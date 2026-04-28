@@ -1,0 +1,98 @@
+"use client";
+import { useState } from "react";
+
+const Home = () => {
+  const [form, setForm] = useState({
+    name: "",
+    price: 0,
+    description: "",
+    stock: 0,
+  });
+  console.log(form);
+
+  const HandleChange = (e: any) => {
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const HandleSubmit = async (e: any) => {
+    e.preventDefault();
+
+    await fetch("http://localhost:3001/api/products", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ...form,
+        price: Number(form.price),
+        stock: Number(form.stock),
+      }),
+    });
+    alert("Product added successfully");
+
+    // clear input fields after submit
+    setForm({
+      name: "",
+      price: 0,
+      description: "",
+      stock: 0,
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-4 items-center justify-center">
+      <div>
+        <div className="text-2xl ">Product Form</div>
+      </div>
+
+      <div>
+        <form action="" onSubmit={HandleSubmit}>
+          Name:
+          <input
+            required
+            value={form.name}
+            type="text"
+            name="name"
+            placeholder=" Enter Product name"
+            onChange={HandleChange}
+          />
+          <br />
+          Price:
+          <input
+            required
+            value={form.price}
+            type="number"
+            name="price"
+            placeholder=" Enter Product price"
+            onChange={HandleChange}
+          />
+          <br />
+          Description:
+          <input
+            value={form.description}
+            type="text"
+            name="description"
+            placeholder=" Enter Product description"
+            onChange={HandleChange}
+          />
+          <br />
+          Stock:
+          <input
+            value={form.stock}
+            type="number"
+            name="stock"
+            placeholder=" Enter Product stock"
+            onChange={HandleChange}
+          />
+          <br />
+          <button type="submit">Submit</button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Home;
