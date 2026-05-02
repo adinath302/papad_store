@@ -1,17 +1,33 @@
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "mysql"
-}
-
 model Product {
-  id          String   @id @default(uuid())
-  name        String
-  price       Float
-  description String?
-  image       String?
-  stock       Int
-  createdAt   DateTime @default(now())
+  id    String @id @default(uuid())
+  name  String
+  price Int
+
+  cartItems  CartItem[]
+  orderItems OrderItem[] // ✅ MUST EXIST
+}
+
+model CartItem {
+  id        String @id @default(uuid())
+  productId String
+  quantity  Int
+
+  product Product @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  items OrderItem[]
+}
+
+model OrderItem {
+  id        String @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
 }

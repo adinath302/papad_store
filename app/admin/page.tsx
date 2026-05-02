@@ -20,7 +20,7 @@ const Home = () => {
   const HandleSubmit = async (e: any) => {
     e.preventDefault();
 
-    await fetch("http://localhost:3001/api/products", {
+await fetch("/api/products", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
