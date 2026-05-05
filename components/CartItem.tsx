@@ -28,7 +28,7 @@ export default function CartItem({ item }: any) {
   return (
     <div className="border p-3 mb-3 rounded flex justify-between">
       <div>
-        <h2>{item.product.name}</h2>
+        <h2>{item.product?.name}</h2>
         <p>₹{item.product.price}</p>
       </div>
 

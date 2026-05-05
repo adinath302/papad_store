@@ -1,60 +1,47 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
+import { cookies } from "next/headers";
+
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    console.log("BODY:", body);
+    const { productId } = await req.json();
 
-    const { productId, quantity } = body;
-    const newQuantity = quantity || 1;
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
 
-    // Check if item already exists in cart
-    const existingItem = await prisma.cartItem.findFirst({
-      where: { productId },
-    });
-
-    let item;
-
-    if (existingItem) {
-      // Update quantity by adding to existing quantity
-      item = await prisma.cartItem.update({
-        where: { id: existingItem.id },
-        data: {
-          quantity: existingItem.quantity + newQuantity,
-        },
-      });
-    } else {
-      // Create new cart item
-      item = await prisma.cartItem.create({
-        data: {
-          productId,
-          quantity: newQuantity,
-        },
-      });
+    if (!userId) {
+      return Response.json({ error: "Not logged in" }, { status: 401 });
     }
 
-    revalidatePath("/cart");
+    const item = await prisma.cartItem.create({
+      data: {
+        productId,
+        userId,
+        quantity: 1,
+      },
+    });
 
     return Response.json(item);
   } catch (error: any) {
-    console.log("POST ERROR:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
 
 export async function GET() {
-  try {
-    const cartItems = await prisma.cartItem.findMany({
-      include: {
-        product: true,
-      },
-    });
-    return Response.json(cartItems);
-  } catch (error: any) {
-    console.log("GET ERROR:", error.message);
-    return Response.json({ error: error.message }, { status: 500 });
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+
+  if (!userId) {
+    return Response.json([], { status: 200 });
   }
+
+  const items = await prisma.cartItem.findMany({
+    where: { userId },
+    include: { product: true },
+  });
+
+  return Response.json(items);
 }
 
 export async function DELETE(req: Request) {

@@ -25,8 +25,8 @@ const addToCart = async () => {
 
   return (
     <li className="border p-4 bg-white">
-      <h2>{product.name}</h2>
-      <p>₹{product.price}</p>
+      <h2>{product?.name}</h2>
+      <p>₹{product?.price}</p>
       <p>Stock: {product.stock}</p>
       <div className="flex justify-between text-sm mt-2">
         <button

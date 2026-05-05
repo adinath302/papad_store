@@ -8,8 +8,6 @@ const Home = () => {
     description: "",
     stock: 0,
   });
-  console.log(form);
-
   const HandleChange = (e: any) => {
     setForm({
       ...form,
@@ -20,7 +18,7 @@ const Home = () => {
   const HandleSubmit = async (e: any) => {
     e.preventDefault();
 
-await fetch("/api/products", {
+    const res = await fetch("/api/products", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -31,15 +29,19 @@ await fetch("/api/products", {
         stock: Number(form.stock),
       }),
     });
-    alert("Product added successfully");
 
-    // clear input fields after submit
-    setForm({
-      name: "",
-      price: 0,
-      description: "",
-      stock: 0,
-    });
+    if (res.ok) {
+      alert("Product added successfully!");
+      setForm({
+        name: "",
+        price: 0,
+        description: "",
+        stock: 0,
+      });
+    } else {
+      const error = await res.json();
+      alert(`Error: ${error.error || "Failed to add product"}`);
+    }
   };
 
   return (

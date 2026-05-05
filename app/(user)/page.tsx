@@ -1,12 +1,7 @@
-async function getProducts() {
-  const res = await fetch("http://localhost:3000/api/products", {
-    cache: "no-cache",
-  });
-  return res.json();
-}
+import { prisma } from "@/lib/prisma";
 
 const Home = async () => {
-  const products = await getProducts();
+  const products = await prisma.product.findMany();
   return (
     <>
       <div>All Products</div>

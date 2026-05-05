@@ -1,26 +1,36 @@
 model Product {
-  id    String @id @default(uuid())
-  name  String
-  price Int
+  id          String   @id @default(uuid())
+  name        String
+  price       Int
+  description String?
+  stock       Int?
 
   cartItems  CartItem[]
-  orderItems OrderItem[] // ✅ MUST EXIST
+  orderItems OrderItem[]
 }
 
 model CartItem {
-  id        String @id @default(uuid())
+  id        String  @id @default(uuid())
+
   productId String
+  userId    String
   quantity  Int
 
-  product Product @relation(fields: [productId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
 }
+
 
 model Order {
-  id        String   @id @default(uuid())
-  createdAt DateTime @default(now())
+  id        String      @id @default(uuid())
+  createdAt DateTime    @default(now())
 
-  items OrderItem[]
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+
+  items     OrderItem[]
 }
+
 
 model OrderItem {
   id        String @id @default(uuid())
@@ -30,4 +40,21 @@ model OrderItem {
 
   order   Order   @relation(fields: [orderId], references: [id])
   product Product @relation(fields: [productId], references: [id])
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String
+
+  orders   Order[]
+  cartItems CartItem[]
 }
