@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
+export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   try {
     const { email, password } = await req.json();
@@ -8,6 +9,10 @@ export async function POST(req: Request) {
     const user = await prisma.user.findUnique({
       where: { email },
     });
+
+    console.log(email);
+    console.log(password);
+    console.log(user);
 
     if (!user || user.password !== password) {
       return Response.json({ error: "Invalid credentials" }, { status: 401 });

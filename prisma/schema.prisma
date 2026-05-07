@@ -1,47 +1,3 @@
-model Product {
-  id          String   @id @default(uuid())
-  name        String
-  price       Int
-  description String?
-  stock       Int?
-
-  cartItems  CartItem[]
-  orderItems OrderItem[]
-}
-
-model CartItem {
-  id        String  @id @default(uuid())
-
-  productId String
-  userId    String
-  quantity  Int
-
-  product   Product @relation(fields: [productId], references: [id])
-  user      User    @relation(fields: [userId], references: [id])
-}
-
-
-model Order {
-  id        String      @id @default(uuid())
-  createdAt DateTime    @default(now())
-
-  userId    String
-  user      User        @relation(fields: [userId], references: [id])
-
-  items     OrderItem[]
-}
-
-
-model OrderItem {
-  id        String @id @default(uuid())
-  orderId   String
-  productId String
-  quantity  Int
-
-  order   Order   @relation(fields: [orderId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-}
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -50,11 +6,56 @@ datasource db {
   provider = "mysql"
 }
 
-model User {
+model cartitem {
+  id        String  @id
+  productId String
+  quantity  Int
+  userId    String
+  product   product @relation(fields: [productId], references: [id], map: "CartItem_productId_fkey")
+  user      user    @relation(fields: [userId], references: [id], map: "CartItem_userId_fkey")
+
+  @@index([productId], map: "CartItem_productId_fkey")
+  @@index([userId], map: "CartItem_userId_fkey")
+}
+
+model order {
+  id        String      @id
+  createdAt DateTime    @default(now())
+  userId    String
+  user      user        @relation(fields: [userId], references: [id], map: "Order_userId_fkey")
+  orderitem orderitem[]
+
+  @@index([userId], map: "Order_userId_fkey")
+}
+
+model orderitem {
+  id        String  @id
+  orderId   String
+  productId String
+  quantity  Int
+  order     order   @relation(fields: [orderId], references: [id], map: "OrderItem_orderId_fkey")
+  product   product @relation(fields: [productId], references: [id], map: "OrderItem_productId_fkey")
+
+  @@index([orderId], map: "OrderItem_orderId_fkey")
+  @@index([productId], map: "OrderItem_productId_fkey")
+}
+
+model product {
+  id          String      @id
+  name        String
+  price       Int
+  description String?
+  stock       Int?
+  cartitem    cartitem[]
+  orderitem   orderitem[]
+}
+
+model user {
   id       String  @id @default(uuid())
+  name     String?
   email    String  @unique
   password String
 
-  orders   Order[]
-  cartItems CartItem[]
+  cartitem cartitem[]
+  order    order[]
 }

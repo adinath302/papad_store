@@ -9,7 +9,7 @@ export async function POST(req: Request) {
 
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
-
+    console.log("USER ID:", userId);
     if (!userId) {
       return Response.json({ error: "Not logged in" }, { status: 401 });
     }
