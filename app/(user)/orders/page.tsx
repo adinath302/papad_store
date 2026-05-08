@@ -4,15 +4,16 @@ import { log } from "console";
 const OrdersPage = async () => {
   const orders = await prisma.order.findMany({
     include: {
-      items: {
+      orderItems: {
         include: { product: true },
       },
+      user: true,
     },
     orderBy: {
       createdAt: "desc",
     },
   });
-console.log(orders);
+  console.log(orders);
 
   return (
     <div className="p-5">
@@ -24,10 +25,12 @@ console.log(orders);
         <div key={order.id} className="border p-4 mb-4 rounded">
           <h2 className="font-bold">Order ID: {order.id}</h2>
 
-          {order.items.map((item) => (
+          {(order as any).orderItems?.map((item: any) => (
             <div key={item.id} className="ml-4 mt-2">
               <p>{item.product.name}</p>
-              <p>₹{item.product.price} × {item.quantity}</p>
+              <p>
+                ₹{item.product.price} × {item.quantity}
+              </p>
             </div>
           ))}
         </div>

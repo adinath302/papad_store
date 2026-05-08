@@ -6,56 +6,60 @@ datasource db {
   provider = "mysql"
 }
 
-model cartitem {
-  id        String  @id
+model CartItem {
+  id        String   @id @default(uuid())
   productId String
   quantity  Int
   userId    String
-  product   product @relation(fields: [productId], references: [id], map: "CartItem_productId_fkey")
-  user      user    @relation(fields: [userId], references: [id], map: "CartItem_userId_fkey")
 
-  @@index([productId], map: "CartItem_productId_fkey")
-  @@index([userId], map: "CartItem_userId_fkey")
+  product Product @relation(fields: [productId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@index([productId])
+  @@index([userId])
 }
 
-model order {
-  id        String      @id
+model Order {
+  id        String      @id @default(uuid())
   createdAt DateTime    @default(now())
   userId    String
-  user      user        @relation(fields: [userId], references: [id], map: "Order_userId_fkey")
-  orderitem orderitem[]
 
-  @@index([userId], map: "Order_userId_fkey")
+  user  User        @relation(fields: [userId], references: [id])
+ orderItems OrderItem[]
+
+  @@index([userId])
 }
 
-model orderitem {
-  id        String  @id
+model OrderItem {
+  id        String @id @default(uuid())
   orderId   String
   productId String
   quantity  Int
-  order     order   @relation(fields: [orderId], references: [id], map: "OrderItem_orderId_fkey")
-  product   product @relation(fields: [productId], references: [id], map: "OrderItem_productId_fkey")
 
-  @@index([orderId], map: "OrderItem_orderId_fkey")
-  @@index([productId], map: "OrderItem_productId_fkey")
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
 }
 
-model product {
-  id          String      @id
+model Product {
+  id          String @id @default(uuid())
   name        String
   price       Int
   description String?
   stock       Int?
-  cartitem    cartitem[]
-  orderitem   orderitem[]
+
+ orderItems OrderItem[]
+ cartItems CartItem[]
 }
 
-model user {
-  id       String  @id @default(uuid())
+model User {
+  id       String @id @default(uuid())
   name     String?
-  email    String  @unique
+  email    String @unique
   password String
 
-  cartitem cartitem[]
-  order    order[]
+ orders Order[]
+ cartItems CartItem[]
 }
