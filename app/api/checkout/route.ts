@@ -28,7 +28,7 @@ export async function POST() {
         userId,
       },
       include: {
-        items: { include: { product: true } },
+        orderItems: { include: { product: true } },
       },
     });
 
