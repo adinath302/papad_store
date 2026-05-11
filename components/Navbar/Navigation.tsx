@@ -12,9 +12,9 @@ const Navigation = () => {
   return (
     <nav className="flex items-center gap-8">
       {navItems.map((item) => (
-        <Link 
-          key={item.name} 
-          href={item.path} 
+        <Link
+          key={item.name}
+          href={item.path}
           className="text-xs font-semibold tracking-widest uppercase transition-colors duration-300 text-zinc-800 hover:text-red-400"
         >
           {item.name}
