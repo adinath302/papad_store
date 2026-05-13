@@ -47,7 +47,7 @@ export default function HeroCarousel() {
   }, [index]);
 
   return (
-    <div className="relative h-[450px] md:h-[600px] w-full overflow-hidden rounded-[2rem] shadow-2xl">
+    <div className="relative h-[450px] md:h-[600px] max-w-full overflow-hidden rounded-[2rem] shadow-2xl">
       <AnimatePresence mode="wait">
         <motion.div
           key={index}

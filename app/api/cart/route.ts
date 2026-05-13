@@ -5,26 +5,60 @@ import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
-    const { productId } = await req.json();
+    const body = await req.json();
+
+    const { productId, quantity } = body;
 
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
-    console.log("USER ID:", userId);
+
     if (!userId) {
-      return Response.json({ error: "Not logged in" }, { status: 401 });
+      return Response.json(
+        { error: "Not logged in" },
+        { status: 401 }
+      );
     }
 
+    // CHECK EXISTING ITEM
+    const existingItem = await prisma.cartItem.findFirst({
+      where: {
+        userId,
+        productId,
+      },
+    });
+
+    // IF EXISTS → UPDATE QUANTITY
+    if (existingItem) {
+      const updatedItem = await prisma.cartItem.update({
+        where: {
+          id: existingItem.id,
+        },
+        data: {
+          quantity: existingItem.quantity + quantity,
+        },
+      });
+
+      return Response.json(updatedItem);
+    }
+
+    // ELSE CREATE NEW ITEM
     const item = await prisma.cartItem.create({
       data: {
         productId,
         userId,
-        quantity: 1,
+        quantity,
       },
     });
 
     return Response.json(item);
+
   } catch (error: any) {
-    return Response.json({ error: error.message }, { status: 500 });
+    console.log("CART POST ERROR:", error);
+
+    return Response.json(
+      { error: error.message },
+      { status: 500 }
+    );
   }
 }
 
