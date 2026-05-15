@@ -65,7 +65,7 @@ export default async function Home() {
       </section>
 
       {/* Footer */}
-      <Footer/>
+      {/* <Footer/> */}
       
     </main>
   );
