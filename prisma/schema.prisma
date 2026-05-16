@@ -44,15 +44,18 @@ model OrderItem {
 }
 
 model Product {
-  id          String @id @default(uuid())
+  id          String      @id @default(uuid())
   name        String
   price       Int
   description String?
   stock       Int?
+  image       String?     // Optional main image URL
+  thumbnail   String?     // New optional thumbnail URL
 
- orderItems OrderItem[]
- cartItems CartItem[]
+  orderItems  OrderItem[]
+  cartItems   CartItem[]
 }
+
 
 model User {
   id       String @id @default(uuid())

@@ -2,17 +2,18 @@ import Image from "next/image";
 import { Star } from "lucide-react";
 
 export default function ProductCard({ product }: any) {
+  // Use thumbnail if available; default back to main image or placeholder asset
+  const displayImage = product.thumbnail || product.image || "/placeholder-image.jpg";
+
   return (
     <div className="group space-y-4">
-      {/* Image Container */}
       <div className="relative aspect-[4/5] rounded-3xl overflow-hidden bg-zinc-100">
         <Image
-          src={product.image}
+          src={displayImage}
           alt={product.name}
           fill
           className="object-cover transition-transform duration-700 group-hover:scale-110"
         />
-        {/* Badge Example */}
         {product.isNew && (
           <span className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-amber-700 shadow-sm">
             Aazol's Choice
@@ -20,12 +21,11 @@ export default function ProductCard({ product }: any) {
         )}
       </div>
       
-      {/* Content */}
+      {/* Product Content Details ... */}
       <div className="space-y-2">
         <h3 className="text-lg font-medium text-zinc-900 leading-tight">
           {product.name}
         </h3>
-        
         <div className="flex items-center justify-between">
           <span className="text-xs text-zinc-400 font-medium">(200g / 500g)</span>
           <div className="flex items-center gap-1 text-amber-500">
@@ -33,7 +33,6 @@ export default function ProductCard({ product }: any) {
             <span className="text-xs font-bold text-zinc-900">4.8</span>
           </div>
         </div>
-
         <div className="flex items-center justify-between pt-2">
           <p className="text-xl font-bold text-zinc-900">
             <span className="text-xs font-medium text-zinc-400 mr-1">From</span>

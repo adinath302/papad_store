@@ -4,95 +4,54 @@ import { useState } from "react";
 const Home = () => {
   const [form, setForm] = useState({
     name: "",
-    price: 0,
+    price: "", // String representation prevents formatting bugs
     description: "",
-    stock: 0,
+    stock: "",
+    image: "",
+    thumbnail: "",
   });
-  const HandleChange = (e: any) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
+
+  const HandleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const HandleSubmit = async (e: any) => {
+  const HandleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const res = await fetch("/api/products", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...form,
+        name: form.name,
         price: Number(form.price),
-        stock: Number(form.stock),
+        description: form.description,
+        stock: form.stock ? Number(form.stock) : 0,
+        image: form.image,
+        thumbnail: form.thumbnail,
       }),
     });
 
     if (res.ok) {
-      alert("Product added successfully!");
-      setForm({
-        name: "",
-        price: 0,
-        description: "",
-        stock: 0,
-      });
+      alert("Product successfully published!");
+      setForm({ name: "", price: "", description: "", stock: "", image: "", thumbnail: "" });
     } else {
       const error = await res.json();
-      alert(`Error: ${error.error || "Failed to add product"}`);
+      alert(`Error ${res.status}: ${error.details || error.error}`);
     }
   };
 
   return (
-    <div className="flex flex-col gap-4 items-center justify-center">
-      <div>
-        <div className="text-2xl ">Product Form</div>
-      </div>
-
-      <div>
-        <form action="" onSubmit={HandleSubmit}>
-          Name:
-          <input
-            required
-            value={form.name}
-            type="text"
-            name="name"
-            placeholder=" Enter Product name"
-            onChange={HandleChange}
-          />
-          <br />
-          Price:
-          <input
-            required
-            value={form.price}
-            type="number"
-            name="price"
-            placeholder=" Enter Product price"
-            onChange={HandleChange}
-          />
-          <br />
-          Description:
-          <input
-            value={form.description}
-            type="text"
-            name="description"
-            placeholder=" Enter Product description"
-            onChange={HandleChange}
-          />
-          <br />
-          Stock:
-          <input
-            value={form.stock}
-            type="number"
-            name="stock"
-            placeholder=" Enter Product stock"
-            onChange={HandleChange}
-          />
-          <br />
-          <button type="submit">Submit</button>
-        </form>
-      </div>
+    <div className="flex flex-col gap-4 items-center justify-center p-6 bg-zinc-50 min-h-screen">
+      <h1 className="text-2xl font-bold text-zinc-900">Add New Production Product</h1>
+      <form onSubmit={HandleSubmit} className="flex flex-col gap-4 w-96 bg-white p-6 rounded-2xl shadow-sm border border-zinc-200">
+        <input required name="name" value={form.name} placeholder="Product Name" onChange={HandleChange} className="border p-2 rounded text-zinc-900" />
+        <input required name="price" type="number" value={form.price} placeholder="Price (₹)" onChange={HandleChange} className="border p-2 rounded text-zinc-900" />
+        <input name="description" value={form.description} placeholder="Description (Optional)" onChange={HandleChange} className="border p-2 rounded text-zinc-900" />
+        <input name="image" value={form.image} placeholder="Main Image URL" onChange={HandleChange} className="border p-2 rounded text-zinc-900" />
+        <input name="thumbnail" value={form.thumbnail} placeholder="Thumbnail Image URL" onChange={HandleChange} className="border p-2 rounded text-zinc-900" />
+        <input name="stock" type="number" value={form.stock} placeholder="Available Stock" onChange={HandleChange} className="border p-2 rounded text-zinc-900" />
+        <button type="submit" className="bg-zinc-900 text-white p-3 rounded-xl font-bold hover:bg-zinc-800 transition-all">Publish Product</button>
+      </form>
     </div>
   );
 };

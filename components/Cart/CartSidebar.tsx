@@ -88,7 +88,9 @@ export default function CartSidebar({
             <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <ShoppingBag size={20} className="text-amber-600" />
-                <h2 className="text-xl font-serif text-zinc-900">Your Basket</h2>
+                <h2 className="text-xl font-serif text-zinc-900">
+                  Your Basket
+                </h2>
                 <span className="bg-zinc-100 text-zinc-500 text-[10px] font-bold px-2 py-0.5 rounded-full">
                   {items.length}
                 </span>
@@ -138,8 +140,12 @@ export default function CartSidebar({
             {items.length > 0 && (
               <div className="p-6 bg-zinc-50 border-t border-zinc-100 space-y-4">
                 <div className="flex justify-between items-end">
-                  <span className="text-zinc-500 text-sm font-medium">Subtotal</span>
-                  <span className="text-2xl font-serif text-zinc-900">₹{total}</span>
+                  <span className="text-zinc-500 text-sm font-medium">
+                    Subtotal
+                  </span>
+                  <span className="text-2xl font-serif text-zinc-900">
+                    ₹{total}
+                  </span>
                 </div>
                 <p className="text-[10px] text-zinc-400 uppercase tracking-widest text-center">
                   Shipping & taxes calculated at checkout
@@ -162,4 +168,3 @@ export default function CartSidebar({
     </AnimatePresence>
   );
 }
-

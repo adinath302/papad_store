@@ -4,7 +4,7 @@ import FilterSidebar from "@/components/Products/FilterSidebar";
 import SearchBar from "@/components/Products/SearchBar";
 
 export default async function ProductPage() {
-  const products = await prisma.product.findMany();
+  const products = await prisma.product.findMany();  // Fetch all products from the database
 
   return (
     <main className="min-h-screen bg-[#fdfdfd] pt-24 pb-20">
