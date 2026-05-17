@@ -20,12 +20,22 @@ model CartItem {
 }
 
 model Order {
-  id        String      @id @default(uuid())
-  createdAt DateTime    @default(now())
-  userId    String
+  id          String      @id @default(uuid())
+  createdAt   DateTime    @default(now())
+  userId      String
 
-  user  User        @relation(fields: [userId], references: [id])
- orderItems OrderItem[]
+  fullName    String?
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  pincode     String?
+
+  paymentType String?   // COD / Razorpay
+  status      String    @default("Pending")
+
+  user        User       @relation(fields: [userId], references: [id])
+  orderItems  OrderItem[]
 
   @@index([userId])
 }
@@ -49,8 +59,9 @@ model Product {
   price       Int
   description String?
   stock       Int?
-  image       String?     // Optional main image URL
-  thumbnail   String?     // New optional thumbnail URL
+
+  image       String? @db.Text
+  thumbnail   String? @db.Text
 
   orderItems  OrderItem[]
   cartItems   CartItem[]

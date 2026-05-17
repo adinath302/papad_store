@@ -6,10 +6,15 @@ export async function GET() {
   try {
     const products = await prisma.product.findMany();
     return NextResponse.json(products);
-  } catch (error) {
-    console.error("Prisma Error:", error);
+  } catch (error: any) {
+    console.log("FULL PRODUCT ERROR:");
+    console.dir(error, { depth: null });
+
     return NextResponse.json(
-      { error: "Failed to fetch products from database" },
+      {
+        error: error?.message || "Database error",
+        full: String(error),
+      },
       { status: 500 },
     );
   }
