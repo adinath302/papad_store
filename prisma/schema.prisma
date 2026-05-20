@@ -20,24 +20,37 @@ model CartItem {
 }
 
 model Order {
-  id          String      @id @default(uuid())
-  createdAt   DateTime    @default(now())
-  userId      String
+  id String @id @default(uuid())
 
-  fullName    String?
-  phone       String?
-  address     String?
-  city        String?
-  state       String?
-  pincode     String?
+  userId String
 
-  paymentType String?   // COD / Razorpay
-  status      String    @default("Pending")
+  paymentType String
 
-  user        User       @relation(fields: [userId], references: [id])
-  orderItems  OrderItem[]
+  shippingCost Int
 
-  @@index([userId])
+  totalAmount Int
+
+  status String @default("PENDING")
+
+  fullName String
+  phone String
+
+  address1 String
+  address2 String?
+
+  city String
+  state String
+
+  pincode String
+
+  createdAt DateTime @default(now())
+
+  user User @relation(
+    fields:[userId],
+    references:[id]
+  )
+
+  orderItems OrderItem[]
 }
 
 model OrderItem {
@@ -54,26 +67,77 @@ model OrderItem {
 }
 
 model Product {
-  id          String      @id @default(uuid())
+  id          String @id @default(uuid())
+
   name        String
-  price       Int
   description String?
+
   stock       Int?
+  image       String?
+  thumbnail   String?
 
-  image       String? @db.Text
-  thumbnail   String? @db.Text
+  productType String @default("weight")
 
-  orderItems  OrderItem[]
-  cartItems   CartItem[]
+  createdAt DateTime @default(now())
+
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  variants ProductVariant[]
+}
+
+model ProductVariant {
+  id String @id @default(uuid())
+
+  label String
+  price Int
+
+  productId String
+
+  product Product @relation(
+    fields:[productId],
+    references:[id],
+    onDelete: Cascade
+  )
+
+  @@index([productId])
 }
 
 
 model User {
-  id       String @id @default(uuid())
-  name     String?
-  email    String @unique
+  id String @id @default(uuid())
+
+  name String?
+
+  email String @unique
+
   password String
 
- orders Order[]
- cartItems CartItem[]
+  orders Order[]
+
+  cartItems CartItem[]
+
+  addresses Address[]
+}
+
+model Address {
+  id String @id @default(uuid())
+
+  userId String
+
+  fullName String
+  phone String
+
+  address1 String
+  address2 String?
+
+  city String
+  state String
+  pincode String
+
+  saveAddress Boolean @default(false)
+
+  user User @relation(fields:[userId], references:[id])
+
+  createdAt DateTime @default(now())
 }

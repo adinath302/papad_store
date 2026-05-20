@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 
 export async function GET() {
   try {
-    const products = await prisma.product.findMany();
+    const products = await prisma.product.findMany({
+      include: {
+        variants: true,
+      },
+    })
     return NextResponse.json(products);
   } catch (error: any) {
     console.log("FULL PRODUCT ERROR:");
@@ -23,52 +27,44 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    console.log("Incoming Payload:", body);
 
-    // 1. Strict Validation: Enforce exact types for a real production project
-    if (
-      !body.name ||
-      typeof body.name !== "string" ||
-      body.name.trim() === ""
-    ) {
-      return NextResponse.json(
-        { error: "Product name is required" },
-        { status: 400 },
-      );
-    }
-    if (
-      typeof body.price !== "number" ||
-      !Number.isFinite(body.price) ||
-      body.price <= 0
-    ) {
-      return NextResponse.json(
-        { error: "A valid positive price is required" },
-        { status: 400 },
-      );
-    }
-
-    // 2. Format fields so they don't break Prisma types
     const product = await prisma.product.create({
       data: {
-        name: body.name.trim(),
-        price: Math.round(body.price), // MySQL Int requires integers
-        description: body.description?.trim() || null,
-        stock: typeof body.stock === "number" ? body.stock : 0,
-        image: body.image?.trim() || null,
-        thumbnail: body.thumbnail?.trim() || null, // Matches schema field
+        name: body.name,
+        description: body.description || null,
+
+        stock: Number(body.stock) || 0,
+
+        image: body.image || null,
+
+        thumbnail: body.thumbnail || body.image || null,
+
+        productType: body.productType || "weight",
+
+        variants: {
+          create: body.variants.map((v: any) => ({
+            label: v.label,
+            price: Number(v.price),
+          })),
+        },
+      },
+
+      include: {
+        variants: true,
       },
     });
 
-    revalidatePath("/(user)");
-    revalidatePath("/(user)/products");
-
-    return NextResponse.json(product, { status: 201 });
+    return NextResponse.json(product);
   } catch (error: any) {
-    // This logs the precise MySQL error block inside your terminal console
-    console.error("CRITICAL DATABASE CRASH:", error);
+    console.log(error);
+
     return NextResponse.json(
-      { error: "Internal Server Database Exception", details: error.message },
-      { status: 500 },
+      {
+        error: error.message,
+      },
+      {
+        status: 500,
+      },
     );
   }
 }

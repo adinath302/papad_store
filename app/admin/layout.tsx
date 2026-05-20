@@ -29,7 +29,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <div className="">
-          <h1>Admin Dashboard</h1>
+          {/* <h1>Admin Dashboard</h1> */}
         </div>
         {children}
       </body>
