@@ -28,8 +28,7 @@ export default async function Home() {
       <PapadExplorer />
 
       {/* Heritage section */}
-        <HeritageSection />
-   
+      <HeritageSection />
 
       {/* 4. Product List Section */}
       <section className="relative z-10 bg-white pt-24 pb-32">
@@ -66,7 +65,6 @@ export default async function Home() {
 
       {/* Footer */}
       {/* <Footer/> */}
-      
     </main>
   );
 }
