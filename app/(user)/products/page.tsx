@@ -4,17 +4,24 @@ import FilterSidebar from "@/components/Products/FilterSidebar";
 import SearchBar from "@/components/Products/SearchBar";
 
 export default async function ProductPage() {
-  const products = await prisma.product.findMany();  // Fetch all products from the database
+  const products = await prisma.product.findMany({ // Fetch all products with their variants
+    include: {
+      variants: true,
+    },
+  });
 
   return (
     <main className="min-h-screen bg-[#fdfdfd] pt-24 pb-20">
       <div className="max-w-[1400px] mx-auto px-6">
-        
         {/* Top Utility Bar */}
         <div className="flex flex-col md:flex-row justify-between items-end gap-6 mb-12">
           <div>
-            <h1 className="text-3xl font-serif text-zinc-900">Our Collection</h1>
-            <p className="text-zinc-500 text-sm mt-1">Showing all authentic varieties</p>
+            <h1 className="text-3xl font-serif text-zinc-900">
+              Our Collection
+            </h1>
+            <p className="text-zinc-500 text-sm mt-1">
+              Showing all authentic varieties
+            </p>
           </div>
           <div className="w-full md:w-96">
             <SearchBar />
@@ -40,7 +47,7 @@ export default async function ProductPage() {
                 <option>Rating</option>
               </select>
             </div>
-            
+
             <ProductList products={products} />
           </div>
         </div>

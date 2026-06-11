@@ -41,6 +41,10 @@ export default function ProductCard({ product }: any) {
     }
   };
 
+  const startingPrice = Math.min(
+    ...product.variants.map((variant: any) => variant.price),
+  );
+
   return (
     <div className="group space-y-4">
       {/* Image Container */}
@@ -74,7 +78,7 @@ export default function ProductCard({ product }: any) {
               Price
             </span>
             <p className="text-xl font-bold text-zinc-900">
-              ₹{product.variants?.[0]?.price}
+              Starting from ₹{startingPrice}
             </p>
           </div>
 
