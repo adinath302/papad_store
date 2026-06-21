@@ -1,61 +1,71 @@
 import { prisma } from "@/lib/prisma";
 import HeroCarousel from "@/components/Home/HeroCarousel";
-import PapadExplorer from "@/components/Home/PapadExplorer";
+import PromoBar from "@/components/Home/PromoBar";
+import TrustMarquee from "@/components/Home/TrustMarquee";
+import CategoryGrid from "@/components/Home/CategoryGrid";
+import CombosSection from "@/components/Home/CombosSection";
 import HeritageSection from "@/components/Home/HeritageSection";
-import Footer from "@/components/Footer/Footer";
+import ReviewsSection from "@/components/Home/ReviewsSection";
+import FAQSection from "@/components/Home/FAQSection";
+import ProductCard from "@/components/Products/ProductCard";
+import Link from "next/link";
 
 export default async function Home() {
-  const products = (await prisma.product.findMany()) || [];
+  const products = (await prisma.product.findMany({ include: { variants: true } })) || [];
 
   return (
-    <main className="relative w-full bg-[#fdfdfd] overflow-x-hidden">
-      {/* 1. Hero Section */}
-      <section className="pt-24 px-4 max-w-7xl mx-auto">
+    <main className="relative w-full bg-[#faf8f5] overflow-x-hidden">
+      {/* Promo announcement strip */}
+      <div className="pt-[72px] md:pt-[80px]">
+        <PromoBar />
+      </div>
+
+      {/* Hero */}
+      <section className="px-4 md:px-8 max-w-7xl mx-auto py-6 md:py-8">
         <HeroCarousel />
       </section>
 
-      {/* 2. Transition Label */}
-      <div className="max-w-7xl mx-auto px-6 md:px-12 py-10">
-        <p className="text-amber-600 font-bold tracking-[0.4em] uppercase text-[9px] mb-2">
-          Our Craft
-        </p>
-        <h2 className="text-4xl md:text-6xl font-serif text-zinc-900 tracking-tight">
-          The Explorer
-        </h2>
-      </div>
+      {/* Scrolling trust badges */}
+      <TrustMarquee />
 
-      {/* 3. Sticky Horizontal Explorer */}
-      <PapadExplorer />
+      {/* Category shortcuts */}
+      <CategoryGrid />
 
-      {/* Heritage section */}
+      {/* Heritage & story */}
       <HeritageSection />
 
-      {/* 4. Product List Section */}
-      <section className="relative z-10 bg-white pt-24 pb-32">
+      {/* Bestsellers from DB */}
+      <section className="relative z-10 bg-white py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-4">
-            <div className="space-y-2">
-              <h2 className="text-4xl md:text-5xl font-serif text-zinc-900 tracking-tighter">
-                Shop the Kitchen
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 md:mb-14 gap-4">
+            <div>
+              <p className="text-emerald-800 text-[10px] font-bold tracking-[0.35em] uppercase mb-2">
+                Customer Favorites
+              </p>
+              <h2 className="text-3xl md:text-4xl font-serif text-stone-900 tracking-tight">
+                Bestsellers
               </h2>
-              <p className="text-zinc-400 font-light text-lg">
+              <p className="text-stone-500 mt-2 text-sm md:text-base">
                 Directly from our traditional sun-drying floors.
               </p>
             </div>
-            <div className="h-px flex-1 bg-zinc-100 mx-8 hidden md:block" />
-            <button className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-400 hover:text-zinc-900 transition-colors">
-              View All Products &rarr;
-            </button>
+            <Link
+              href="/products"
+              className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-800 hover:text-amber-600 transition-colors shrink-0"
+            >
+              View All Products →
+            </Link>
           </div>
 
-          {/* Product Grid logic remains here */}
           {products.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
-              {/* Reuse the product card mapping from previous step */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {products.map((product: any) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
             </div>
           ) : (
-            <div className="text-center py-20 bg-zinc-50 rounded-[3rem] border border-dashed">
-              <p className="text-zinc-400 italic">
+            <div className="text-center py-20 bg-[#faf8f5] rounded-3xl border border-dashed border-stone-300">
+              <p className="text-stone-500 italic">
                 No products currently available.
               </p>
             </div>
@@ -63,8 +73,14 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Footer */}
-      {/* <Footer/> */}
+      {/* Combos */}
+      <CombosSection />
+
+      {/* Reviews */}
+      <ReviewsSection />
+
+      {/* FAQ */}
+      <FAQSection />
     </main>
   );
 }

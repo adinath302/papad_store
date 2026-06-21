@@ -1,128 +1,157 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Truck, Award, Leaf, ShieldCheck } from "lucide-react";
+import { Truck, Award, Leaf, ShieldCheck, Sun, HandHeart, Package } from "lucide-react";
+import Image from "next/image";
 
 const pillars = [
   {
-    icon: <Truck strokeWidth={1} />,
-    title: "Quick Delivery",
-    sub: "Fresh flavors, right on time.",
+    icon: Truck,
+    title: "Pan-India Delivery",
+    sub: "Fresh flavors delivered to your doorstep.",
   },
   {
-    icon: <Award strokeWidth={1} />,
-    title: "Authentic Taste",
-    sub: "Traditional recipes, true to roots.",
+    icon: Award,
+    title: "Since 1984",
+    sub: "Three generations of papad-making craft.",
   },
   {
-    icon: <Leaf strokeWidth={1} />,
-    title: "Wide Range",
-    sub: "Pickles, spices, snacks & more.",
+    icon: Leaf,
+    title: "Natural Ingredients",
+    sub: "Premium lentils, spices — nothing artificial.",
   },
   {
-    icon: <ShieldCheck strokeWidth={1} />,
-    title: "Quality-Made",
-    sub: "Clean, safe, and consistent.",
+    icon: ShieldCheck,
+    title: "Quality Sealed",
+    sub: "Moisture-lock packaging for lasting crunch.",
   },
 ];
 
 const processSteps = [
   {
     no: "01",
-    title: "Sourcing Excellence",
-    desc: "We hand-select premium lentils and spices from local farmers who share our commitment to purity and traditional farming.",
+    icon: HandHeart,
+    title: "Hand-Selected Ingredients",
+    desc: "We source premium lentils and spices from trusted local farmers who share our commitment to purity.",
   },
   {
     no: "02",
-    title: "The Sun-Drying Ritual",
-    desc: "Our papads are cured naturally under the golden sun, preserving the authentic crunch and nutrition without artificial heat.",
+    icon: Sun,
+    title: "Sun-Drying Tradition",
+    desc: "Each papad is cured naturally under the golden sun — preserving authentic crunch without artificial heat.",
   },
   {
     no: "03",
-    title: "Precision Packaging",
-    desc: "Every batch undergoes rigorous quality checks before being sealed in our signature moisture-lock minimalist packaging.",
+    icon: Package,
+    title: "Careful Packaging",
+    desc: "Every batch is quality-checked and sealed fresh, so you receive papads as crisp as the day they were made.",
   },
 ];
 
 export default function HeritageSection() {
   return (
-    <section className="py-32 bg-[#fdfdfd] max-w-full overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6 md:px-12">
-        {/* 1. Minimalist Pillars (Black/Zinc) */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-12 mb-48">
+    <section className="py-16 md:py-24 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 md:px-8">
+        {/* Trust pillars */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 mb-20 md:mb-28">
           {pillars.map((item, idx) => (
             <motion.div
               key={idx}
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: idx * 0.1, ease: "easeOut" }}
-              className="flex flex-col items-center text-center"
+              transition={{ delay: idx * 0.08, ease: "easeOut" }}
+              className="flex flex-col items-center text-center p-4 rounded-2xl hover:bg-[#faf8f5] transition-colors"
             >
-              <div className="text-zinc-900 mb-6 scale-125">{item.icon}</div>
-              <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-900 mb-2">
+              <div className="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-800 mb-4">
+                <item.icon size={22} strokeWidth={1.5} />
+              </div>
+              <h4 className="text-xs font-bold uppercase tracking-wider text-stone-900 mb-1.5">
                 {item.title}
               </h4>
-              <p className="text-zinc-400 text-[11px] font-light max-w-[160px] leading-relaxed">
+              <p className="text-stone-500 text-xs leading-relaxed max-w-[180px]">
                 {item.sub}
               </p>
             </motion.div>
           ))}
         </div>
 
-        {/* 2. Centered Story Intro */}
-        {/* <div className="text-center max-w-2xl mx-auto mb-40">
+        {/* Story intro */}
+        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center mb-20 md:mb-28">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
           >
-            <h2 className="text-4xl md:text-6xl font-serif text-zinc-900 leading-tight tracking-tight">
-              The art of <br />
-              <span className="italic text-zinc-400 font-light">patient craft.</span>
+            <p className="text-emerald-800 text-[10px] font-bold tracking-[0.35em] uppercase mb-3">
+              Our Heritage
+            </p>
+            <h2 className="text-3xl md:text-5xl font-serif text-stone-900 leading-tight tracking-tight mb-6">
+              The art of{" "}
+              <span className="italic text-amber-600">patient craft</span>
             </h2>
-            <div className="h-10 w-px bg-zinc-200 mx-auto my-8" />
-            <p className="text-zinc-500 text-lg font-light leading-relaxed">
-              In a world of mass production, we believe in the luxury of time. 
-              Our process respects the natural rhythm of the seasons.
+            <p className="text-stone-600 leading-relaxed mb-4">
+              In a world of mass production, we believe in the luxury of time.
+              Our papads are shaped by hand, seasoned with recipes passed down
+              through generations, and dried under the open sky — just as they
+              have been for over four decades.
+            </p>
+            <p className="text-stone-500 leading-relaxed text-sm">
+              From our sun-drying floors in Rajasthan to your kitchen table,
+              every step honors the natural rhythm of traditional Indian
+              food-making.
             </p>
           </motion.div>
-        </div> */}
 
-        {/* 3. Centered Vertical Process Steps */}
-        {/* <div className="space-y-48 flex flex-col items-center">
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+            className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg"
+          >
+            <Image
+              src="https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?q=80&w=1000"
+              alt="Traditional papad making"
+              fill
+              className="object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-stone-900/40 to-transparent" />
+            <div className="absolute bottom-6 left-6 right-6">
+              <p className="text-white/90 text-sm font-light italic">
+                &ldquo;Preserving taste, one sun-dried batch at a time.&rdquo;
+              </p>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Process steps */}
+        <div className="grid md:grid-cols-3 gap-6 md:gap-8">
           {processSteps.map((step, idx) => (
-            <motion.div 
+            <motion.div
               key={idx}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 24 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ margin: "-100px", once: true }}
-              transition={{ duration: 0.8 }}
-              className="flex flex-col items-center text-center max-w-xl"
+              viewport={{ once: true }}
+              transition={{ delay: idx * 0.1, duration: 0.6 }}
+              className="relative bg-[#faf8f5] rounded-2xl p-6 md:p-8 border border-stone-200/60"
             >
-              <span className="text-[8rem] md:text-[12rem] font-serif text-zinc-100 leading-none block select-none mb-[-2rem]">
+              <span className="text-5xl font-serif text-stone-200 absolute top-4 right-6 select-none">
                 {step.no}
               </span>
-              
-              <div className="relative z-10 space-y-4">
-                <h3 className="text-3xl font-serif text-zinc-900">{step.title}</h3>
-                <p className="text-zinc-500 font-light leading-relaxed text-base">
-                  {step.desc}
-                </p>
+              <div className="w-10 h-10 rounded-xl bg-emerald-800 text-white flex items-center justify-center mb-5">
+                <step.icon size={20} strokeWidth={1.5} />
               </div>
-
-              <div className="mt-12 w-full aspect-[16/9] bg-zinc-50 rounded-[2.5rem] border border-zinc-100 overflow-hidden flex items-center justify-center">
-                <span className="text-[10px] uppercase tracking-[0.3em] text-zinc-300 italic">
-                  Visual Representation {step.no}
-                </span>
-              </div>
-
-              {idx !== processSteps.length - 1 && (
-                <div className="h-24 w-px bg-gradient-to-b from-zinc-200 to-transparent mt-24" />
-              )}
+              <h3 className="text-lg font-semibold text-stone-900 mb-2">
+                {step.title}
+              </h3>
+              <p className="text-stone-600 text-sm leading-relaxed">
+                {step.desc}
+              </p>
             </motion.div>
           ))}
-        </div> */}
+        </div>
       </div>
     </section>
   );

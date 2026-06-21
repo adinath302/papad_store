@@ -2,16 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Star, ShoppingCart, Loader2, Plus, Minus } from "lucide-react";
+import Link from "next/link";
+import { Star, Loader2, Plus, Minus } from "lucide-react";
 
 export default function ProductCard({ product }: any) {
   const [loading, setLoading] = useState(false);
-  const [quantity, setQuantity] = useState(1); // Old logic style: default is 1
+  const [quantity, setQuantity] = useState(1);
 
   const increment = () => setQuantity((prev) => prev + 1);
   const decrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
 
-  // --- OLD LOGIC with Quantity Variable ---
   const addToCart = async () => {
     setLoading(true);
     try {
@@ -22,7 +22,7 @@ export default function ProductCard({ product }: any) {
         },
         body: JSON.stringify({
           productId: product.id,
-          quantity: quantity, // Uses the current state count
+          quantity: quantity,
         }),
       });
 
@@ -45,10 +45,12 @@ export default function ProductCard({ product }: any) {
     ...product.variants.map((variant: any) => variant.price),
   );
 
+  const outOfStock = product.stock === 0;
+
   return (
-    <div className="group space-y-4">
-      {/* Image Container */}
-      <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden bg-zinc-100 shadow-sm transition-all duration-500 group-hover:shadow-xl">
+    <div className="group flex flex-col bg-white rounded-2xl border border-stone-200/80 overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full">
+      {/* Image */}
+      <Link href={`/products/${product.id}`} className="relative aspect-square bg-stone-100 block overflow-hidden">
         <Image
           src={
             product.image ||
@@ -56,46 +58,63 @@ export default function ProductCard({ product }: any) {
           }
           alt={product.name}
           fill
-          className="object-cover transition-transform duration-700 group-hover:scale-110"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
-      </div>
+        {outOfStock && (
+          <span className="absolute inset-0 bg-stone-900/50 flex items-center justify-center">
+            <span className="bg-white text-stone-900 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
+              Out of Stock
+            </span>
+          </span>
+        )}
+      </Link>
 
-      {/* Product Details */}
-      <div className="space-y-3 px-1">
-        <div className="flex justify-between items-start">
-          <h3 className="text-xl font-medium text-zinc-900 leading-tight">
-            {product.name}
-          </h3>
-          <div className="flex items-center gap-1 text-amber-500 shrink-0 mt-1">
-            <Star size={12} fill="currentColor" />
-            <span className="text-[11px] font-black text-zinc-900">4.8</span>
-          </div>
+      {/* Details */}
+      <div className="flex flex-col flex-1 p-4 space-y-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1">
+            Papad
+          </p>
+          <Link href={`/products/${product.id}`}>
+            <h3 className="text-sm font-semibold text-stone-900 leading-snug line-clamp-2 hover:text-emerald-800 transition-colors">
+              {product.name}
+            </h3>
+          </Link>
         </div>
 
-        <div className="flex items-center justify-between pt-3 border-t border-zinc-100">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest leading-none mb-1">
-              Price
-            </span>
-            <p className="text-xl font-bold text-zinc-900">
-              Starting from ₹{startingPrice}
-            </p>
-          </div>
+        <div className="flex items-center gap-1">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Star
+              key={i}
+              size={11}
+              className={i < 4 ? "text-amber-400 fill-amber-400" : "text-stone-200 fill-stone-200"}
+            />
+          ))}
+          <span className="text-[10px] text-stone-400 ml-1">(4.8)</span>
+        </div>
 
-          {/* NEW QUANTITY UI */}
-          <div className="flex items-center bg-zinc-100 rounded-xl p-1">
+        <p className="text-base font-bold text-stone-900">
+          ₹{startingPrice}
+          <span className="text-[10px] font-normal text-stone-400 ml-1">onwards</span>
+        </p>
+
+        {/* Quantity + Add to cart */}
+        <div className="mt-auto pt-2 space-y-2.5">
+          <div className="flex items-center justify-between bg-stone-50 rounded-xl p-1 border border-stone-100">
             <button
               onClick={decrement}
-              className="p-2 hover:bg-white rounded-lg transition-colors text-zinc-500"
+              className="p-1.5 hover:bg-white rounded-lg transition-colors text-stone-500"
+              aria-label="Decrease quantity"
             >
               <Minus size={14} />
             </button>
-            <span className="w-8 text-center text-sm font-bold text-zinc-900">
+            <span className="w-8 text-center text-sm font-bold text-stone-900">
               {quantity}
             </span>
             <button
               onClick={increment}
-              className="p-2 hover:bg-white rounded-lg transition-colors text-zinc-500"
+              className="p-1.5 hover:bg-white rounded-lg transition-colors text-stone-500"
+              aria-label="Increase quantity"
             >
               <Plus size={14} />
             </button>
@@ -103,13 +122,15 @@ export default function ProductCard({ product }: any) {
 
           <button
             onClick={addToCart}
-            disabled={loading || product.stock === 0}
-            className="bg-zinc-900 text-white p-4 rounded-2xl hover:bg-amber-600 transition-all active:scale-95 disabled:bg-zinc-200"
+            disabled={loading || outOfStock}
+            className="w-full py-2.5 rounded-xl bg-stone-900 text-white text-xs font-bold uppercase tracking-wider hover:bg-emerald-800 transition-colors disabled:bg-stone-200 disabled:text-stone-400 flex items-center justify-center gap-2"
           >
             {loading ? (
-              <Loader2 size={20} className="animate-spin" />
+              <Loader2 size={16} className="animate-spin" />
+            ) : outOfStock ? (
+              "Out of Stock"
             ) : (
-              <ShoppingCart size={20} />
+              "Add to Cart"
             )}
           </button>
         </div>

@@ -25,21 +25,23 @@ const Navbar = () => {
 
   return (
     <header
-      className={`fixed top-0 z-50 w-full transition-all duration-500 ${
-        scrolled ? "py-2" : "py-4"
+      className={`fixed top-0 z-50 w-full transition-all duration-300 ${
+        scrolled
+          ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-stone-200/80 py-2"
+          : "bg-white/80 backdrop-blur-sm py-3"
       }`}
     >
-      <div className="mx-auto max-w-7xl px-4">
-        {/* Main Bar */}
-        <div className="grid grid-cols-3 items-center px-4 md:px-8 py-3 rounded-2xl border border-white/20 shadow-xl backdrop-blur-lg bg-white/80">
-          {/* LEFT: Mobile Menu Button (Mobile) / Placeholder (Desktop) */}
-          <div className="flex items-center">
+      <div className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className="flex items-center justify-between gap-4">
+          {/* Left: mobile menu + desktop logo */}
+          <div className="flex items-center gap-3 min-w-[120px]">
             <button
               onClick={() => setIsOpen(true)}
-              className="md:hidden p-2 hover:bg-zinc-100 rounded-xl transition-colors"
+              className="md:hidden p-2 hover:bg-stone-100 rounded-xl transition-colors text-stone-700"
+              aria-label="Open menu"
             >
               <svg
-                className="w-6 h-6"
+                className="w-5 h-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -48,63 +50,45 @@ const Navbar = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={1.5}
-                  d="M4 6h16M4 12h8m-8 6h16"
+                  d="M4 6h16M4 12h16M4 18h16"
                 />
               </svg>
             </button>
 
-            {/* Desktop Logo (Hidden on mobile to allow centering logic) */}
             <Link
               href="/"
-              className="hidden md:block hover:opacity-70 transition-opacity"
+              className="hover:opacity-80 transition-opacity"
             >
               <Image
                 src="/logo.png"
-                alt="logo"
-                width={100}
-                height={32}
-                className="h-8 w-auto object-contain"
+                alt="The Papad Co."
+                width={110}
+                height={36}
+                className="h-7 md:h-8 w-auto object-contain"
               />
             </Link>
           </div>
 
-          {/* CENTER: Desktop Nav OR Mobile Logo */}
-          <div className="flex justify-center items-center">
-            {/* Desktop Navigation */}
-            <nav className="hidden md:flex items-center gap-8">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.path}
-                  className="text-[10px] font-bold tracking-[0.25em] uppercase text-zinc-500 hover:text-zinc-900 transition-colors relative group"
-                >
-                  {item.name}
-                  <motion.span
-                    className="absolute -bottom-1 left-0 w-0 h-[1.5px] bg-zinc-900"
-                    whileHover={{ width: "100%" }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </Link>
-              ))}
-            </nav>
+          {/* Center: desktop nav */}
+          <nav className="hidden md:flex items-center gap-8">
+            {navItems.map((item) => (
+              <Link
+                key={item.name}
+                href={item.path}
+                className="text-xs font-semibold tracking-wide uppercase text-stone-600 hover:text-emerald-800 transition-colors relative group"
+              >
+                {item.name}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300" />
+              </Link>
+            ))}
+          </nav>
 
-            {/* Mobile Centered Logo */}
-            <Link href="/" className="md:hidden">
-              <Image
-                src="/logo.png"
-                alt="logo"
-                width={80}
-                height={28}
-                className="h-7 w-auto object-contain"
-              />
-            </Link>
-          </div>
-
-          {/* RIGHT: Actions */}
-          <div className="flex items-center justify-end gap-1 md:gap-4">
+          {/* Right: actions */}
+          <div className="flex items-center justify-end gap-1 md:gap-2 min-w-[120px]">
             <button
               onClick={() => setIsCartOpen(true)}
-              className="p-2 hover:bg-zinc-100 rounded-xl transition-colors relative"
+              className="p-2.5 hover:bg-stone-100 rounded-xl transition-colors relative text-stone-700"
+              aria-label="Open cart"
             >
               <svg
                 className="w-5 h-5"
@@ -119,12 +103,13 @@ const Navbar = () => {
                   d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                 />
               </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-amber-500 rounded-full border-2 border-white" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-white" />
             </button>
 
             <Link
               href="/profile"
-              className="hidden md:flex p-2 hover:bg-zinc-100 rounded-xl transition-colors"
+              className="hidden md:flex p-2.5 hover:bg-stone-100 rounded-xl transition-colors text-stone-700"
+              aria-label="My account"
             >
               <svg
                 className="w-5 h-5"
@@ -144,20 +129,18 @@ const Navbar = () => {
         </div>
       </div>
 
-      {/* MOBILE DRAWER (Framer Motion) */}
+      {/* Mobile drawer */}
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] md:hidden"
+              className="fixed inset-0 bg-stone-900/30 backdrop-blur-sm z-[60] md:hidden"
             />
 
-            {/* Sidebar */}
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
@@ -165,20 +148,21 @@ const Navbar = () => {
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
               className="fixed top-0 left-0 h-full w-[300px] bg-white z-[70] shadow-2xl p-8 md:hidden flex flex-col"
             >
-              <div className="flex justify-between items-center mb-12">
+              <div className="flex justify-between items-center mb-10">
                 <Image
                   src="/logo.png"
-                  alt="logo"
+                  alt="The Papad Co."
                   width={90}
                   height={30}
                   className="h-6 w-auto"
                 />
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="p-2 hover:bg-zinc-100 rounded-full"
+                  className="p-2 hover:bg-stone-100 rounded-full"
+                  aria-label="Close menu"
                 >
                   <svg
-                    className="w-6 h-6"
+                    className="w-5 h-5"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -193,18 +177,18 @@ const Navbar = () => {
                 </button>
               </div>
 
-              <nav className="flex flex-col gap-6">
+              <nav className="flex flex-col gap-1">
                 {navItems.map((item, idx) => (
                   <motion.div
                     key={item.name}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.1 * idx }}
+                    transition={{ delay: 0.05 * idx }}
                   >
                     <Link
                       href={item.path}
                       onClick={() => setIsOpen(false)}
-                      className="text-2xl font-medium tracking-tight text-zinc-900 hover:pl-2 transition-all"
+                      className="block py-3 px-2 text-lg font-medium text-stone-800 hover:text-emerald-800 hover:pl-4 transition-all border-b border-stone-100"
                     >
                       {item.name}
                     </Link>
@@ -212,13 +196,13 @@ const Navbar = () => {
                 ))}
               </nav>
 
-              <div className="mt-auto border-t border-zinc-100 pt-6">
+              <div className="mt-auto border-t border-stone-100 pt-6">
                 <Link
                   href="/profile"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-4 text-zinc-600 hover:text-black transition-colors"
+                  className="flex items-center gap-3 text-stone-600 hover:text-emerald-800 transition-colors"
                 >
-                  <div className="w-10 h-10 bg-zinc-900 rounded-full flex items-center justify-center text-white">
+                  <div className="w-10 h-10 bg-emerald-800 rounded-full flex items-center justify-center text-white">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -228,7 +212,7 @@ const Navbar = () => {
                       <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
-                  <span className="font-semibold uppercase text-xs tracking-widest">
+                  <span className="font-semibold text-xs uppercase tracking-wider">
                     My Account
                   </span>
                 </Link>

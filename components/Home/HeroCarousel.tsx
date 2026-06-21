@@ -4,19 +4,35 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import gsap from "gsap";
 import Image from "next/image";
+import Link from "next/link";
 
 const slides = [
   {
     id: 1,
-    title: "AUTHENTIC TASTE",
-    desc: "Traditional handmade papads with premium spices.",
-    img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cHJvZHVjdHN8ZW58MHx8MHx8fDA%3D",
+    title: "Authentic Taste",
+    subtitle: "Handcrafted Papads",
+    desc: "Traditional sun-dried papads with premium spices — straight from our kitchen to yours.",
+    img: "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=1200",
+    cta: "Shop Papads",
+    href: "/products",
   },
   {
     id: 2,
-    title: "PURE INGREDIENTS",
-    desc: "No preservatives. Just the goodness of organic lentils.",
-    img: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Nnx8cHJvZHVjdHN8ZW58MHx8MHx8fDA%3D",
+    title: "Pure Ingredients",
+    subtitle: "No Shortcuts",
+    desc: "No preservatives. Just the goodness of organic lentils and time-honored recipes.",
+    img: "https://images.unsplash.com/photo-1589113817223-14db18136244?q=80&w=1200",
+    cta: "Explore Range",
+    href: "/products",
+  },
+  {
+    id: 3,
+    title: "Festive Combos",
+    subtitle: "Gift-Ready Boxes",
+    desc: "Curated assortments perfect for celebrations, gifting, and family gatherings.",
+    img: "https://images.unsplash.com/photo-1548943487-a2e4ef43b3f6?q=80&w=1200",
+    cta: "View Combos",
+    href: "/products",
   },
 ];
 
@@ -25,20 +41,19 @@ export default function HeroCarousel() {
   const textRef = useRef(null);
 
   useEffect(() => {
-    // GSAP Entrance Animation
     const ctx = gsap.context(() => {
-      gsap.from(".char", {
+      gsap.from(".hero-char", {
         opacity: 0,
-        y: 20,
-        stagger: 0.05,
-        duration: 0.8,
-        ease: "power4.out",
+        y: 24,
+        stagger: 0.04,
+        duration: 0.7,
+        ease: "power3.out",
       });
     }, textRef);
 
     const timer = setInterval(() => {
       setIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
-    }, 5000);
+    }, 5500);
 
     return () => {
       clearInterval(timer);
@@ -47,43 +62,81 @@ export default function HeroCarousel() {
   }, [index]);
 
   return (
-    <div className="relative h-[450px] md:h-[600px] max-w-full overflow-hidden rounded-[2rem] shadow-2xl">
+    <div className="relative h-[420px] sm:h-[480px] md:h-[560px] max-w-full overflow-hidden rounded-2xl md:rounded-3xl shadow-xl border border-stone-200/60">
       <AnimatePresence mode="wait">
         <motion.div
           key={index}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1 }}
+          transition={{ duration: 0.8 }}
           className="relative h-full w-full"
         >
           <Image
             src={slides[index].img}
-            alt="Carousel"
+            alt={slides[index].title}
             fill
-            className="object-cover brightness-75 transition-transform duration-[10s] scale-110"
+            priority
+            className="object-cover brightness-[0.55]"
           />
+
+          <div className="absolute inset-0 bg-gradient-to-r from-stone-950/80 via-stone-900/50 to-transparent" />
 
           <div
             ref={textRef}
-            className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-black/20"
+            className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 lg:px-20 max-w-2xl"
           >
-            <h1 className="text-5xl md:text-8xl font-serif text-white tracking-tighter flex overflow-hidden">
-              {slides[index].title.split("").map((char, i) => (
-                <span key={i} className="char inline-block">
-                  {char === " " ? "\u00A0" : char}
+            <p className="text-amber-400 text-[10px] md:text-xs font-bold tracking-[0.35em] uppercase mb-3">
+              {slides[index].subtitle}
+            </p>
+
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif text-white tracking-tight leading-[1.05] mb-4">
+              {slides[index].title.split(" ").map((word, wi) => (
+                <span key={wi} className="block overflow-hidden">
+                  {word.split("").map((char, i) => (
+                    <span key={i} className="hero-char inline-block">
+                      {char}
+                    </span>
+                  ))}
                 </span>
               ))}
             </h1>
-            <p className="mt-4 text-lg md:text-xl text-zinc-200 max-w-lg font-light tracking-wide uppercase italic">
+
+            <p className="text-stone-200 text-sm md:text-base font-light leading-relaxed max-w-md mb-8">
               {slides[index].desc}
             </p>
-            <button className="mt-10 px-10 py-4 bg-white text-black font-bold text-[10px] tracking-[0.3em] uppercase rounded-full hover:bg-zinc-200 transition-colors">
-              Explore Collection
-            </button>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <Link
+                href={slides[index].href}
+                className="px-8 py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-xs tracking-[0.2em] uppercase rounded-full transition-colors"
+              >
+                {slides[index].cta}
+              </Link>
+              <Link
+                href="/products"
+                className="px-8 py-3.5 border border-white/40 text-white font-bold text-xs tracking-[0.2em] uppercase rounded-full hover:bg-white/10 transition-colors"
+              >
+                Learn More
+              </Link>
+            </div>
           </div>
         </motion.div>
       </AnimatePresence>
+
+      {/* Slide indicators */}
+      <div className="absolute bottom-6 left-8 md:left-16 flex gap-2">
+        {slides.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIndex(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            className={`h-1.5 rounded-full transition-all duration-300 ${
+              i === index ? "w-8 bg-amber-400" : "w-3 bg-white/40 hover:bg-white/60"
+            }`}
+          />
+        ))}
+      </div>
     </div>
   );
 }

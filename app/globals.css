@@ -1,8 +1,11 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #faf8f5;
+  --foreground: #1c1917;
+  --brand-emerald: #065f46;
+  --brand-amber: #f59e0b;
+  --brand-warm: #faf8f5;
 }
 
 @theme inline {
@@ -44,4 +47,28 @@ main {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Homepage marquee animations */
+@keyframes promo-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+@keyframes trust-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+.animate-promo-scroll {
+  animation: promo-scroll 35s linear infinite;
+}
+
+.animate-trust-scroll {
+  animation: trust-scroll 25s linear infinite;
+}
+
+.animate-promo-scroll:hover,
+.animate-trust-scroll:hover {
+  animation-play-state: paused;
 }
