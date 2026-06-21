@@ -6,136 +6,98 @@ datasource db {
   provider = "mysql"
 }
 
-model CartItem {
-  id        String   @id @default(uuid())
+model address {
+  id          String   @id
+  userId      String
+  fullName    String
+  phone       String
+  address1    String
+  address2    String?
+  city        String
+  state       String
+  pincode     String
+  saveAddress Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        user     @relation(fields: [userId], references: [id], map: "Address_userId_fkey")
+
+  @@index([userId], map: "Address_userId_fkey")
+}
+
+model cartitem {
+  id        String  @id
   productId String
   quantity  Int
   userId    String
+  product   product @relation(fields: [productId], references: [id], map: "CartItem_productId_fkey")
+  user      user    @relation(fields: [userId], references: [id], map: "CartItem_userId_fkey")
 
-  variant ProductVariant @relation(fields:[variantId], references:[id])
-  product Product @relation(fields: [productId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
-
-
-  @@index([productId])
-  @@index([userId])
-  @@index([variantId])
-
-  variantId String
+  @@index([productId], map: "CartItem_productId_idx")
+  @@index([userId], map: "CartItem_userId_idx")
 }
 
-model Order {
-  id String @id @default(uuid())
-
-  userId String
-
-  paymentType String
-
+model order {
+  id           String      @id
+  userId       String
+  paymentType  String
   shippingCost Int
+  totalAmount  Int
+  status       String      @default("PENDING")
+  fullName     String
+  phone        String
+  address1     String
+  address2     String?
+  city         String
+  state        String
+  pincode      String
+  createdAt    DateTime    @default(now())
+  user         user        @relation(fields: [userId], references: [id], map: "Order_userId_fkey")
+  orderitem    orderitem[]
 
-  totalAmount Int
-
-  status String @default("PENDING")
-
-  fullName String
-  phone String
-
-  address1 String
-  address2 String?
-
-  city String
-  state String
-
-  pincode String
-
-  createdAt DateTime @default(now())
-
- user User @relation(fields: [userId], references: [id])
-
-  orderItems OrderItem[]
+  @@index([userId], map: "Order_userId_fkey")
 }
 
-model OrderItem {
-  id        String @id @default(uuid())
+model orderitem {
+  id        String  @id
   orderId   String
   productId String
   quantity  Int
+  order     order   @relation(fields: [orderId], references: [id], map: "OrderItem_orderId_fkey")
+  product   product @relation(fields: [productId], references: [id], map: "OrderItem_productId_fkey")
 
-  order   Order   @relation(fields: [orderId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-
-  @@index([orderId])
-  @@index([productId])
-  variantId String
+  @@index([orderId], map: "OrderItem_orderId_idx")
+  @@index([productId], map: "OrderItem_productId_idx")
 }
 
-model Product {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-
-  stock       Int?
-  image       String?
-  thumbnail   String?
-
-  productType String @default("weight")
-
-  variants ProductVariant[]
-
-  orderItems OrderItem[]
-  cartItems  CartItem[]
+model product {
+  id             String           @id
+  name           String
+  description    String?
+  stock          Int?
+  image          String?
+  thumbnail      String?
+  productType    String           @default("weight")
+  cartitem       cartitem[]
+  orderitem      orderitem[]
+  productvariant productvariant[]
 }
 
-model ProductVariant {
-  id        String @id @default(uuid())
-
+model productvariant {
+  id        String  @id
   label     String
   price     Int
-
   productId String
-  product   Product @relation(fields:[productId], references:[id])
-  
-  stock Int @default(0)
+  product   product @relation(fields: [productId], references: [id], map: "ProductVariant_productId_fkey")
 
-
-  @@index([productId])
+  @@index([productId], map: "ProductVariant_productId_idx")
+  cartItems CartItem[]   
 }
 
-
-model User {
-  id String @id @default(uuid())
-
-  name String?
-
-  email String @unique
-
+model user {
+  id       String     @id
+  name     String?
+  email    String     @unique(map: "User_email_key")
   password String
-
-  orders Order[]
-
-  cartItems CartItem[]
-
-  addresses Address[]
-}
-
-model Address {
-  id String @id @default(uuid())
-
-  userId String
-
-  fullName String
-  phone String
-
-  address1 String
-  address2 String?
-
-  city String
-  state String
-  pincode String
-
-  saveAddress Boolean @default(false)
-
-  user User @relation(fields:[userId], references:[id])
-
-  createdAt DateTime @default(now())
+  address  address[]
+  cartitem cartitem[]
+  order    order[]
 }
