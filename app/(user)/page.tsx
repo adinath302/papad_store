@@ -11,7 +11,7 @@ import ProductCard from "@/components/Products/ProductCard";
 import Link from "next/link";
 
 export default async function Home() {
-  const products = (await prisma.product.findMany({ include: { variants: true } })) || [];
+  const products = (await prisma.product.findMany({ include: { productvariant: true } })) || [];
 
   return (
     <main className="relative w-full bg-[#faf8f5] overflow-x-hidden">
@@ -20,8 +20,8 @@ export default async function Home() {
         <PromoBar />
       </div>
 
-      {/* Hero */}
-      <section className="px-4 md:px-8 max-w-7xl mx-auto py-6 md:py-8">
+      {/* Hero (fullscreen) */}
+      <section className="w-full">
         <HeroCarousel />
       </section>
 

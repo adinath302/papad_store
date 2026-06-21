@@ -1,6 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
-
 import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
@@ -20,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     // CHECK EXISTING ITEM
-    const existingItem = await prisma.cartItem.findFirst({
+    const existingItem = await prisma.cartitem.findFirst({
       where: {
         userId,
         productId,
@@ -29,7 +27,7 @@ export async function POST(req: Request) {
 
     // IF EXISTS → UPDATE QUANTITY
     if (existingItem) {
-      const updatedItem = await prisma.cartItem.update({
+      const updatedItem = await prisma.cartitem.update({
         where: {
           id: existingItem.id,
         },
@@ -42,7 +40,7 @@ export async function POST(req: Request) {
     }
 
     // ELSE CREATE NEW ITEM
-    const item = await prisma.cartItem.create({
+    const item = await prisma.cartitem.create({
       data: {
         productId,
         userId,
@@ -70,9 +68,13 @@ export async function GET() {
     return Response.json([], { status: 200 });
   }
 
-  const items = await prisma.cartItem.findMany({
+  const items = await prisma.cartitem.findMany({
     where: { userId },
-    include: { product: true },
+    include: {
+      product: {
+        include: { productvariant: true },
+      },
+    },
   });
 
   return Response.json(items);
@@ -87,7 +89,7 @@ export async function DELETE(req: Request) {
       return Response.json({ error: "Missing ID" }, { status: 400 });
     }
 
-    await prisma.cartItem.delete({
+    await prisma.cartitem.delete({
       where: { id },
     });
 
@@ -103,7 +105,7 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { id, action } = body;
 
-    const item = await prisma.cartItem.findUnique({
+    const item = await prisma.cartitem.findUnique({
       where: { id },
     });
 
@@ -121,14 +123,14 @@ export async function PATCH(req: Request) {
 
     // ❗ if quantity becomes 0 → delete item
     if (newQuantity <= 0) {
-      await prisma.cartItem.delete({
+      await prisma.cartitem.delete({
         where: { id },
       });
 
       return Response.json({ message: "Item removed" });
     }
 
-    const updated = await prisma.cartItem.update({
+    const updated = await prisma.cartitem.update({
       where: { id },
       data: {
         quantity: newQuantity,

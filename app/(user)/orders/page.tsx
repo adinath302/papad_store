@@ -1,10 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { log } from "console";
 
 const OrdersPage = async () => {
   const orders = await prisma.order.findMany({
     include: {
-      orderItems: {
+      orderitem: {
         include: { product: true },
       },
       user: true,
@@ -25,7 +24,7 @@ const OrdersPage = async () => {
         <div key={order.id} className="border p-4 mb-4 rounded">
           <h2 className="font-bold">Order ID: {order.id}</h2>
 
-          {(order as any).orderItems?.map((item: any) => (
+          {(order as any).orderitem?.map((item: any) => (
             <div key={item.id} className="ml-4 mt-2">
               <p>{item.product.name}</p>
               <p>

@@ -95,7 +95,7 @@ export default function LoginPage() {
 
           {/* Footer */}
           <p className="text-center text-zinc-500 text-sm">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/signup" className="text-zinc-900 font-bold hover:underline">
               Join the club
             </Link>
@@ -128,7 +128,7 @@ export default function LoginPage() {
             className="backdrop-blur-md bg-white/10 p-8 rounded-[2rem] border border-white/20 text-white"
           >
             <p className="text-2xl font-serif italic mb-4">
-              "Authenticity in every bite, delivered to your doorstep."
+              &ldquo;Authenticity in every bite, delivered to your doorstep.&rdquo;
             </p>
             <span className="text-sm font-black tracking-widest uppercase">
               The Papad Co. Heritage

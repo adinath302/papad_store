@@ -9,9 +9,9 @@ interface CartItemType {
   product: {
     id: string;
     name: string;
-    price: number;
     image?: string;
     description?: string;
+    productvariant: Array<{ id: string; label: string; price: number }>;
   };
   quantity: number;
 }
@@ -27,33 +27,35 @@ export default function CartSidebar({
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
 
+  const getItemPrice = (item: any) => {
+    if (item.product?.productvariant?.length > 0) {
+      return Math.min(...item.product.productvariant.map((v: any) => v.price));
+    }
+    return 0;
+  };
+
+  const fetchCart = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/cart");
+      const data = await res.json();
+      setItems(data);
+      const calculatedTotal = data.reduce(
+        (sum: number, item: any) => sum + getItemPrice(item) * item.quantity,
+        0,
+      );
+      setTotal(calculatedTotal);
+    } catch (error) {
+      console.error("Fetch cart error:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isOpen) return;
-
-    let isCancelled = false;
-    const fetchCart = async () => {
-      try {
-        const res = await fetch("/api/cart");
-        const data = await res.json();
-        if (isCancelled) return;
-
-        setItems(data);
-        const calculatedTotal = data.reduce(
-          (sum: number, item: any) => sum + item.product?.price * item.quantity,
-          0,
-        );
-        setTotal(calculatedTotal);
-      } catch (error) {
-        console.error("Fetch cart error:", error);
-      } finally {
-        if (!isCancelled) setLoading(false);
-      }
-    };
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCart();
-    return () => {
-      isCancelled = true;
-    };
   }, [isOpen]);
 
   const handleCheckout = async () => {
@@ -131,7 +133,7 @@ export default function CartSidebar({
               ) : (
                 items.map((item) => (
                   <div key={item.id} className="group relative">
-                    <CartItem item={item} />
+                    <CartItem item={item} onUpdate={fetchCart} />
                   </div>
                 ))
               )}

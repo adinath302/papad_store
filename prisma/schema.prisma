@@ -7,7 +7,7 @@ datasource db {
 }
 
 model address {
-  id          String   @id
+  id          String   @id @default(cuid())
   userId      String
   fullName    String
   phone       String
@@ -24,7 +24,7 @@ model address {
 }
 
 model cartitem {
-  id        String  @id
+  id        String  @id @default(cuid())
   productId String
   quantity  Int
   userId    String
@@ -36,7 +36,7 @@ model cartitem {
 }
 
 model order {
-  id           String      @id
+  id           String      @id @default(cuid())
   userId       String
   paymentType  String
   shippingCost Int
@@ -57,7 +57,7 @@ model order {
 }
 
 model orderitem {
-  id        String  @id
+  id        String  @id @default(cuid())
   orderId   String
   productId String
   quantity  Int
@@ -69,7 +69,7 @@ model orderitem {
 }
 
 model product {
-  id             String           @id
+  id             String           @id @default(cuid())
   name           String
   description    String?
   stock          Int?
@@ -82,18 +82,17 @@ model product {
 }
 
 model productvariant {
-  id        String  @id
+  id        String  @id @default(cuid())
   label     String
   price     Int
   productId String
   product   product @relation(fields: [productId], references: [id], map: "ProductVariant_productId_fkey")
 
   @@index([productId], map: "ProductVariant_productId_idx")
-  cartItems CartItem[]   
 }
 
 model user {
-  id       String     @id
+  id       String     @id @default(cuid())
   name     String?
   email    String     @unique(map: "User_email_key")
   password String

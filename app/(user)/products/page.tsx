@@ -6,7 +6,7 @@ import SearchBar from "@/components/Products/SearchBar";
 export default async function ProductPage() {
   const products = await prisma.product.findMany({ // Fetch all products with their variants
     include: {
-      variants: true,
+      productvariant: true,
     },
   });
 

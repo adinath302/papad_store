@@ -1,12 +1,11 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { revalidatePath } from "next/cache";
 
 export async function GET() {
   try {
     const products = await prisma.product.findMany({
       include: {
-        variants: true,
+        productvariant: true,
       },
     })
     return NextResponse.json(products);
@@ -41,7 +40,7 @@ export async function POST(req: NextRequest) {
 
         productType: body.productType || "weight",
 
-        variants: {
+        productvariant: {
           create: body.variants.map((v: any) => ({
             label: v.label,
             price: Number(v.price),
@@ -50,7 +49,7 @@ export async function POST(req: NextRequest) {
       },
 
       include: {
-        variants: true,
+        productvariant: true,
       },
     });
 

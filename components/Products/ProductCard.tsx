@@ -42,7 +42,7 @@ export default function ProductCard({ product }: any) {
   };
 
   const startingPrice = Math.min(
-    ...product.variants.map((variant: any) => variant.price),
+    ...product.productvariant.map((variant: any) => variant.price),
   );
 
   const outOfStock = product.stock === 0;

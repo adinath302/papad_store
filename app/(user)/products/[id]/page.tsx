@@ -12,7 +12,7 @@ export default async function ProductDetailsPage({
       id,
     },
     include: {
-      variants: true,
+      productvariant: true,
     },
   });
 

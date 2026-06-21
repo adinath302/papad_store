@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 
 export const runtime = "nodejs";
 
-export async function POST() {
+export async function POST(req: Request) {
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 
@@ -12,7 +12,10 @@ export async function POST() {
   }
 
   try {
-    const cartItems = await prisma.cartItem.findMany({
+    const body = await req.json().catch(() => ({}));
+    const { fullName, phone, address, city, state, pincode, paymentType } = body;
+
+    const cartItems = await prisma.cartitem.findMany({
       where: { userId },
       include: { product: true },
     });
@@ -21,18 +24,31 @@ export async function POST() {
       return Response.json({ error: "Cart is empty" }, { status: 400 });
     }
 
-    // Create order first, then create order items separately.
-    // This avoids any Prisma nested-write input naming mismatches.
+    const totalAmount = cartItems.reduce(
+      (sum: number, item: any) => sum + (item.product as any)?.price * item.quantity,
+      0,
+    );
+
     const order = await prisma.order.create({
       data: {
         userId,
+        paymentType: paymentType || "COD",
+        shippingCost: 0,
+        totalAmount,
+        fullName: fullName || cartItems[0]?.product?.name || "",
+        phone: phone || "",
+        address1: address || "",
+        address2: null,
+        city: city || "",
+        state: state || "",
+        pincode: pincode || "",
       },
       include: {
-        orderItems: { include: { product: true } },
+        orderitem: { include: { product: true } },
       },
     });
 
-    await prisma.orderItem.createMany({
+    await prisma.orderitem.createMany({
       data: cartItems.map((item: any) => ({
         orderId: order.id,
         productId: item.productId,
@@ -43,12 +59,12 @@ export async function POST() {
     const updatedOrder = await prisma.order.findUnique({
       where: { id: order.id },
       include: {
-        orderItems: { include: { product: true } },
+        orderitem: { include: { product: true } },
         user: true,
       },
     });
 
-    await prisma.cartItem.deleteMany({ where: { userId } });
+    await prisma.cartitem.deleteMany({ where: { userId } });
 
     return Response.json(updatedOrder);
   } catch (error: any) {

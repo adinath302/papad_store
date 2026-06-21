@@ -1,4 +1,3 @@
-- [ ] Inspect CartSidebar continue shopping button implementation
-- [ ] Wire "Continue Shopping" to navigate to /products and close sidebar
-- [ ] Verify click behavior in browser
-
+- [x] Update components/Home/HeroCarousel.tsx to match reference fullscreen hero (edge-to-edge, remove rounded card styling, adjust indicators/overlay)
+- [x] Update app/(user)/page.tsx wrapper so hero can go edge-to-edge (remove section padding constraints for the hero)
+- [x] Verify build/lint (npm run lint, npm run build or npm run dev)
