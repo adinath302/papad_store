@@ -4,46 +4,50 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, Loader2, Plus, Minus } from "lucide-react";
+import { addToGuestCart, isLoggedIn } from "@/lib/guest-cart";
 
 export default function ProductCard({ product }: any) {
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
 
-  const increment = () => setQuantity((prev) => prev + 1);
-  const decrement = () => setQuantity((prev) => (prev > 1 ? prev - 1 : 1));
+  const startingPrice = Math.min(
+    ...product.productvariant.map((variant: any) => variant.price),
+  );
 
   const addToCart = async () => {
     setLoading(true);
     try {
+      if (!isLoggedIn()) {
+        addToGuestCart({
+          productId: product.id,
+          name: product.name,
+          image: product.image || null,
+          quantity,
+          price: startingPrice,
+        });
+        alert(`${quantity}x ${product.name} added to cart!`);
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/cart", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: quantity,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id, quantity }),
       });
 
       const data = await res.json();
-
       if (data.error) {
         alert(data.error);
       } else {
         alert(`${quantity}x ${product.name} added to basket!`);
       }
-    } catch (error) {
-      console.error("Cart error:", error);
+    } catch {
       alert("Something went wrong while adding to cart.");
     } finally {
       setLoading(false);
     }
   };
-
-  const startingPrice = Math.min(
-    ...product.productvariant.map((variant: any) => variant.price),
-  );
 
   const outOfStock = product.stock === 0;
 
@@ -79,6 +83,9 @@ export default function ProductCard({ product }: any) {
             <h3 className="text-sm font-semibold text-stone-900 leading-snug line-clamp-2 hover:text-emerald-800 transition-colors">
               {product.name}
             </h3>
+            {product.nameMarathi && (
+              <p className="text-xs text-stone-500 mt-0.5">{product.nameMarathi}</p>
+            )}
           </Link>
         </div>
 
@@ -102,7 +109,7 @@ export default function ProductCard({ product }: any) {
         <div className="mt-auto pt-2 space-y-2.5">
           <div className="flex items-center justify-between bg-stone-50 rounded-xl p-1 border border-stone-100">
             <button
-              onClick={decrement}
+              onClick={() => setQuantity((prev) => (prev > 1 ? prev - 1 : 1))}
               className="p-1.5 hover:bg-white rounded-lg transition-colors text-stone-500"
               aria-label="Decrease quantity"
             >
@@ -112,7 +119,7 @@ export default function ProductCard({ product }: any) {
               {quantity}
             </span>
             <button
-              onClick={increment}
+              onClick={() => setQuantity((prev) => prev + 1)}
               className="p-1.5 hover:bg-white rounded-lg transition-colors text-stone-500"
               aria-label="Increase quantity"
             >

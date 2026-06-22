@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, ShoppingBag, ArrowRight } from "lucide-react";
 import CartItem from "@/components/Cart/CartItem";
+import { getGuestCart, isLoggedIn } from "@/lib/guest-cart";
 
 interface CartItemType {
   id: string;
@@ -27,21 +28,40 @@ export default function CartSidebar({
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
 
-  const getItemPrice = (item: any) => {
-    if (item.product?.productvariant?.length > 0) {
-      return Math.min(...item.product.productvariant.map((v: any) => v.price));
-    }
+  const getItemPrice = (item: CartItemType) => {
+    const variants = item.product?.productvariant ?? [];
+    if (variants.length > 0) return Math.min(...variants.map((v) => v.price));
     return 0;
   };
 
   const fetchCart = async () => {
     setLoading(true);
     try {
+      if (!isLoggedIn()) {
+        const guestItems = getGuestCart();
+        const mapped: CartItemType[] = guestItems.map((gi) => ({
+          id: `guest-${gi.productId}`,
+          product: {
+            id: gi.productId,
+            name: gi.name,
+            image: gi.image || undefined,
+            productvariant: [{ id: "", label: "Default", price: gi.price }],
+          },
+          quantity: gi.quantity,
+        }));
+        setItems(mapped);
+        setTotal(
+          mapped.reduce((sum, item) => sum + getItemPrice(item) * item.quantity, 0),
+        );
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/cart");
-      const data = await res.json();
+      const data = (await res.json()) as CartItemType[];
       setItems(data);
       const calculatedTotal = data.reduce(
-        (sum: number, item: any) => sum + getItemPrice(item) * item.quantity,
+        (sum, item) => sum + getItemPrice(item) * item.quantity,
         0,
       );
       setTotal(calculatedTotal);
@@ -54,18 +74,12 @@ export default function CartSidebar({
 
   useEffect(() => {
     if (!isOpen) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchCart();
   }, [isOpen]);
 
-  const handleCheckout = async () => {
-    const res = await fetch("/api/checkout", { method: "POST" });
-    const data = await res.json();
-    if (data.error) alert("Error: " + data.error);
-    else {
-      alert("Order placed successfully!");
-      window.location.reload();
-    }
+  const handleCheckout = () => {
+    onClose();
+    window.location.href = "/checkout";
   };
 
   return (

@@ -12,22 +12,37 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const { fullName, phone, address, city, state, pincode, paymentType } = body;
+    const body = await req.json();
+    const { fullName, phone, address1, address2, city, state, pincode, paymentType } = body;
+
+    if (!fullName || !phone || !address1 || !city || !state || !pincode) {
+      return Response.json(
+        { error: "Missing required shipping fields" },
+        { status: 400 },
+      );
+    }
 
     const cartItems = await prisma.cartitem.findMany({
       where: { userId },
-      include: { product: true },
+      include: {
+        product: {
+          include: { productvariant: true },
+        },
+      },
     });
 
     if (cartItems.length === 0) {
       return Response.json({ error: "Cart is empty" }, { status: 400 });
     }
 
-    const totalAmount = cartItems.reduce(
-      (sum: number, item: any) => sum + (item.product as any)?.price * item.quantity,
-      0,
-    );
+    const totalAmount = cartItems.reduce((sum, item) => {
+      const variants = item.product.productvariant;
+      const price =
+        variants.length > 0
+          ? Math.min(...variants.map((v) => v.price))
+          : 0;
+      return sum + price * item.quantity;
+    }, 0);
 
     const order = await prisma.order.create({
       data: {
@@ -35,36 +50,33 @@ export async function POST(req: Request) {
         paymentType: paymentType || "COD",
         shippingCost: 0,
         totalAmount,
-        fullName: fullName || cartItems[0]?.product?.name || "",
-        phone: phone || "",
-        address1: address || "",
-        address2: null,
-        city: city || "",
-        state: state || "",
-        pincode: pincode || "",
-      },
-      include: {
-        orderitem: { include: { product: true } },
+        fullName,
+        phone,
+        address1,
+        address2: address2 || null,
+        city,
+        state,
+        pincode,
       },
     });
 
     await prisma.orderitem.createMany({
-      data: cartItems.map((item: any) => ({
+      data: cartItems.map((item) => ({
         orderId: order.id,
         productId: item.productId,
-        quantity: Number(item.quantity),
+        quantity: item.quantity,
       })),
     });
+
+    await prisma.cartitem.deleteMany({ where: { userId } });
 
     const updatedOrder = await prisma.order.findUnique({
       where: { id: order.id },
       include: {
         orderitem: { include: { product: true } },
-        user: true,
+        user: { select: { id: true, name: true, email: true } },
       },
     });
-
-    await prisma.cartitem.deleteMany({ where: { userId } });
 
     return Response.json(updatedOrder);
   } catch (error: any) {

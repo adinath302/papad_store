@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
     const product = await prisma.product.create({
       data: {
         name: body.name,
+        nameMarathi: body.nameMarathi || null,
         description: body.description || null,
 
         stock: Number(body.stock) || 0,

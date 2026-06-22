@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { Plus, Minus, Loader2 } from "lucide-react";
+import { addToGuestCart, isLoggedIn } from "@/lib/guest-cart";
 
 export default function ProductDetails({ product }: { product: any }) {
   const [selectedVariant, setSelectedVariant] = useState(product.productvariant[0]);
@@ -12,13 +13,23 @@ export default function ProductDetails({ product }: { product: any }) {
   const addToCart = async () => {
     setLoading(true);
     try {
+      if (!isLoggedIn()) {
+        addToGuestCart({
+          productId: product.id,
+          name: product.name,
+          image: product.image || null,
+          quantity,
+          price: selectedVariant.price,
+        });
+        alert(`${quantity}x ${product.name} (${selectedVariant.label}) added to cart!`);
+        setLoading(false);
+        return;
+      }
+
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productId: product.id,
-          quantity: quantity,
-        }),
+        body: JSON.stringify({ productId: product.id, quantity }),
       });
       const data = await res.json();
       if (data.error) {
@@ -50,6 +61,9 @@ export default function ProductDetails({ product }: { product: any }) {
 
         <div>
           <h1 className="text-5xl font-serif text-zinc-900">{product.name}</h1>
+          {product.nameMarathi && (
+            <p className="text-lg text-stone-500 mt-1">{product.nameMarathi}</p>
+          )}
 
           <p className="mt-6 text-zinc-500 leading-relaxed">
             {product.description}

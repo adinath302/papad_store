@@ -10,11 +10,26 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const match = document.cookie.match(/(?:^|;\s*)userId=([^;]*)/);
+    const userId = match?.[1];
+    if (!userId) return;
+    setIsLoggedIn(true);
+    fetch(`/api/auth/user?userId=${encodeURIComponent(userId)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((data) => {
+        if (data.isAdmin) setIsAdmin(true);
+      })
+      .catch(() => {});
   }, []);
 
   const navItems = [
@@ -106,6 +121,28 @@ const Navbar = () => {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-white" />
             </button>
 
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="hidden md:flex p-2.5 hover:bg-amber-50 rounded-xl transition-colors text-amber-700"
+                aria-label="Admin panel"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                  />
+                </svg>
+              </Link>
+            )}
+
             <Link
               href="/profile"
               className="hidden md:flex p-2.5 hover:bg-stone-100 rounded-xl transition-colors text-stone-700"
@@ -196,7 +233,33 @@ const Navbar = () => {
                 ))}
               </nav>
 
-              <div className="mt-auto border-t border-stone-100 pt-6">
+              <div className="mt-auto border-t border-stone-100 pt-6 space-y-3">
+                {isAdmin && (
+                  <Link
+                    href="/admin"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center gap-3 text-amber-700 hover:text-amber-800 transition-colors"
+                  >
+                    <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
+                      </svg>
+                    </div>
+                    <span className="font-semibold text-xs uppercase tracking-wider">
+                      Admin Panel
+                    </span>
+                  </Link>
+                )}
                 <Link
                   href="/profile"
                   onClick={() => setIsOpen(false)}
