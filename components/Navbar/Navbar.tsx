@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import CartSidebar from "@/components/Cart/CartSidebar";
 
-const Navbar = () => {
+const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -20,14 +18,13 @@ const Navbar = () => {
   }, []);
 
   useEffect(() => {
-    const match = document.cookie.match(/(?:^|;\s*)userId=([^;]*)/);
-    const userId = match?.[1];
-    if (!userId) return;
-    setIsLoggedIn(true);
-    fetch(`/api/auth/user?userId=${encodeURIComponent(userId)}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+    fetch("/api/auth/me")
+      .then((r) => r.json())
       .then((data) => {
-        if (data.isAdmin) setIsAdmin(true);
+        if (data.user) {
+          setIsLoggedIn(true);
+          if (data.user.isAdmin) setIsAdmin(true);
+        }
       })
       .catch(() => {});
   }, []);
@@ -43,7 +40,7 @@ const Navbar = () => {
       className={`fixed top-0 z-50 w-full transition-all duration-300 ${
         scrolled
           ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-stone-200/80 py-2"
-          : "bg-white/80 backdrop-blur-sm py-3"
+          : "bg-white/95 backdrop-blur-sm py-3"
       }`}
     >
       <div className="mx-auto max-w-7xl px-4 md:px-8">
@@ -76,7 +73,7 @@ const Navbar = () => {
             >
               <Image
                 src="/logo.png"
-                alt="The Papad Co."
+                alt="Shivshambho"
                 width={110}
                 height={36}
                 className="h-7 md:h-8 w-auto object-contain"
@@ -101,7 +98,7 @@ const Navbar = () => {
           {/* Right: actions */}
           <div className="flex items-center justify-end gap-1 md:gap-2 min-w-[120px]">
             <button
-              onClick={() => setIsCartOpen(true)}
+              onClick={onCartToggle}
               className="p-2.5 hover:bg-stone-100 rounded-xl transition-colors relative text-stone-700"
               aria-label="Open cart"
             >
@@ -175,7 +172,7 @@ const Navbar = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-stone-900/30 backdrop-blur-sm z-[60] md:hidden"
+              className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-[60] md:hidden"
             />
 
             <motion.div
@@ -183,12 +180,12 @@ const Navbar = () => {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 h-full w-[300px] bg-white z-[70] shadow-2xl p-8 md:hidden flex flex-col"
+              className="fixed inset-y-0 left-0 w-[300px] bg-white z-[70] shadow-2xl p-8 md:hidden flex flex-col border-r border-stone-200"
             >
               <div className="flex justify-between items-center mb-10">
                 <Image
                   src="/logo.png"
-                  alt="The Papad Co."
+                  alt="Shivshambho"
                   width={90}
                   height={30}
                   className="h-6 w-auto"
@@ -284,7 +281,6 @@ const Navbar = () => {
           </>
         )}
       </AnimatePresence>
-      <CartSidebar isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </header>
   );
 };

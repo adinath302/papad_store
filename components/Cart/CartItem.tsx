@@ -1,16 +1,18 @@
 "use client";
 
+import Image from "next/image";
 import { Trash2, Plus, Minus, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, memo, useMemo } from "react";
+import { useToast } from "@/components/Toast/ToastProvider";
 import {
-  isLoggedIn,
   removeFromGuestCart,
   updateGuestCartQuantity,
   getGuestCart,
 } from "@/lib/guest-cart";
 
-type CartItem = {
+export type CartItemData = {
   id: string;
+  variantId?: string | null;
   product: {
     id: string;
     name: string;
@@ -21,31 +23,40 @@ type CartItem = {
   quantity: number;
 };
 
-export default function CartItem({
+const CartItem = memo(function CartItem({
   item,
   onUpdate,
 }: {
-  item: CartItem;
+  item: CartItemData;
   onUpdate?: () => void;
 }) {
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   const isGuest = item.id.startsWith("guest-");
 
-  const variants = item.product?.productvariant ?? [];
-  const price =
-    variants.length > 0 ? Math.min(...variants.map((v) => v.price)) : 0;
+  const variant = useMemo(() => {
+    if (item.variantId) {
+      return item.product?.productvariant?.find(
+        (v) => v.id === item.variantId,
+      );
+    }
+    return item.product?.productvariant?.[0];
+  }, [item.variantId, item.product?.productvariant]);
+
+  const price = variant?.price ?? 0;
 
   const handleQuantity = async (action: "increase" | "decrease") => {
     if (isGuest) {
-      const productId = item.id.replace("guest-", "");
       const guestCart = getGuestCart();
-      const guestItem = guestCart.find((i) => i.productId === productId);
+      const guestItem = guestCart.find(
+        (i) => i.productId === item.product.id && i.variantId === (item.variantId ?? i.variantId),
+      );
       if (!guestItem) return;
       const newQty =
         action === "increase"
           ? guestItem.quantity + 1
           : guestItem.quantity - 1;
-      updateGuestCartQuantity(productId, newQty);
+      updateGuestCartQuantity(item.product.id, newQty, item.variantId ?? undefined);
       onUpdate?.();
       return;
     }
@@ -59,12 +70,12 @@ export default function CartItem({
       });
       const data = await res.json();
       if (data.error) {
-        alert(data.error);
+        toast(data.error, "error");
       } else {
         onUpdate?.();
       }
     } catch {
-      alert("Failed to update quantity");
+      toast("Failed to update quantity", "error");
     } finally {
       setLoading(false);
     }
@@ -72,8 +83,7 @@ export default function CartItem({
 
   const handleDelete = async () => {
     if (isGuest) {
-      const productId = item.id.replace("guest-", "");
-      removeFromGuestCart(productId);
+      removeFromGuestCart(item.product.id, item.variantId ?? undefined);
       onUpdate?.();
       return;
     }
@@ -85,12 +95,12 @@ export default function CartItem({
       });
       const data = await res.json();
       if (data.error) {
-        alert(data.error);
+        toast(data.error, "error");
       } else {
         onUpdate?.();
       }
     } catch {
-      alert("Failed to remove item");
+      toast("Failed to remove item", "error");
     } finally {
       setLoading(false);
     }
@@ -99,10 +109,13 @@ export default function CartItem({
   return (
     <div className="flex gap-4 sm:gap-5 items-center py-2">
       <div className="w-24 h-28 sm:w-28 sm:h-32 bg-zinc-100 rounded-2xl overflow-hidden shrink-0">
-        <img
+        <Image
           src={item.product?.image || "/papad-placeholder.jpg"}
-          className="w-full h-full object-cover"
           alt={item.product?.name ?? "Cart item"}
+          width={112}
+          height={128}
+          className="w-full h-full object-cover"
+          loading="lazy"
         />
       </div>
 
@@ -110,6 +123,10 @@ export default function CartItem({
         <h4 className="text-zinc-900 font-semibold truncate text-sm sm:text-base">
           {item.product?.name}
         </h4>
+
+        {variant?.label && (
+          <p className="text-xs text-zinc-400 mt-0.5">{variant.label}</p>
+        )}
 
         <div className="flex items-center gap-2 mt-2">
           <button
@@ -157,4 +174,6 @@ export default function CartItem({
       </button>
     </div>
   );
-}
+});
+
+export default CartItem;

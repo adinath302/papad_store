@@ -14,3 +14,17 @@
 
 4 - how cart section arrive, product details page, 
     1 - https://theaffordableorganicstore.com/
+
+
+
+
+    Priority	Item	Why
+Critical	Payment Gateway (Razorpay/Stripe)	Currently only COD — no online payments
+High	Order notifications — email/SMS to admin on new order	You won't know someone ordered unless you check admin
+High	HTTPS/SSL + custom domain	Required for payments & trust
+High	Privacy Policy & Terms pages	Legally required for selling
+Medium	Contact page (phone/email/address)	Customer trust & support
+Medium	Google Analytics / Facebook Pixel	Track ads & conversions
+Medium	robots.txt + sitemap.xml	SEO for product pages
+Low	Toast notifications instead of alert()	Better UX
+Low	Loading skeletons for product lists	Polish

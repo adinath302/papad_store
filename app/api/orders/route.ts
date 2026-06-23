@@ -25,16 +25,21 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
-    const { id, status } = await req.json();
-    if (!id || !status) {
+    const { id, status, courierName, trackingId } = await req.json();
+    if (!id) {
       return NextResponse.json(
-        { error: "Missing id or status" },
+        { error: "Missing id" },
         { status: 400 },
       );
     }
+    const data: any = {};
+    if (status) data.status = status;
+    if (courierName !== undefined) data.courierName = courierName;
+    if (trackingId !== undefined) data.trackingId = trackingId;
+
     const order = await prisma.order.update({
       where: { id },
-      data: { status },
+      data,
     });
     return NextResponse.json(order);
   } catch (error: any) {

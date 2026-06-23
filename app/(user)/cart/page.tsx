@@ -1,79 +1,63 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import CartItem from "@/components/Cart/CartItem";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useRouter } from "next/navigation";
+import CartItem, { type CartItemData } from "@/components/Cart/CartItem";
 import { getGuestCart, isLoggedIn } from "@/lib/guest-cart";
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Loader2, ArrowRight, Truck } from "lucide-react";
+import { FREE_SHIPPING_MIN } from "@/lib/shipping";
+import { SkeletonCart } from "@/components/Skeleton/Skeleton";
 
-interface CartItemType {
-  id: string;
-  product: {
-    id: string;
-    name: string;
-    image?: string | null;
-    description?: string | null;
-    productvariant: Array<{ id: string; label: string; price: number }>;
-  };
-  quantity: number;
-}
-
-const getItemPrice = (item: CartItemType) => {
-  const variants = item.product?.productvariant ?? [];
-  if (variants.length > 0) {
-    return Math.min(...variants.map((v) => v.price));
+const getItemPrice = (item: CartItemData) => {
+  if (item.variantId) {
+    const variant = item.product?.productvariant?.find(
+      (v) => v.id === item.variantId,
+    );
+    if (variant) return variant.price;
   }
-  return 0;
+  return item.product?.productvariant?.[0]?.price ?? 0;
 };
 
-const handleCheckout = () => {
-  window.location.href = "/checkout";
-};
+export const dynamic = "force-dynamic";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItemType[]>([]);
+  const router = useRouter();
+  const [items, setItems] = useState<CartItemData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
+  const [checkingOut, setCheckingOut] = useState(false);
 
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     try {
       if (!isLoggedIn()) {
         const guestItems = getGuestCart();
-        const mapped: CartItemType[] = guestItems.map((gi) => ({
-          id: `guest-${gi.productId}`,
+        const mapped: CartItemData[] = guestItems.map((gi) => ({
+          id: `guest-${gi.productId}-${gi.variantId || "default"}`,
+          variantId: gi.variantId,
           product: {
             id: gi.productId,
             name: gi.name,
             image: gi.image,
-            productvariant: [{ id: "", label: "Default", price: gi.price }],
+            productvariant: gi.variantId
+              ? [{ id: gi.variantId, label: "", price: gi.price }]
+              : [{ id: "", label: "Default", price: gi.price }],
           },
           quantity: gi.quantity,
         }));
         setItems(mapped);
-        setTotal(
-          mapped.reduce(
-            (sum, item) => sum + getItemPrice(item) * item.quantity,
-            0,
-          ),
-        );
         setLoading(false);
         return;
       }
 
       const res = await fetch("/api/cart");
-      const data = (await res.json()) as CartItemType[];
+      const data = (await res.json()) as CartItemData[];
       setItems(data);
-      const calculatedTotal = data.reduce(
-        (sum, item) => sum + getItemPrice(item) * item.quantity,
-        0,
-      );
-      setTotal(calculatedTotal);
     } catch (error) {
       console.error("Fetch cart error:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -84,7 +68,12 @@ export default function CartPage() {
     };
   }, []);
 
-  if (loading) return <div>Loading cart...</div>;
+  const total = useMemo(
+    () => items.reduce((sum, item) => sum + getItemPrice(item) * item.quantity, 0),
+    [items],
+  );
+
+  if (loading) return <SkeletonCart />;
 
   return (
     <div className="min-h-screen bg-[#faf8f5] pt-32 pb-16 px-6">
@@ -127,12 +116,49 @@ export default function CartPage() {
                 ₹{total}
               </span>
             </div>
+
+            {total > 0 && total < FREE_SHIPPING_MIN && (
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                <div className="flex items-center gap-2 text-sm text-amber-800 mb-2">
+                  <Truck size={16} />
+                  <span>Add ₹{FREE_SHIPPING_MIN - total} more for free shipping</span>
+                </div>
+                <div className="w-full bg-amber-200 rounded-full h-2">
+                  <div
+                    className="bg-amber-600 h-2 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min((total / FREE_SHIPPING_MIN) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {total >= FREE_SHIPPING_MIN && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 flex items-center gap-2 text-sm text-emerald-800">
+                <Truck size={16} />
+                <span>You qualify for free shipping!</span>
+              </div>
+            )}
+
             <button
-              onClick={handleCheckout}
-              disabled={items.length === 0}
-              className="w-full bg-stone-900 text-white py-4 rounded-2xl font-bold hover:bg-stone-800 transition-colors disabled:bg-stone-300 mt-2"
+              onClick={() => {
+                setCheckingOut(true);
+                router.push("/checkout");
+              }}
+              disabled={checkingOut}
+              className="group relative w-full bg-stone-900 text-white py-4 rounded-2xl font-bold mt-2 text-center overflow-hidden transition-all duration-300 hover:bg-stone-800 disabled:bg-stone-400 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              Proceed to Checkout
+              <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-white/10 skew-x-12" />
+              {checkingOut ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  Taking you to checkout...
+                </>
+              ) : (
+                <>
+                  Proceed to Checkout
+                  <ArrowRight size={18} className="group-hover:translate-x-1.5 transition-transform" />
+                </>
+              )}
             </button>
             {!isLoggedIn() && (
               <p className="text-center text-xs text-stone-400 mt-2">

@@ -1,21 +1,22 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ShoppingBag, ArrowRight } from "lucide-react";
-import CartItem from "@/components/Cart/CartItem";
+import { X, ShoppingBag, ArrowRight, Loader2, Truck } from "lucide-react";
+import { FREE_SHIPPING_MIN } from "@/lib/shipping";
+import { useRouter } from "next/navigation";
+import CartItem, { type CartItemData } from "@/components/Cart/CartItem";
 import { getGuestCart, isLoggedIn } from "@/lib/guest-cart";
+import Shimmer from "@/components/Skeleton/Skeleton";
 
-interface CartItemType {
-  id: string;
-  product: {
-    id: string;
-    name: string;
-    image?: string;
-    description?: string;
-    productvariant: Array<{ id: string; label: string; price: number }>;
-  };
-  quantity: number;
-}
+const getItemPrice = (item: CartItemData) => {
+  if (item.variantId) {
+    const variant = item.product?.productvariant?.find(
+      (v) => v.id === item.variantId,
+    );
+    if (variant) return variant.price;
+  }
+  return item.product?.productvariant?.[0]?.price ?? 0;
+};
 
 export default function CartSidebar({
   isOpen,
@@ -24,62 +25,62 @@ export default function CartSidebar({
   isOpen: boolean;
   onClose: () => void;
 }) {
-  const [items, setItems] = useState<CartItemType[]>([]);
+  const router = useRouter();
+  const [items, setItems] = useState<CartItemData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
+  const [checkingOut, setCheckingOut] = useState(false);
 
-  const getItemPrice = (item: CartItemType) => {
-    const variants = item.product?.productvariant ?? [];
-    if (variants.length > 0) return Math.min(...variants.map((v) => v.price));
-    return 0;
-  };
-
-  const fetchCart = async () => {
+  const fetchCart = useCallback(async () => {
     setLoading(true);
     try {
       if (!isLoggedIn()) {
         const guestItems = getGuestCart();
-        const mapped: CartItemType[] = guestItems.map((gi) => ({
-          id: `guest-${gi.productId}`,
+        const mapped: CartItemData[] = guestItems.map((gi) => ({
+          id: `guest-${gi.productId}-${gi.variantId || "default"}`,
+          variantId: gi.variantId,
           product: {
             id: gi.productId,
             name: gi.name,
             image: gi.image || undefined,
-            productvariant: [{ id: "", label: "Default", price: gi.price }],
+            productvariant: gi.variantId
+              ? [{ id: gi.variantId, label: "", price: gi.price }]
+              : [{ id: "", label: "Default", price: gi.price }],
           },
           quantity: gi.quantity,
         }));
         setItems(mapped);
-        setTotal(
-          mapped.reduce((sum, item) => sum + getItemPrice(item) * item.quantity, 0),
-        );
         setLoading(false);
         return;
       }
 
       const res = await fetch("/api/cart");
-      const data = (await res.json()) as CartItemType[];
+      const data = (await res.json()) as CartItemData[];
       setItems(data);
-      const calculatedTotal = data.reduce(
-        (sum, item) => sum + getItemPrice(item) * item.quantity,
-        0,
-      );
-      setTotal(calculatedTotal);
     } catch (error) {
       console.error("Fetch cart error:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
     fetchCart();
   }, [isOpen]);
 
+  const total = useMemo(
+    () =>
+      items.reduce(
+        (sum, item) => sum + getItemPrice(item) * item.quantity,
+        0,
+      ),
+    [items],
+  );
+
   const handleCheckout = () => {
+    setCheckingOut(true);
     onClose();
-    window.location.href = "/checkout";
+    router.push("/checkout");
   };
 
   return (
@@ -99,7 +100,7 @@ export default function CartSidebar({
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-md bg-white z-[101] shadow-2xl flex flex-col"
+            className="fixed right-0 inset-y-0 w-full max-w-md bg-white z-[101] shadow-2xl flex flex-col"
           >
             <div className="p-6 border-b border-zinc-100 flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -121,9 +122,17 @@ export default function CartSidebar({
 
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {loading ? (
-                <div className="flex flex-col items-center justify-center h-40 space-y-4">
-                  <div className="w-8 h-8 border-4 border-amber-600 border-t-transparent rounded-full animate-spin" />
-                  <p className="text-sm text-zinc-400">Updating basket...</p>
+                <div className="space-y-4 py-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex gap-4 items-center">
+                      <Shimmer className="w-20 h-24 rounded-2xl shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <Shimmer className="h-4 w-3/4" />
+                        <Shimmer className="h-3 w-1/3" />
+                        <Shimmer className="h-4 w-16" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : items.length === 0 ? (
                 <div className="text-center py-20">
@@ -137,7 +146,7 @@ export default function CartSidebar({
                   <button
                     onClick={() => {
                       onClose();
-                      window.location.href = "/products";
+                      router.push("/products");
                     }}
                     className="text-amber-600 text-sm font-bold mt-2 hover:underline"
                   >
@@ -155,6 +164,20 @@ export default function CartSidebar({
 
             {items.length > 0 && (
               <div className="p-6 bg-zinc-50 border-t border-zinc-100 space-y-4">
+                {total > 0 && total < FREE_SHIPPING_MIN && (
+                  <div className="flex items-center gap-2 text-[11px] text-amber-700 bg-amber-50 rounded-xl px-3 py-2">
+                    <Truck size={14} />
+                    <span>Add ₹{FREE_SHIPPING_MIN - total} more for free shipping</span>
+                  </div>
+                )}
+
+                {total >= FREE_SHIPPING_MIN && (
+                  <div className="flex items-center gap-2 text-[11px] text-emerald-700 bg-emerald-50 rounded-xl px-3 py-2">
+                    <Truck size={14} />
+                    <span>Free shipping applied!</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between items-end">
                   <span className="text-zinc-500 text-sm font-medium">
                     Subtotal
@@ -163,18 +186,23 @@ export default function CartSidebar({
                     ₹{total}
                   </span>
                 </div>
-                <p className="text-[10px] text-zinc-400 uppercase tracking-widest text-center">
-                  Shipping & taxes calculated at checkout
-                </p>
                 <button
                   onClick={handleCheckout}
-                  className="w-full bg-zinc-900 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-zinc-800 transition-all group"
+                  disabled={checkingOut}
+                  className="group relative w-full bg-zinc-900 disabled:bg-zinc-500 text-white py-5 rounded-2xl font-bold flex items-center justify-center gap-3 overflow-hidden transition-all duration-300 hover:bg-zinc-800 disabled:cursor-not-allowed"
                 >
-                  Proceed to Checkout
-                  <ArrowRight
-                    size={18}
-                    className="group-hover:translate-x-1 transition-transform"
-                  />
+                  <span className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-700 bg-white/10 skew-x-12" />
+                  <span className="relative flex items-center gap-3">
+                    {checkingOut ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <ArrowRight
+                        size={18}
+                        className="group-hover:translate-x-1.5 transition-transform"
+                      />
+                    )}
+                    {checkingOut ? "Redirecting..." : "Proceed to Checkout"}
+                  </span>
                 </button>
               </div>
             )}

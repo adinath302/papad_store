@@ -4,59 +4,44 @@ import { cookies } from "next/headers";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
-    const { productId, quantity } = body;
+    const { productId, variantId, quantity } = body;
 
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
 
     if (!userId) {
-      return Response.json(
-        { error: "Not logged in" },
-        { status: 401 }
-      );
+      return Response.json({ error: "Not logged in" }, { status: 401 });
     }
 
-    // CHECK EXISTING ITEM
     const existingItem = await prisma.cartitem.findFirst({
       where: {
         userId,
         productId,
+        variantId: variantId || null,
       },
     });
 
-    // IF EXISTS → UPDATE QUANTITY
     if (existingItem) {
       const updatedItem = await prisma.cartitem.update({
-        where: {
-          id: existingItem.id,
-        },
-        data: {
-          quantity: existingItem.quantity + quantity,
-        },
+        where: { id: existingItem.id },
+        data: { quantity: existingItem.quantity + quantity },
       });
-
       return Response.json(updatedItem);
     }
 
-    // ELSE CREATE NEW ITEM
     const item = await prisma.cartitem.create({
       data: {
         productId,
+        variantId: variantId || null,
         userId,
         quantity,
       },
     });
 
     return Response.json(item);
-
   } catch (error: any) {
     console.log("CART POST ERROR:", error);
-
-    return Response.json(
-      { error: error.message },
-      { status: 500 }
-    );
+    return Response.json({ error: error.message }, { status: 500 });
   }
 }
 
@@ -89,10 +74,7 @@ export async function DELETE(req: Request) {
       return Response.json({ error: "Missing ID" }, { status: 400 });
     }
 
-    await prisma.cartitem.delete({
-      where: { id },
-    });
-
+    await prisma.cartitem.delete({ where: { id } });
     return Response.json({ message: "Deleted successfully" });
   } catch (error: any) {
     console.log("DELETE ERROR:", error.message);
@@ -105,9 +87,7 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { id, action } = body;
 
-    const item = await prisma.cartitem.findUnique({
-      where: { id },
-    });
+    const item = await prisma.cartitem.findUnique({ where: { id } });
 
     if (!item) {
       return Response.json({ error: "Item not found" }, { status: 404 });
@@ -121,20 +101,14 @@ export async function PATCH(req: Request) {
       newQuantity -= 1;
     }
 
-    // ❗ if quantity becomes 0 → delete item
     if (newQuantity <= 0) {
-      await prisma.cartitem.delete({
-        where: { id },
-      });
-
+      await prisma.cartitem.delete({ where: { id } });
       return Response.json({ message: "Item removed" });
     }
 
     const updated = await prisma.cartitem.update({
       where: { id },
-      data: {
-        quantity: newQuantity,
-      },
+      data: { quantity: newQuantity },
     });
 
     return Response.json(updated);

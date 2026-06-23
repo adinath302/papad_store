@@ -1,5 +1,6 @@
 export type GuestCartItem = {
   productId: string;
+  variantId?: string;
   name: string;
   image: string | null;
   quantity: number;
@@ -25,7 +26,9 @@ export function setGuestCart(items: GuestCartItem[]) {
 
 export function addToGuestCart(item: GuestCartItem) {
   const cart = getGuestCart();
-  const existing = cart.find((i) => i.productId === item.productId);
+  const existing = cart.find(
+    (i) => i.productId === item.productId && i.variantId === item.variantId,
+  );
   if (existing) {
     existing.quantity += item.quantity;
   } else {
@@ -34,16 +37,27 @@ export function addToGuestCart(item: GuestCartItem) {
   setGuestCart(cart);
 }
 
-export function removeFromGuestCart(productId: string) {
-  setGuestCart(getGuestCart().filter((i) => i.productId !== productId));
+export function removeFromGuestCart(productId: string, variantId?: string) {
+  setGuestCart(
+    getGuestCart().filter(
+      (i) =>
+        !(i.productId === productId && i.variantId === (variantId ?? i.variantId)),
+    ),
+  );
 }
 
-export function updateGuestCartQuantity(productId: string, quantity: number) {
+export function updateGuestCartQuantity(
+  productId: string,
+  quantity: number,
+  variantId?: string,
+) {
   const cart = getGuestCart();
-  const item = cart.find((i) => i.productId === productId);
+  const item = cart.find(
+    (i) => i.productId === productId && i.variantId === (variantId ?? i.variantId),
+  );
   if (item) {
     if (quantity <= 0) {
-      removeFromGuestCart(productId);
+      removeFromGuestCart(productId, variantId);
     } else {
       item.quantity = quantity;
       setGuestCart(cart);
@@ -58,5 +72,5 @@ export function clearGuestCart() {
 
 export function isLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
-  return !!document.cookie.match(/(?:^|;\s*)userId=([^;]*)/);
+  return document.cookie.includes("isLoggedIn=true");
 }

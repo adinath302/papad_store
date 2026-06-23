@@ -1,14 +1,26 @@
 import { prisma } from "@/lib/prisma";
+import dynamic from "next/dynamic";
 import HeroCarousel from "@/components/Home/HeroCarousel";
 import PromoBar from "@/components/Home/PromoBar";
 import TrustMarquee from "@/components/Home/TrustMarquee";
 import CategoryGrid from "@/components/Home/CategoryGrid";
 import CombosSection from "@/components/Home/CombosSection";
-import HeritageSection from "@/components/Home/HeritageSection";
-import ReviewsSection from "@/components/Home/ReviewsSection";
-import FAQSection from "@/components/Home/FAQSection";
 import ProductCard from "@/components/Products/ProductCard";
 import Link from "next/link";
+
+const HeritageSection = dynamic(
+  () => import("@/components/Home/HeritageSection"),
+  { loading: () => <div className="h-[600px] bg-white" /> },
+);
+
+const ReviewsSection = dynamic(
+  () => import("@/components/Home/ReviewsSection"),
+  { loading: () => <div className="h-[400px] bg-white" /> },
+);
+
+const FAQSection = dynamic(() => import("@/components/Home/FAQSection"), {
+  loading: () => <div className="h-[500px] bg-[#faf8f5]" />,
+});
 
 export default async function Home() {
   const products = (await prisma.product.findMany({ include: { productvariant: true } })) || [];

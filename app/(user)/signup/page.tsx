@@ -1,10 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, UserPlus, Check } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useToast } from "@/components/Toast/ToastProvider";
+
+export const dynamic = "force-dynamic";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -16,6 +20,7 @@ export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
+  const { toast } = useToast();
 
   const handleSignup = async () => {
     setError("");
@@ -60,17 +65,22 @@ export default function SignupPage() {
           transition={{ duration: 1.5 }}
           className="absolute inset-0"
         >
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1589113817223-14db18136244?q=80&w=1200"
             alt="Handmade Tradition"
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            priority
           />
           <div className="absolute inset-0 bg-gradient-to-br from-black/50 to-black/20" />
         </motion.div>
 
         <div className="absolute top-12 left-12">
           <span className="text-2xl font-serif italic text-white">
-            The Papad Co.
+            Shivshambho
+          </span>
+          <span className="block text-[10px] text-amber-400 font-semibold tracking-[0.3em] uppercase">
+            crafted with tradition
           </span>
         </div>
 
@@ -82,10 +92,10 @@ export default function SignupPage() {
             className="backdrop-blur-xl bg-white/10 p-10 rounded-[2.5rem] border border-white/20 text-white"
           >
             <h2 className="text-4xl font-serif mb-4 leading-tight">
-              You're one bite away from belonging.
+              You&apos;re one bite away from belonging.
             </h2>
             <p className="text-zinc-200 leading-relaxed font-light text-sm">
-              Join The Papad Co. Club and unlock members-only batches,
+              Join Shivshambho Club and unlock members-only batches,
               early access to seasonal drops, and stories from the heart
               of Indian kitchens.
             </p>
@@ -113,7 +123,7 @@ export default function SignupPage() {
         >
           <div className="text-center lg:text-left">
             <h1 className="text-4xl font-serif text-stone-900 mb-2">
-              Join the Club
+              Sign Up
             </h1>
             <p className="text-stone-500 text-sm">
               Create your account and step into a world of authentic crunch.
@@ -215,7 +225,7 @@ export default function SignupPage() {
               </span>
             ) : (
               <>
-                Join the Club
+                Sign Up
                 <UserPlus className="group-hover:translate-x-1 transition-transform" size={18} />
               </>
             )}
@@ -236,8 +246,9 @@ export default function SignupPage() {
           {/* Google Button */}
           <button
             onClick={() =>
-              alert(
-                "Google sign-up coming soon! You can sign up with email for now.",
+              toast(
+                "Google sign-up coming soon! Sign up with email for now.",
+                "info",
               )
             }
             className="w-full bg-white border border-stone-200 rounded-xl py-3.5 font-medium text-stone-700 hover:bg-stone-50 hover:border-stone-300 transition-all flex items-center justify-center gap-3 text-sm cursor-pointer"

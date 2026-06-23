@@ -1,18 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { getGuestCart, clearGuestCart } from "@/lib/guest-cart";
+import { useToast } from "@/components/Toast/ToastProvider";
+
+export const dynamic = "force-dynamic";
 
 export default function LoginPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const mergeGuestCart = async () => {
     const guestItems = getGuestCart();
@@ -25,6 +31,7 @@ export default function LoginPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             productId: item.productId,
+            variantId: item.variantId,
             quantity: item.quantity,
           }),
         }),
@@ -45,16 +52,16 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (data.error) {
-        alert(data.error);
+        toast(data.error, "error");
         setIsLoading(false);
         return;
       }
 
       await mergeGuestCart();
       const redirect = searchParams.get("redirect") || "/";
-      window.location.href = redirect;
-    } catch (err) {
-      alert("Something went wrong. Please try again.");
+      router.push(redirect);
+    } catch {
+      toast("Something went wrong. Please try again.", "error");
       setIsLoading(false);
     }
   };
@@ -72,7 +79,10 @@ export default function LoginPage() {
           <div className="text-center lg:text-left">
             <Link href="/" className="inline-block mb-8">
               <span className="text-2xl font-serif italic text-stone-900">
-                The Papad Co.
+                Shivshambho
+              </span>
+              <span className="block text-[10px] text-amber-600 font-semibold tracking-[0.3em] uppercase -mt-1">
+                crafted with tradition
               </span>
             </Link>
             <h1 className="text-4xl font-serif text-stone-900 mb-2">
@@ -133,6 +143,15 @@ export default function LoginPage() {
             )}
           </button>
 
+          <div className="text-center -mt-2">
+            <Link
+              href="/forgot-password"
+              className="text-xs text-stone-400 hover:text-stone-600 underline underline-offset-2"
+            >
+              Forgot password?
+            </Link>
+          </div>
+
           {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
@@ -148,8 +167,9 @@ export default function LoginPage() {
           {/* Google Button */}
           <button
             onClick={() =>
-              alert(
-                "Google sign-in coming soon! You can sign in with email/password for now.",
+              toast(
+                "Google sign-in coming soon! Sign in with email/password for now.",
+                "info",
               )
             }
             className="w-full bg-white border border-stone-200 rounded-xl py-4 font-medium text-stone-700 hover:bg-stone-50 transition-all flex items-center justify-center gap-3"
@@ -206,10 +226,12 @@ export default function LoginPage() {
           transition={{ duration: 1.5 }}
           className="absolute inset-0"
         >
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1614707267537-b85acc00c4b7?q=80&w=1200"
             alt="Handcrafted Spices"
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
+            priority
           />
           <div className="absolute inset-0 bg-black/20" />
         </motion.div>
@@ -225,7 +247,7 @@ export default function LoginPage() {
               &ldquo;Authenticity in every bite, delivered to your doorstep.&rdquo;
             </p>
             <span className="text-sm font-black tracking-widest uppercase">
-              The Papad Co. Heritage
+              Shivshambho Heritage
             </span>
           </motion.div>
         </div>

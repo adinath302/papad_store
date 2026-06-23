@@ -1,5 +1,3 @@
-"use client";
-
 import { Leaf, ShieldCheck, Truck, Award } from "lucide-react";
 
 const badges = [
@@ -17,7 +15,7 @@ export default function TrustMarquee() {
       <div className="flex animate-trust-scroll">
         {items.map(({ icon: Icon, text }, i) => (
           <div
-            key={i}
+            key={`${text}-${i}`}
             className="flex shrink-0 items-center gap-2.5 px-10 text-stone-700"
           >
             <Icon size={16} className="text-emerald-700" strokeWidth={1.75} />

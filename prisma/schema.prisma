@@ -26,6 +26,7 @@ model address {
 model cartitem {
   id        String  @id @default(cuid())
   productId String
+  variantId String?
   quantity  Int
   userId    String
   product   product @relation(fields: [productId], references: [id], map: "CartItem_productId_fkey")
@@ -36,22 +37,28 @@ model cartitem {
 }
 
 model order {
-  id           String      @id @default(cuid())
-  userId       String
-  paymentType  String
-  shippingCost Int
-  totalAmount  Int
-  status       String      @default("PENDING")
-  fullName     String
-  phone        String
-  address1     String
-  address2     String?
-  city         String
-  state        String
-  pincode      String
-  createdAt    DateTime    @default(now())
-  user         user        @relation(fields: [userId], references: [id], map: "Order_userId_fkey")
-  orderitem    orderitem[]
+  id                String      @id @default(cuid())
+  userId            String?
+  paymentType       String
+  shippingCost      Int
+  totalAmount       Int
+  status            String      @default("PENDING")
+  fullName          String
+  phone             String
+  address1          String
+  address2          String?
+  city              String
+  state             String
+  pincode           String
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  courierName       String?
+  trackingId        String?
+  shiprocketShipmentId Int?
+  shippingMethod    String?
+  createdAt         DateTime    @default(now())
+  user              user?       @relation(fields: [userId], references: [id], map: "Order_userId_fkey")
+  orderitem         orderitem[]
 
   @@index([userId], map: "Order_userId_fkey")
 }
@@ -86,6 +93,7 @@ model productvariant {
   id        String  @id @default(cuid())
   label     String
   price     Int
+  weight    Int     @default(500)
   productId String
   product   product @relation(fields: [productId], references: [id], map: "ProductVariant_productId_fkey")
 
@@ -98,12 +106,26 @@ enum Role {
 }
 
 model user {
-  id       String     @id @default(cuid())
-  name     String?
-  email    String     @unique(map: "User_email_key")
-  password String
-  role     Role       @default(USER)
-  address  address[]
-  cartitem cartitem[]
-  order    order[]
+  id                  String     @id @default(cuid())
+  name                String?
+  email               String     @unique(map: "User_email_key")
+  password            String
+  role                Role       @default(USER)
+  permissions         String?
+  address             address[]
+  cartitem            cartitem[]
+  order               order[]
+  passwordresettoken  passwordresettoken?
+}
+
+model passwordresettoken {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  token     String   @unique
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      user     @relation(fields: [userId], references: [id], map: "PasswordResetToken_userId_fkey")
+
+  @@index([token])
 }

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Loader2,
   User,
   Mail,
   Shield,
@@ -17,6 +16,7 @@ import {
   Save,
   X,
 } from "lucide-react";
+import { SkeletonProfile, SkeletonAddresses, SkeletonOrders } from "@/components/Skeleton/Skeleton";
 
 type UserDetails = {
   id: string;
@@ -104,24 +104,20 @@ export default function ProfilePage() {
   const [savingAddress, setSavingAddress] = useState(false);
 
   useEffect(() => {
-    const match = document.cookie.match(/(?:^|;\s*)userId=([^;]*)/);
-    const userId = match?.[1];
-
-    if (!userId) {
-      router.push("/login");
-      return;
-    }
-
-    fetch(`/api/auth/user?userId=${encodeURIComponent(userId)}`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((data: UserDetails) => {
-        setUser(data);
-        setNewName(data.name || "");
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.user) {
+          router.push("/login");
+          return;
+        }
+        setUser(data.user);
+        setNewName(data.user.name || "");
+        setChecking(false);
       })
       .catch(() => {
         router.push("/login");
-      })
-      .finally(() => setChecking(false));
+      });
   }, [router]);
 
   const loadAddresses = async () => {
@@ -157,7 +153,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
-    window.location.href = "/";
+    router.push("/");
   };
 
   const handleSaveName = async () => {
@@ -198,11 +194,7 @@ export default function ProfilePage() {
   };
 
   if (checking) {
-    return (
-      <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-emerald-800" />
-      </div>
-    );
+    return <SkeletonProfile />;
   }
 
   return (
@@ -416,9 +408,7 @@ export default function ProfilePage() {
               )}
 
               {addressesLoading ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 size={24} className="animate-spin text-emerald-800" />
-                </div>
+                <SkeletonAddresses />
               ) : addresses.length === 0 ? (
                 <p className="text-stone-500 text-sm py-10 text-center">
                   No saved addresses yet.
@@ -457,9 +447,7 @@ export default function ProfilePage() {
               </h2>
 
               {ordersLoading ? (
-                <div className="flex justify-center py-10">
-                  <Loader2 size={24} className="animate-spin text-emerald-800" />
-                </div>
+                <SkeletonOrders />
               ) : orders.length === 0 ? (
                 <div className="text-center py-10">
                   <Package

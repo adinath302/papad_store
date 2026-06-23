@@ -17,6 +17,7 @@ export async function middleware(req: NextRequest) {
     try {
       const res = await fetch(
         `${req.nextUrl.origin}/api/auth/user?userId=${userId}`,
+        { cache: "no-store" },
       );
       if (!res.ok) {
         return NextResponse.redirect(new URL("/login", req.url));

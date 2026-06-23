@@ -50,10 +50,34 @@ const processSteps = [
 
 export default function HeritageSection() {
   return (
-    <section className="py-16 md:py-24 bg-white overflow-hidden">
+    <section className="py-10 md:py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
-        {/* Trust pillars */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 mb-20 md:mb-28">
+        {/* Trust pillars - mobile: horizontal scroll */}
+        <div className="md:hidden -mx-4 px-4 overflow-x-auto scrollbar-none mb-8">
+          <div className="flex gap-3 w-max pb-2">
+            {pillars.map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 bg-emerald-50/80 rounded-2xl px-4 py-3 min-w-[220px] border border-emerald-100/60"
+              >
+                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 shrink-0">
+                  <item.icon size={18} strokeWidth={1.5} />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-[11px] font-bold uppercase tracking-wider text-stone-900">
+                    {item.title}
+                  </h4>
+                  <p className="text-[10px] text-stone-500 leading-tight truncate">
+                    {item.sub}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Trust pillars - desktop: grid */}
+        <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12 mb-20 md:mb-28">
           {pillars.map((item, idx) => (
             <motion.div
               key={idx}
@@ -115,6 +139,8 @@ export default function HeritageSection() {
               src="https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?q=80&w=1000"
               alt="Traditional papad making"
               fill
+              loading="lazy"
+              sizes="(max-width: 1024px) 100vw, 50vw"
               className="object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-stone-900/40 to-transparent" />

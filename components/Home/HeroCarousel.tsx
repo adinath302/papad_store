@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -38,31 +37,28 @@ const slides = [
 
 export default function HeroCarousel() {
   const [index, setIndex] = useState(0);
-  const textRef = useRef(null);
 
   useEffect(() => {
-    const ctx = gsap.context(() => {
-      gsap.from(".hero-char", {
-        opacity: 0,
-        y: 24,
-        stagger: 0.04,
-        duration: 0.7,
-        ease: "power3.out",
-      });
-    }, textRef);
-
     const timer = setInterval(() => {
       setIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
     }, 5500);
 
-    return () => {
-      clearInterval(timer);
-      ctx.revert();
-    };
-  }, [index]);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="relative h-[100vh] w-screen overflow-hidden">
+      <style>{`
+        .hero-char {
+          display: inline-block;
+          animation: heroFadeUp 0.7s ease-out both;
+          animation-delay: calc(var(--char-index) * 0.04s);
+        }
+        @keyframes heroFadeUp {
+          from { opacity: 0; transform: translateY(24px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
       <AnimatePresence mode="wait">
         <motion.div
           key={index}
@@ -77,29 +73,37 @@ export default function HeroCarousel() {
             alt={slides[index].title}
             fill
             priority
+            sizes="100vw"
             className="object-cover brightness-[0.55]"
           />
 
           <div className="absolute inset-0 bg-gradient-to-r from-stone-950/80 via-stone-900/50 to-transparent" />
 
-          <div
-            ref={textRef}
-            className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 lg:px-20 max-w-2xl"
-          >
+          <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 lg:px-20 max-w-2xl">
             <p className="text-amber-400 text-[10px] md:text-xs font-bold tracking-[0.35em] uppercase mb-3">
               {slides[index].subtitle}
             </p>
 
             <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif text-white tracking-tight leading-[1.05] mb-4">
-              {slides[index].title.split(" ").map((word, wi) => (
-                <span key={wi} className="block overflow-hidden">
-                  {word.split("").map((char, i) => (
-                    <span key={i} className="hero-char inline-block">
-                      {char}
-                    </span>
-                  ))}
-                </span>
-              ))}
+              {(() => {
+                let charIdx = 0;
+                return slides[index].title.split(" ").map((word, wi) => (
+                  <span key={wi} className="block overflow-hidden">
+                    {word.split("").map((char, i) => {
+                      const delay = charIdx++;
+                      return (
+                        <span
+                          key={i}
+                          className="hero-char inline-block"
+                          style={{ "--char-index": delay } as React.CSSProperties}
+                        >
+                          {char}
+                        </span>
+                      );
+                    })}
+                  </span>
+                ));
+              })()}
             </h1>
 
             <p className="text-stone-200 text-sm md:text-base font-light leading-relaxed max-w-md mb-8">

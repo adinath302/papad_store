@@ -1,18 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Star, Loader2, Plus, Minus } from "lucide-react";
 import { addToGuestCart, isLoggedIn } from "@/lib/guest-cart";
+import { useToast } from "@/components/Toast/ToastProvider";
 
-export default function ProductCard({ product }: any) {
+const ProductCard = memo(function ProductCard({ product }: any) {
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
-
-  const startingPrice = Math.min(
-    ...product.productvariant.map((variant: any) => variant.price),
+  const [selectedVariant, setSelectedVariant] = useState(
+    product.productvariant?.[0] ?? null,
   );
+  const { toast } = useToast();
+
+  const price = selectedVariant?.price ?? 0;
 
   const addToCart = async () => {
     setLoading(true);
@@ -20,12 +23,13 @@ export default function ProductCard({ product }: any) {
       if (!isLoggedIn()) {
         addToGuestCart({
           productId: product.id,
+          variantId: selectedVariant?.id,
           name: product.name,
           image: product.image || null,
           quantity,
-          price: startingPrice,
+          price,
         });
-        alert(`${quantity}x ${product.name} added to cart!`);
+        toast(`${quantity}x ${product.name} added to cart!`, "success");
         setLoading(false);
         return;
       }
@@ -33,17 +37,21 @@ export default function ProductCard({ product }: any) {
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: product.id, quantity }),
+        body: JSON.stringify({
+          productId: product.id,
+          variantId: selectedVariant?.id,
+          quantity,
+        }),
       });
 
       const data = await res.json();
       if (data.error) {
-        alert(data.error);
+        toast(data.error, "error");
       } else {
-        alert(`${quantity}x ${product.name} added to basket!`);
+        toast(`${quantity}x ${product.name} added to cart!`, "success");
       }
     } catch {
-      alert("Something went wrong while adding to cart.");
+      toast("Something went wrong while adding to cart.", "error");
     } finally {
       setLoading(false);
     }
@@ -53,8 +61,10 @@ export default function ProductCard({ product }: any) {
 
   return (
     <div className="group flex flex-col bg-white rounded-2xl border border-stone-200/80 overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full">
-      {/* Image */}
-      <Link href={`/products/${product.id}`} className="relative aspect-square bg-stone-100 block overflow-hidden">
+      <Link
+        href={`/products/${product.id}`}
+        className="relative aspect-square bg-stone-100 block overflow-hidden"
+      >
         <Image
           src={
             product.image ||
@@ -62,6 +72,8 @@ export default function ProductCard({ product }: any) {
           }
           alt={product.name}
           fill
+          loading="lazy"
+          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
           className="object-cover transition-transform duration-500 group-hover:scale-105"
         />
         {outOfStock && (
@@ -73,7 +85,6 @@ export default function ProductCard({ product }: any) {
         )}
       </Link>
 
-      {/* Details */}
       <div className="flex flex-col flex-1 p-4 space-y-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-800 mb-1">
@@ -84,7 +95,9 @@ export default function ProductCard({ product }: any) {
               {product.name}
             </h3>
             {product.nameMarathi && (
-              <p className="text-xs text-stone-500 mt-0.5">{product.nameMarathi}</p>
+              <p className="text-xs text-stone-500 mt-0.5">
+                {product.nameMarathi}
+              </p>
             )}
           </Link>
         </div>
@@ -94,18 +107,43 @@ export default function ProductCard({ product }: any) {
             <Star
               key={i}
               size={11}
-              className={i < 4 ? "text-amber-400 fill-amber-400" : "text-stone-200 fill-stone-200"}
+              className={
+                i < 4
+                  ? "text-amber-400 fill-amber-400"
+                  : "text-stone-200 fill-stone-200"
+              }
             />
           ))}
           <span className="text-[10px] text-stone-400 ml-1">(4.8)</span>
         </div>
 
         <p className="text-base font-bold text-stone-900">
-          ₹{startingPrice}
-          <span className="text-[10px] font-normal text-stone-400 ml-1">onwards</span>
+          ₹{price}
+          {product.productvariant?.length > 1 && (
+            <span className="text-[10px] font-normal text-stone-400 ml-1">
+              / {selectedVariant?.label}
+            </span>
+          )}
         </p>
 
-        {/* Quantity + Add to cart */}
+        {product.productvariant?.length > 1 && (
+          <div className="flex flex-wrap gap-1">
+            {product.productvariant.map((v: any) => (
+              <button
+                key={v.id}
+                onClick={() => setSelectedVariant(v)}
+                className={`text-[10px] px-2 py-1 rounded-md border transition-all ${
+                  selectedVariant?.id === v.id
+                    ? "bg-emerald-800 text-white border-emerald-800"
+                    : "bg-white border-stone-200 text-stone-500 hover:border-stone-400"
+                }`}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div className="mt-auto pt-2 space-y-2.5">
           <div className="flex items-center justify-between bg-stone-50 rounded-xl p-1 border border-stone-100">
             <button
@@ -144,4 +182,6 @@ export default function ProductCard({ product }: any) {
       </div>
     </div>
   );
-}
+});
+
+export default ProductCard;

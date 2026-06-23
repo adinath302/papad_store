@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { Mail, MapPin, Phone, ExternalLink, Headphones, ShieldCheck, Truck } from "lucide-react";
 
@@ -40,13 +38,16 @@ export default function Footer() {
 
       <div className="pt-16 pb-10">
         <div className="absolute top-16 left-1/2 -translate-x-1/2 pointer-events-none select-none">
-          <h2 className="text-[22vw] font-serif text-white/[0.02] leading-none italic">Papad</h2>
+          <h2 className="text-[18vw] font-bold text-white/[0.02] leading-none tracking-tight select-none">Shivshambho</h2>
         </div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="space-y-5">
-              <h3 className="text-xl font-serif text-white">The Papad Co.</h3>
+              <h3 className="text-xl font-serif text-white">Shivshambho</h3>
+              <p className="text-xs text-amber-500 font-semibold tracking-widest uppercase -mt-3">
+                crafted with tradition
+              </p>
               <p className="text-sm leading-relaxed max-w-xs text-stone-400">
                 Preserving the authentic taste of Indian heritage since 1984.
                 Hand-crafted with love, sun-dried to perfection.
@@ -103,10 +104,10 @@ export default function Footer() {
           </div>
 
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] tracking-[0.15em] uppercase font-semibold text-stone-500 text-center md:text-left">
-            <p>© {currentYear} The Papad Co. All rights reserved.</p>
+            <p>© {currentYear} Shivshambho. All rights reserved.</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
             </div>
           </div>
         </div>

@@ -1,9 +1,22 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
   try {
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      "unknown";
+    const rateKey = `signup:${ip}`;
+    const { allowed } = checkRateLimit(rateKey, 5, 60_000);
+    if (!allowed) {
+      return Response.json(
+        { error: "Too many sign-up attempts. Try again later." },
+        { status: 429 },
+      );
+    }
+
     const { name, email, password } = await req.json();
 
     const existing = await prisma.user.findUnique({
@@ -30,10 +43,11 @@ export async function POST(req: Request) {
 
     const cookieStore = await cookies();
     cookieStore.set("userId", user.id, {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
+      secure: process.env.NODE_ENV === "production",
     });
 
     return Response.json({
