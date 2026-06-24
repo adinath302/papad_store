@@ -8,7 +8,6 @@ import {
   Plus,
   Trash2,
   Image as ImageIcon,
-  ChevronDown,
   LogOut,
   FileText,
   Hash,
@@ -16,7 +15,6 @@ import {
   Link2,
   Pencil,
   Shield,
-  Users,
   Check,
   X as XIcon,
 } from "lucide-react";
@@ -70,15 +68,31 @@ type AdminUser = {
   name: string | null;
   email: string;
   role: string;
-  permissions: string | null;
+  permissions: Record<string, any> | null;
 };
 
-const ALL_PERMISSION_OPTIONS = [
-  { value: "products", label: "Manage Products" },
-  { value: "orders", label: "Manage Orders" },
-  { value: "dashboard", label: "View Dashboard" },
-  { value: "admins", label: "Manage Admins" },
-] as const;
+type PermissionMap = Record<string, Record<string, boolean>>;
+
+const RESOURCE_ACTIONS: Record<string, { value: string; label: string }[]> = {
+  products: [
+    { value: "view", label: "View" },
+    { value: "create", label: "Create" },
+    { value: "edit", label: "Edit" },
+    { value: "delete", label: "Delete" },
+  ],
+  orders: [
+    { value: "view", label: "View" },
+    { value: "update_status", label: "Update Status" },
+    { value: "add_tracking", label: "Add Tracking" },
+  ],
+  dashboard: [{ value: "view", label: "View" }],
+};
+
+const RESOURCE_LABELS: Record<string, string> = {
+  products: "Products",
+  orders: "Orders",
+  dashboard: "Dashboard",
+};
 
 const statusStyles: Record<string, string> = {
   PENDING: "bg-amber-50 text-amber-700 ring-1 ring-amber-200",
@@ -97,13 +111,13 @@ export default function AdminPage() {
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isOwner, setIsOwner] = useState(false);
+  const [currentPerms, setCurrentPerms] = useState<PermissionMap | null>(null);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
   const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [addAdminEmail, setAddAdminEmail] = useState("");
-  const [addAdminPermissions, setAddAdminPermissions] = useState<string[]>([]);
+  const [addAdminPermissions, setAddAdminPermissions] = useState<PermissionMap>({});
   const [editingAdminId, setEditingAdminId] = useState<string | null>(null);
-  const [editingPerms, setEditingPerms] = useState<string[]>([]);
-  const [adminsLoading, setAdminsLoading] = useState(false);
+  const [editingPerms, setEditingPerms] = useState<PermissionMap>({});
 
   const [form, setForm] = useState({
     name: "",
@@ -156,6 +170,7 @@ export default function AdminPage() {
       const meData = await meRes.json();
       const isOwnerUser = meData.user?.isOwner;
       setIsOwner(isOwnerUser);
+      setCurrentPerms(meData.user?.permissions || null);
 
       await Promise.all([fetchProducts(), fetchOrders()]);
       if (isOwnerUser) await fetchAdmins();
@@ -163,6 +178,11 @@ export default function AdminPage() {
     };
     init();
   }, [fetchProducts, fetchOrders]);
+
+  const hasPerm = (resource: string, action: string): boolean => {
+    if (isOwner) return true;
+    return currentPerms?.[resource]?.[action] === true;
+  };
 
   const addAdmin = async () => {
     if (!addAdminEmail.trim()) return;
@@ -178,7 +198,7 @@ export default function AdminPage() {
       toast("Admin added successfully!", "success");
       setShowAddAdmin(false);
       setAddAdminEmail("");
-      setAddAdminPermissions([]);
+      setAddAdminPermissions({});
       fetchAdmins();
     } else {
       const err = await res.json();
@@ -195,7 +215,7 @@ export default function AdminPage() {
     if (res.ok) {
       toast("Permissions updated!", "success");
       setEditingAdminId(null);
-      setEditingPerms([]);
+      setEditingPerms({});
       fetchAdmins();
     } else {
       const err = await res.json();
@@ -217,10 +237,25 @@ export default function AdminPage() {
     }
   };
 
-  const togglePerm = (perms: string[], perm: string): string[] => {
-    return perms.includes(perm)
-      ? perms.filter((p) => p !== perm)
-      : [...perms, perm];
+  const toggleResourceAction = (
+    perms: PermissionMap,
+    resource: string,
+    action: string,
+  ): PermissionMap => {
+    const updated = { ...perms };
+    if (!updated[resource]) {
+      updated[resource] = {};
+    }
+    if (updated[resource][action]) {
+      const { [action]: _, ...rest } = updated[resource];
+      updated[resource] = rest;
+      if (Object.keys(updated[resource]).length === 0) {
+        delete updated[resource];
+      }
+    } else {
+      updated[resource] = { ...updated[resource], [action]: true };
+    }
+    return updated;
   };
 
   const OWNER_EMAIL = "shivshambho@gmail.com";
@@ -372,15 +407,55 @@ export default function AdminPage() {
     },
   ];
 
-  const baseTabs: { id: Tab; label: string; icon: React.ElementType }[] = [
-    { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-    { id: "products", label: "Products", icon: Package },
-    { id: "orders", label: "Orders", icon: ShoppingBag },
-  ];
+  const baseTabs: { id: Tab; label: string; icon: React.ElementType }[] = [];
+  if (isOwner || hasPerm("dashboard", "view")) {
+    baseTabs.push({ id: "dashboard", label: "Dashboard", icon: LayoutDashboard });
+  }
+  if (isOwner || hasPerm("products", "view")) {
+    baseTabs.push({ id: "products", label: "Products", icon: Package });
+  }
+  if (isOwner || hasPerm("orders", "view")) {
+    baseTabs.push({ id: "orders", label: "Orders", icon: ShoppingBag });
+  }
 
   const tabs = isOwner
     ? [...baseTabs, { id: "users" as Tab, label: "Users", icon: Shield }]
     : baseTabs;
+
+  const renderActionCheckboxes = (
+    perms: PermissionMap,
+    onChange: (resource: string, action: string) => void,
+  ) => (
+    <div className="space-y-3">
+      {Object.entries(RESOURCE_ACTIONS).map(([resource, actions]) => (
+        <div key={resource}>
+          <p className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-1.5">
+            {RESOURCE_LABELS[resource]}
+          </p>
+          <div className="flex flex-wrap gap-1.5">
+            {actions.map((act) => {
+              const enabled = perms[resource]?.[act.value] === true;
+              return (
+                <button
+                  key={act.value}
+                  type="button"
+                  onClick={() => onChange(resource, act.value)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                    enabled
+                      ? "bg-emerald-800 text-white"
+                      : "bg-stone-100 text-stone-500 hover:bg-stone-200"
+                  }`}
+                >
+                  {enabled && <Check size={10} strokeWidth={3} />}
+                  {act.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="flex min-h-screen bg-stone-50">
@@ -578,16 +653,18 @@ export default function AdminPage() {
                       {products.length} product{products.length !== 1 ? "s" : ""} • Manage your catalog
                     </p>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (showForm && editingProductId) resetForm();
-                      setShowForm(!showForm);
-                    }}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all shadow-sm"
-                  >
-                    <Plus size={15} strokeWidth={2.5} />
-                    {showForm ? "Cancel" : "Add Product"}
-                  </button>
+                  {(isOwner || hasPerm("products", "create")) && (
+                    <button
+                      onClick={() => {
+                        if (showForm && editingProductId) resetForm();
+                        setShowForm(!showForm);
+                      }}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all shadow-sm"
+                    >
+                      <Plus size={15} strokeWidth={2.5} />
+                      {showForm ? "Cancel" : "Add Product"}
+                    </button>
+                  )}
                 </div>
 
                 {/* Add / Edit Product Form */}
@@ -833,20 +910,24 @@ export default function AdminPage() {
                                 {product.stock ?? "—"}
                               </td>
                               <td className="px-5 py-4 text-right whitespace-nowrap">
-                                <button
-                                  onClick={() => handleEdit(product)}
-                                  className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all mr-1"
-                                  title="Edit product"
-                                >
-                                  <Pencil size={15} />
-                                </button>
-                                <button
-                                  onClick={() => deleteProduct(product.id)}
-                                  className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                  title="Delete product"
-                                >
-                                  <Trash2 size={15} />
-                                </button>
+                                {(isOwner || hasPerm("products", "edit")) && (
+                                  <button
+                                    onClick={() => handleEdit(product)}
+                                    className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all mr-1"
+                                    title="Edit product"
+                                  >
+                                    <Pencil size={15} />
+                                  </button>
+                                )}
+                                {(isOwner || hasPerm("products", "delete")) && (
+                                  <button
+                                    onClick={() => deleteProduct(product.id)}
+                                    className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                    title="Delete product"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                )}
                               </td>
                             </tr>
                           ))}
@@ -859,20 +940,21 @@ export default function AdminPage() {
                       <p className="text-stone-400 text-sm mb-4">
                         No products yet
                       </p>
-                      <button
-                        onClick={() => { resetForm(); setShowForm(true); }}
-                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all shadow-sm"
-                      >
-                        <Plus size={15} strokeWidth={2.5} />
-                        Add Your First Product
-                      </button>
+                      {(isOwner || hasPerm("products", "create")) && (
+                        <button
+                          onClick={() => { resetForm(); setShowForm(true); }}
+                          className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all shadow-sm"
+                        >
+                          <Plus size={15} strokeWidth={2.5} />
+                          Add Your First Product
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
             )}
 
-            {/* Orders Tab */}
             {/* Users Tab */}
             {activeTab === "users" && isOwner && (
               <div>
@@ -910,31 +992,13 @@ export default function AdminPage() {
                       />
                       <div>
                         <p className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">
-                          Permissions
+                          Granular Permissions
                         </p>
-                        <div className="flex flex-wrap gap-2">
-                          {ALL_PERMISSION_OPTIONS.map((opt) => (
-                            <button
-                              key={opt.value}
-                              type="button"
-                              onClick={() =>
-                                setAddAdminPermissions(
-                                  togglePerm(addAdminPermissions, opt.value),
-                                )
-                              }
-                              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                                addAdminPermissions.includes(opt.value)
-                                  ? "bg-emerald-800 text-white"
-                                  : "bg-stone-100 text-stone-600 hover:bg-stone-200"
-                              }`}
-                            >
-                              {addAdminPermissions.includes(opt.value) ? (
-                                <Check size={12} strokeWidth={3} />
-                              ) : null}
-                              {opt.label}
-                            </button>
-                          ))}
-                        </div>
+                        {renderActionCheckboxes(addAdminPermissions, (resource, action) =>
+                          setAddAdminPermissions((prev) =>
+                            toggleResourceAction(prev, resource, action),
+                          ),
+                        )}
                       </div>
                       <button
                         onClick={addAdmin}
@@ -977,10 +1041,8 @@ export default function AdminPage() {
                         ) : (
                           admins.map((admin) => {
                             const isOwnerUser = admin.email === OWNER_EMAIL;
-                            const permList = admin.permissions
-                              ? admin.permissions.split(",")
-                              : [];
                             const isEditing = editingAdminId === admin.id;
+                            const permMap: PermissionMap = admin.permissions || {};
 
                             return (
                               <tr
@@ -1004,45 +1066,40 @@ export default function AdminPage() {
                                 </td>
                                 <td className="px-5 py-4">
                                   {isEditing ? (
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {ALL_PERMISSION_OPTIONS.map((opt) => (
-                                        <button
-                                          key={opt.value}
-                                          type="button"
-                                          onClick={() =>
-                                            setEditingPerms(
-                                              togglePerm(editingPerms, opt.value),
-                                            )
-                                          }
-                                          className={`text-[11px] px-2 py-1 rounded-lg font-semibold transition-all ${
-                                            editingPerms.includes(opt.value)
-                                              ? "bg-emerald-800 text-white"
-                                              : "bg-stone-100 text-stone-500 hover:bg-stone-200"
-                                          }`}
-                                        >
-                                          {opt.label}
-                                        </button>
-                                      ))}
-                                    </div>
+                                    renderActionCheckboxes(editingPerms, (resource, action) =>
+                                      setEditingPerms((prev) =>
+                                        toggleResourceAction(prev, resource, action),
+                                      ),
+                                    )
                                   ) : (
-                                    <div className="flex flex-wrap gap-1.5">
+                                    <div className="flex flex-col gap-1.5">
                                       {isOwnerUser ? (
                                         <span className="text-[11px] text-amber-700 font-semibold">
                                           All permissions
                                         </span>
-                                      ) : permList.length > 0 ? (
-                                        permList.map((p) => {
-                                          const opt = ALL_PERMISSION_OPTIONS.find(
-                                            (o) => o.value === p,
+                                      ) : Object.keys(permMap).length > 0 ? (
+                                        Object.entries(permMap).map(([resource, actions]) => {
+                                          const actionEntries = Object.entries(actions || {}).filter(
+                                            ([, val]) => val === true,
                                           );
-                                          return opt ? (
-                                            <span
-                                              key={p}
-                                              className="inline-flex items-center px-2.5 py-1 bg-stone-100 text-stone-700 rounded-lg text-[11px] font-medium"
-                                            >
-                                              {opt.label}
-                                            </span>
-                                          ) : null;
+                                          if (actionEntries.length === 0) return null;
+                                          return (
+                                            <div key={resource} className="flex items-center gap-1.5">
+                                              <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 min-w-[60px]">
+                                                {RESOURCE_LABELS[resource] || resource}
+                                              </span>
+                                              <div className="flex flex-wrap gap-1">
+                                                {actionEntries.map(([action]) => (
+                                                  <span
+                                                    key={action}
+                                                    className="inline-flex items-center px-2 py-0.5 bg-stone-100 text-stone-600 rounded text-[10px] font-medium"
+                                                  >
+                                                    {action.replace(/_/g, " ")}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          );
                                         })
                                       ) : (
                                         <span className="text-[11px] text-stone-400">
@@ -1069,7 +1126,7 @@ export default function AdminPage() {
                                       <button
                                         onClick={() => {
                                           setEditingAdminId(null);
-                                          setEditingPerms([]);
+                                          setEditingPerms({});
                                         }}
                                         className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-all"
                                         title="Cancel"
@@ -1082,7 +1139,7 @@ export default function AdminPage() {
                                       <button
                                         onClick={() => {
                                           setEditingAdminId(admin.id);
-                                          setEditingPerms(permList);
+                                          setEditingPerms(permMap);
                                         }}
                                         className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all mr-1"
                                         title="Edit permissions"
@@ -1136,14 +1193,11 @@ export default function AdminPage() {
                             <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">
                               Subtotal
                             </th>
-                            <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">
+                            <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">
                               Shipping
                             </th>
                             <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">
                               Total
-                            </th>
-                            <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden lg:table-cell">
-                              Shipping
                             </th>
                             <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">
                               Payment
@@ -1191,11 +1245,18 @@ export default function AdminPage() {
                               <td className="px-5 py-4 text-stone-600 hidden sm:table-cell">
                                 ₹{order.totalAmount - order.shippingCost}
                               </td>
-                              <td className="px-5 py-4 text-stone-600 hidden lg:table-cell">
-                                {order.shippingCost > 0 ? (
-                                  <span>₹{order.shippingCost}</span>
-                                ) : (
-                                  <span className="text-emerald-600 text-[11px] font-medium">Free</span>
+                              <td className="px-5 py-4 text-stone-600">
+                                <div>
+                                  {order.shippingCost > 0 ? (
+                                    <span className="font-semibold">₹{order.shippingCost}</span>
+                                  ) : (
+                                    <span className="text-emerald-600 text-[11px] font-medium">Free</span>
+                                  )}
+                                </div>
+                                {order.courierName && (
+                                  <p className="text-[10px] text-stone-400 mt-0.5 truncate max-w-[130px]" title={order.courierName}>
+                                    {order.courierName}
+                                  </p>
                                 )}
                               </td>
                               <td className="px-5 py-4 font-bold text-stone-800">
@@ -1237,20 +1298,31 @@ export default function AdminPage() {
                                   </div>
                                 ) : (
                                   <div className="space-y-1">
-                                    <select
-                                      value={order.status}
-                                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                                      className={`text-[11px] font-bold px-3 py-1.5 rounded-full border-0 cursor-pointer outline-none ${
-                                        statusStyles[order.status] || "bg-stone-100 text-stone-600"
-                                      }`}
-                                    >
-                                      <option value="PENDING">Pending</option>
-                                      <option value="CONFIRMED">Confirmed</option>
-                                      <option value="SHIPPED">Shipped</option>
-                                      <option value="DELIVERED">Delivered</option>
-                                      <option value="CANCELLED">Cancelled</option>
-                                    </select>
-                                    {(order.status === "PENDING" || order.status === "CONFIRMED") && !order.trackingId && (
+                                    {(isOwner || hasPerm("orders", "update_status")) ? (
+                                      <select
+                                        value={order.status}
+                                        onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                                        className={`text-[11px] font-bold px-3 py-1.5 rounded-full border-0 cursor-pointer outline-none ${
+                                          statusStyles[order.status] || "bg-stone-100 text-stone-600"
+                                        }`}
+                                      >
+                                        <option value="PENDING">Pending</option>
+                                        <option value="CONFIRMED">Confirmed</option>
+                                        <option value="SHIPPED">Shipped</option>
+                                        <option value="DELIVERED">Delivered</option>
+                                        <option value="CANCELLED">Cancelled</option>
+                                      </select>
+                                    ) : (
+                                      <span
+                                        className={`inline-block px-3 py-1 rounded-full text-[11px] font-bold ${
+                                          statusStyles[order.status] || "bg-stone-100 text-stone-600"
+                                        }`}
+                                      >
+                                        {order.status}
+                                      </span>
+                                    )}
+                                    {(isOwner || hasPerm("orders", "add_tracking")) &&
+                                      (order.status === "PENDING" || order.status === "CONFIRMED") && !order.trackingId && (
                                       <button
                                         onClick={() => { setShippingOrderId(order.id); setShipTracking(""); }}
                                         className="block text-[10px] font-semibold text-emerald-700 hover:text-emerald-600 hover:underline mt-1"

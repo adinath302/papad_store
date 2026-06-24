@@ -30,6 +30,7 @@ export async function GET() {
         name: true,
         email: true,
         role: true,
+        permissions: true,
       },
     });
 
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { email } = body;
+    const { email, permissions } = body;
 
     if (!email) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
@@ -66,12 +67,16 @@ export async function POST(req: NextRequest) {
 
     const updated = await prisma.user.update({
       where: { email },
-      data: { role: "ADMIN" },
+      data: {
+        role: "ADMIN",
+        permissions: permissions || null,
+      },
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
+        permissions: true,
       },
     });
 

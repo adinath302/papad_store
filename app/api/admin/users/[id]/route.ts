@@ -1,7 +1,8 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { isOwner, ALL_PERMISSIONS } from "@/lib/permissions";
+import { isOwner } from "@/lib/permissions";
 import { cookies } from "next/headers";
+import { Prisma } from "@prisma/client";
 
 async function getCurrentUser() {
   const cookieStore = await cookies();
@@ -31,15 +32,10 @@ export async function PATCH(
     const body = await req.json();
     const { permissions } = body;
 
-    const validPermissions = (permissions as string[]) || [];
-    const filtered = validPermissions.filter((p) =>
-      ALL_PERMISSIONS.includes(p as any),
-    );
-
     const updated = await prisma.user.update({
       where: { id },
       data: {
-        permissions: filtered.length > 0 ? filtered.join(",") : null,
+        permissions: permissions || null,
       },
       select: {
         id: true,
@@ -84,7 +80,7 @@ export async function DELETE(
 
     await prisma.user.update({
       where: { id },
-      data: { role: "USER", permissions: null },
+      data: { role: "USER", permissions: Prisma.DbNull },
     });
 
     return NextResponse.json({ success: true });

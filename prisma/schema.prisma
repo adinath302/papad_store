@@ -111,7 +111,7 @@ model user {
   email               String     @unique(map: "User_email_key")
   password            String
   role                Role       @default(USER)
-  permissions         String?
+  permissions         Json?
   address             address[]
   cartitem            cartitem[]
   order               order[]

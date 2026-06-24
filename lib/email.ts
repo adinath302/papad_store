@@ -199,3 +199,83 @@ export async function sendCustomerOrderConfirmation(
     console.error("Failed to send customer confirmation:", error);
   }
 }
+
+type ShippingEmailData = {
+  orderId: string;
+  fullName: string;
+  courierName: string;
+  trackingId: string;
+  items: { name: string; quantity: number }[];
+};
+
+export async function sendCustomerShippingNotification(
+  email: string,
+  data: ShippingEmailData,
+) {
+  const transporter = getTransporter();
+  if (!transporter || !email) return;
+
+  const itemsHtml = data.items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;">${item.name}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;text-align:center;">${item.quantity}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+      <div style="background:#065f46;padding:24px;border-radius:12px 12px 0 0;text-align:center;">
+        <div style="font-size:40px;margin-bottom:8px;">🚚</div>
+        <h1 style="color:#fff;margin:0;font-size:20px;">Your Order Has Been Shipped!</h1>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e5e5;border-top:0;padding:24px;border-radius:0 0 12px 12px;">
+        <p style="color:#333;font-size:14px;">Hi <strong>${data.fullName}</strong>,</p>
+        <p style="color:#666;font-size:13px;">Your order is on its way! Here are the shipping details:</p>
+
+        <table style="width:100%;border-collapse:collapse;margin:16px 0;">
+          <tr>
+            <td style="padding:8px 0;color:#888;font-size:13px;">Order ID</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;">#${data.orderId.slice(0, 12).toUpperCase()}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#888;font-size:13px;">Courier</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;">${data.courierName}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#888;font-size:13px;">Tracking ID</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;letter-spacing:1px;">${data.trackingId}</td>
+          </tr>
+        </table>
+
+        <h3 style="font-size:14px;margin:16px 0 8px;color:#333;">Items in this shipment</h3>
+        <table style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr style="background:#f5f5f5;">
+              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">Product</th>
+              <th style="padding:8px 12px;text-align:center;font-size:12px;color:#666;">Qty</th>
+            </tr>
+          </thead>
+          <tbody>${itemsHtml}</tbody>
+        </table>
+
+        <p style="margin-top:20px;font-size:12px;color:#999;text-align:center;">
+          Track your order anytime in your account.
+        </p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to: email,
+      subject: `🚚 Order Shipped #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send shipping notification:", error);
+  }
+}

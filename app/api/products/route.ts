@@ -1,5 +1,18 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { can } from "@/lib/permissions";
+import { cookies } from "next/headers";
+
+async function getCurrentUser() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+  if (!userId) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, role: true, permissions: true },
+  });
+  return user;
+}
 
 export async function GET() {
   try {
@@ -25,6 +38,14 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || currentUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!can(currentUser.permissions, "products", "create")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await req.json();
 
     const product = await prisma.product.create({

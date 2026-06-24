@@ -1,8 +1,30 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { can, isOwner } from "@/lib/permissions";
+import { cookies } from "next/headers";
+import { sendCustomerShippingNotification } from "@/lib/email";
+
+async function getCurrentUser() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get("userId")?.value;
+  if (!userId) return null;
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, email: true, role: true, permissions: true },
+  });
+  return user;
+}
 
 export async function GET() {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || currentUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    if (!isOwner(currentUser.email) && !can(currentUser.permissions, "orders", "view")) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const orders = await prisma.order.findMany({
       include: {
         orderitem: {
@@ -25,6 +47,11 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser || currentUser.role !== "ADMIN") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id, status, courierName, trackingId } = await req.json();
     if (!id) {
       return NextResponse.json(
@@ -32,6 +59,15 @@ export async function PATCH(req: Request) {
         { status: 400 },
       );
     }
+
+    if (status && !can(currentUser.permissions, "orders", "update_status")) {
+      return NextResponse.json({ error: "Forbidden: cannot update order status" }, { status: 403 });
+    }
+
+    if ((courierName !== undefined || trackingId !== undefined) && !can(currentUser.permissions, "orders", "add_tracking")) {
+      return NextResponse.json({ error: "Forbidden: cannot add tracking info" }, { status: 403 });
+    }
+
     const data: any = {};
     if (status) data.status = status;
     if (courierName !== undefined) data.courierName = courierName;
@@ -40,7 +76,30 @@ export async function PATCH(req: Request) {
     const order = await prisma.order.update({
       where: { id },
       data,
+      include: {
+        orderitem: { include: { product: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
     });
+
+    const shouldNotify =
+      order.trackingId &&
+      order.trackingId !== "PENDING" &&
+      (data.trackingId !== undefined || data.status === "SHIPPED");
+
+    if (shouldNotify && order.user?.email) {
+      sendCustomerShippingNotification(order.user.email, {
+        orderId: order.id,
+        fullName: order.fullName,
+        courierName: order.courierName || "",
+        trackingId: order.trackingId || "",
+        items: order.orderitem.map((oi) => ({
+          name: oi.product.name,
+          quantity: oi.quantity,
+        })),
+      }).catch((e) => console.error("Shipping email error:", e));
+    }
+
     return NextResponse.json(order);
   } catch (error: any) {
     return NextResponse.json(

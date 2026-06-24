@@ -216,6 +216,7 @@ export default function CheckoutPage() {
 
   const handleRazorpayPayment = useCallback(async () => {
     const body: any = { state: form.state };
+    if (selectedCourier) body.shippingCost = selectedCourier.rate;
     if (isGuest) {
       const guestItems = getGuestCart();
       body.guestItems = guestItems.map((gi) => ({
@@ -255,7 +256,10 @@ export default function CheckoutPage() {
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
             };
-            if (selectedCourier) checkoutBody.shippingMethod = selectedCourier.service;
+            if (selectedCourier) {
+              checkoutBody.shippingMethod = selectedCourier.service;
+              checkoutBody.shippingCost = selectedCourier.rate;
+            }
             if (isGuest) {
               const guestItems = getGuestCart();
               checkoutBody.guestItems = guestItems.map((gi) => ({
@@ -335,7 +339,10 @@ export default function CheckoutPage() {
 
     try {
       const body: any = { ...form };
-      if (selectedCourier) body.shippingMethod = selectedCourier.service;
+      if (selectedCourier) {
+        body.shippingMethod = selectedCourier.service;
+        body.shippingCost = selectedCourier.rate;
+      }
       if (isGuest) {
         const guestItems = getGuestCart();
         body.guestItems = guestItems.map((gi) => ({

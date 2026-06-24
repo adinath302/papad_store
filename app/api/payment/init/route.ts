@@ -23,8 +23,8 @@ export async function POST(req: Request) {
   }
 
   try {
-    const body = userId ? {} : await req.json();
-    const { state, guestItems } = body;
+    const body = await req.json();
+    const { state, guestItems, shippingCost: clientShippingCost } = body;
 
     let subtotal = 0;
 
@@ -94,7 +94,7 @@ export async function POST(req: Request) {
       }
     }
 
-    const shippingCost = calculateShippingFee(subtotal, state);
+    const shippingCost = clientShippingCost ?? calculateShippingFee(subtotal, state);
     const totalAmount = subtotal + shippingCost;
 
     const receipt = `rcpt_${Date.now()}`;

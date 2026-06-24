@@ -28,6 +28,7 @@ export async function POST(req: Request) {
       razorpaySignature,
       guestItems,
       shippingMethod,
+      shippingCost: clientShippingCost,
     } = body;
 
     if (
@@ -139,7 +140,7 @@ export async function POST(req: Request) {
       return sum + price * item.quantity;
     }, 0);
 
-    const shippingCost = calculateShippingFee(subtotal, state);
+    const shippingCost = clientShippingCost ?? calculateShippingFee(subtotal, state);
     const totalAmount = subtotal + shippingCost;
 
     const order = await prisma.order.create({
