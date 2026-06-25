@@ -17,7 +17,6 @@ import { SkeletonOrderConfirmation } from "@/components/Skeleton/Skeleton";
 type Order = {
   id: string;
   totalAmount: number;
-  shippingCost: number;
   trackingId: string | null;
   courierName: string | null;
   status: string;
@@ -122,19 +121,7 @@ export default function OrderConfirmationPage() {
           </div>
 
           <div className="mt-6 pt-6 border-t border-stone-100 space-y-2">
-            <div className="flex items-center justify-between text-sm text-stone-500">
-              <span>Subtotal</span>
-              <span>₹{order.totalAmount - order.shippingCost}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm text-stone-500">
-              <span>Shipping</span>
-              {order.shippingCost > 0 ? (
-                <span>₹{order.shippingCost}</span>
-              ) : (
-                <span className="text-emerald-600 font-medium">Free</span>
-              )}
-            </div>
-            <div className="flex items-center justify-between font-semibold text-stone-900 pt-2 border-t border-stone-100">
+            <div className="flex items-center justify-between font-semibold text-stone-900">
               <span>Total Paid</span>
               <span className="text-2xl font-bold">₹{order.totalAmount}</span>
             </div>

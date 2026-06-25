@@ -1,26 +1,20 @@
-"use client";
-
-import { motion } from "framer-motion";
-import { Phone, Mail, MapPin, Clock, Headphones } from "lucide-react";
+import { Phone, Mail, MapPin, Headphones } from "lucide-react";
 import Link from "next/link";
 
 const contactDetails = [
   {
-    icon: Phone,
     label: "Phone",
     value: "+91 78229 01803",
     href: "tel:+917822901803",
     description: "Available Mon–Sat, 10 AM – 7 PM",
   },
   {
-    icon: Mail,
     label: "Email",
     value: "hello@papadcompany.com",
     href: "mailto:hello@papadcompany.com",
     description: "We reply within 24 hours",
   },
   {
-    icon: MapPin,
     label: "Office",
     value: "123 Spice Route, Heritage Lane, Rajasthan, India",
     href: "https://maps.google.com/?q=Rajasthan+India",
@@ -48,58 +42,45 @@ export default function ContactPage() {
     <div className="min-h-screen pt-28 pb-16 bg-[#faf8f5]">
       {/* Header */}
       <div className="text-center px-6 mb-14">
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-xs font-bold tracking-[0.2em] uppercase text-emerald-700 mb-4"
-        >
+        <p className="text-xs font-bold tracking-[0.2em] uppercase text-emerald-700 mb-4 animate-fade-in">
           Get in Touch
-        </motion.p>
-        <motion.h1
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
-          className="text-4xl md:text-5xl font-serif text-stone-900 mb-4"
-        >
+        </p>
+        <h1 className="text-4xl md:text-5xl font-serif text-stone-900 mb-4 animate-fade-in [animation-delay:80ms]">
           We&apos;d love to hear from you
-        </motion.h1>
-        <motion.p
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.15 }}
-          className="text-stone-500 max-w-lg mx-auto text-sm leading-relaxed"
-        >
+        </h1>
+        <p className="text-stone-500 max-w-lg mx-auto text-sm leading-relaxed animate-fade-in [animation-delay:150ms]">
           Whether you have a question about our papads, need help with an order, or just want to say namaste — we&apos;re here for you.
-        </motion.p>
+        </p>
       </div>
 
       {/* Contact Cards */}
       <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
-        {contactDetails.map((item, i) => (
-          <motion.a
-            key={item.label}
-            href={item.href}
-            target={item.label === "Office" ? "_blank" : undefined}
-            rel={item.label === "Office" ? "noopener noreferrer" : undefined}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 * i }}
-            className="group bg-white border border-stone-200 rounded-2xl p-6 hover:border-emerald-200 hover:shadow-md transition-all"
-          >
-            <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-800 mb-4 group-hover:bg-emerald-800 group-hover:text-white transition-all">
-              <item.icon size={20} />
-            </div>
-            <h3 className="text-sm font-bold tracking-wider uppercase text-stone-500 mb-1">
-              {item.label}
-            </h3>
-            <p className="text-stone-900 font-semibold text-sm mb-1">
-              {item.value}
-            </p>
-            <p className="text-stone-400 text-xs">
-              {item.description}
-            </p>
-          </motion.a>
-        ))}
+        {contactDetails.map((item, i) => {
+          const Icon = item.label === "Phone" ? Phone : item.label === "Email" ? Mail : MapPin;
+          return (
+            <a
+              key={item.label}
+              href={item.href}
+              target={item.label === "Office" ? "_blank" : undefined}
+              rel={item.label === "Office" ? "noopener noreferrer" : undefined}
+              className="group bg-white border border-stone-200 rounded-2xl p-6 hover:border-emerald-200 hover:shadow-md transition-all animate-fade-in"
+              style={{ animationDelay: `${i * 100}ms` }}
+            >
+              <div className="w-11 h-11 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-800 mb-4 group-hover:bg-emerald-800 group-hover:text-white transition-all">
+                <Icon size={20} />
+              </div>
+              <h3 className="text-sm font-bold tracking-wider uppercase text-stone-500 mb-1">
+                {item.label}
+              </h3>
+              <p className="text-stone-900 font-semibold text-sm mb-1">
+                {item.value}
+              </p>
+              <p className="text-stone-400 text-xs">
+                {item.description}
+              </p>
+            </a>
+          );
+        })}
       </div>
 
       {/* Support Section */}

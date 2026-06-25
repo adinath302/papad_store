@@ -36,22 +36,27 @@ export default async function ProductPage({
     where.stock = { gt: 0 };
   }
 
-  const products = await prisma.product.findMany({
-    where,
-    include: { productvariant: true },
-  });
+  let products: any[] = [];
+  try {
+    products = await prisma.product.findMany({
+      where,
+      include: { productvariant: true },
+    });
+  } catch {
+    // Database may be unavailable during build
+  }
 
   if (sort === "price_asc") {
     products.sort(
-      (a, b) =>
-        Math.min(...a.productvariant.map((v) => v.price)) -
-        Math.min(...b.productvariant.map((v) => v.price)),
+      (a: any, b: any) =>
+        Math.min(...a.productvariant.map((v: any) => v.price)) -
+        Math.min(...b.productvariant.map((v: any) => v.price)),
     );
   } else if (sort === "price_desc") {
     products.sort(
-      (a, b) =>
-        Math.min(...b.productvariant.map((v) => v.price)) -
-        Math.min(...a.productvariant.map((v) => v.price)),
+      (a: any, b: any) =>
+        Math.min(...b.productvariant.map((v: any) => v.price)) -
+        Math.min(...a.productvariant.map((v: any) => v.price)),
     );
   }
 

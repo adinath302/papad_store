@@ -9,10 +9,15 @@ export default async function ProductDetailsPage({
 }) {
   const { id } = await params;
 
-  const product = await prisma.product.findUnique({
-    where: { id },
-    include: { productvariant: true },
-  });
+  let product: any = null;
+  try {
+    product = await prisma.product.findUnique({
+      where: { id },
+      include: { productvariant: true },
+    });
+  } catch {
+    // Database may be unavailable during build
+  }
 
   if (!product) {
     return (
@@ -32,11 +37,16 @@ export default async function ProductDetailsPage({
     );
   }
 
-  const allProducts = await prisma.product.findMany({
-    where: { id: { not: id } },
-    include: { productvariant: true },
-    take: 8,
-  });
+  let allProducts: any[] = [];
+  try {
+    allProducts = await prisma.product.findMany({
+      where: { id: { not: id } },
+      include: { productvariant: true },
+      take: 8,
+    });
+  } catch {
+    // Database may be unavailable during build
+  }
 
   return (
     <ProductDetails product={product} relatedProducts={allProducts} />

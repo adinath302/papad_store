@@ -5,6 +5,7 @@ import {
   useContext,
   useState,
   useCallback,
+  useMemo,
   type ReactNode,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -76,8 +77,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     [removeToast],
   );
 
+  const ctxValue = useMemo(() => ({ toast }), [toast]);
+
   return (
-    <ToastContext.Provider value={{ toast }}>
+    <ToastContext.Provider value={ctxValue}>
       {children}
 
       <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-3 pointer-events-none w-full max-w-[420px] px-4">

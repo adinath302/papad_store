@@ -16,7 +16,7 @@ import {
   Truck,
   RefreshCw,
 } from "lucide-react";
-import { addToGuestCart, isLoggedIn } from "@/lib/guest-cart";
+import { addToGuestCart, isLoggedIn, notifyCartUpdate } from "@/lib/guest-cart";
 import { useToast } from "@/components/Toast/ToastProvider";
 
 export default function ProductDetails({
@@ -67,6 +67,7 @@ export default function ProductDetails({
       } else {
         setAdded(true);
         setTimeout(() => setAdded(false), 2000);
+        notifyCartUpdate();
       }
     } catch {
       toast("Something went wrong.", "error");

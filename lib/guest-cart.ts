@@ -19,9 +19,15 @@ export function getGuestCart(): GuestCartItem[] {
   }
 }
 
+export function notifyCartUpdate() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("cart-updated"));
+}
+
 export function setGuestCart(items: GuestCartItem[]) {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+  notifyCartUpdate();
 }
 
 export function addToGuestCart(item: GuestCartItem) {
@@ -68,6 +74,7 @@ export function updateGuestCartQuantity(
 export function clearGuestCart() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(STORAGE_KEY);
+  notifyCartUpdate();
 }
 
 export function isLoggedIn(): boolean {

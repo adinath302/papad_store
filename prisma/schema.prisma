@@ -85,6 +85,7 @@ model product {
   thumbnail      String?
   productType    String           @default("weight")
   cartitem       cartitem[]
+  wishlistitem   wishlistitem[]
   orderitem      orderitem[]
   productvariant productvariant[]
 }
@@ -114,8 +115,35 @@ model user {
   permissions         Json?
   address             address[]
   cartitem            cartitem[]
+  wishlistitem        wishlistitem[]
   order               order[]
   passwordresettoken  passwordresettoken?
+}
+
+model wishlistitem {
+  id        String   @id @default(cuid())
+  userId    String?
+  productId String
+  product   product  @relation(fields: [productId], references: [id], map: "WishlistItem_productId_fkey")
+  user      user?    @relation(fields: [userId], references: [id], map: "WishlistItem_userId_fkey")
+  createdAt DateTime @default(now())
+
+  @@index([userId], map: "WishlistItem_userId_idx")
+  @@index([productId], map: "WishlistItem_productId_idx")
+}
+
+model coupon {
+  id            String   @id @default(cuid())
+  code          String   @unique(map: "Coupon_code_key")
+  type          String
+  value         Int
+  minCartValue  Int?
+  maxDiscount   Int?
+  usageLimit    Int?
+  usedCount     Int      @default(0)
+  expiresAt     DateTime?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 }
 
 model passwordresettoken {

@@ -3,30 +3,49 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCartCount } from "@/lib/cart-context";
+
 
 const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const cartCount = useCartCount();
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll);
+    let ticking = false;
+    const handleScroll = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   useEffect(() => {
-    fetch("/api/auth/me")
+    const cached = sessionStorage.getItem("nav_auth");
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        if (data.isAdmin) setIsAdmin(true);
+        return;
+      } catch {}
+    }
+    const controller = new AbortController();
+    fetch("/api/auth/me", { signal: controller.signal })
       .then((r) => r.json())
       .then((data) => {
-        if (data.user) {
-          setIsLoggedIn(true);
-          if (data.user.isAdmin) setIsAdmin(true);
-        }
+        const isAdminUser = data.user?.isAdmin === true;
+        setIsAdmin(isAdminUser);
+        sessionStorage.setItem("nav_auth", JSON.stringify({ isAdmin: isAdminUser }));
       })
       .catch(() => {});
+    return () => controller.abort();
   }, []);
 
   const navItems = [
@@ -115,7 +134,11 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
                   d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
                 />
               </svg>
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-amber-500 rounded-full border-2 border-white" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold leading-none min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white px-1">
+                  {cartCount > 99 ? "99+" : cartCount}
+                </span>
+              )}
             </button>
 
             {isAdmin && (
@@ -164,24 +187,19 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
       </div>
 
       {/* Mobile drawer */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-stone-900/60 backdrop-blur-sm z-[60] md:hidden"
-            />
+      {isOpen && (
+        <>
+          <div
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 z-[60] md:hidden"
+            style={{ backgroundColor: "rgba(0,0,0,0.65)" }}
+          />
 
-            <motion.div
-              initial={{ x: "-100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "-100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 left-0 w-[300px] bg-white z-[70] shadow-2xl p-8 md:hidden flex flex-col border-r border-stone-200"
-            >
+          <div
+            className="fixed inset-y-0 left-0 w-[300px] z-[70] shadow-2xl md:hidden flex flex-col"
+            style={{ backgroundColor: "#ffffff" }}
+          >
+            <div className="p-8 flex flex-col min-h-0 flex-1">
               <div className="flex justify-between items-center mb-10">
                 <Image
                   src="/logo.png"
@@ -212,21 +230,15 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
               </div>
 
               <nav className="flex flex-col gap-1">
-                {navItems.map((item, idx) => (
-                  <motion.div
+                {navItems.map((item) => (
+                  <Link
                     key={item.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.05 * idx }}
+                    href={item.path}
+                    onClick={() => setIsOpen(false)}
+                    className="block py-3 px-2 text-lg font-medium text-stone-800 hover:text-emerald-800 hover:pl-4 transition-all border-b border-stone-100"
                   >
-                    <Link
-                      href={item.path}
-                      onClick={() => setIsOpen(false)}
-                      className="block py-3 px-2 text-lg font-medium text-stone-800 hover:text-emerald-800 hover:pl-4 transition-all border-b border-stone-100"
-                    >
-                      {item.name}
-                    </Link>
-                  </motion.div>
+                    {item.name}
+                  </Link>
                 ))}
               </nav>
 
@@ -277,10 +289,10 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
                   </span>
                 </Link>
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            </div>
+          </div>
+        </>
+      )}
     </header>
   );
 };

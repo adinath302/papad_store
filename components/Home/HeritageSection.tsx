@@ -52,10 +52,10 @@ export default function HeritageSection() {
   return (
     <section className="py-10 md:py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
-        {/* Trust pillars - mobile: horizontal scroll */}
-        <div className="md:hidden -mx-4 px-4 overflow-x-auto scrollbar-none mb-8">
-          <div className="flex gap-3 w-max pb-2">
-            {pillars.map((item, idx) => (
+        {/* Trust pillars - mobile: auto-scroll marquee */}
+        <div className="md:hidden -mx-4 px-4 overflow-hidden mb-8">
+          <div className="animate-heritage-scroll flex gap-3 w-max pb-2">
+            {[...pillars, ...pillars].map((item, idx) => (
               <div
                 key={idx}
                 className="flex items-center gap-3 bg-emerald-50/80 rounded-2xl px-4 py-3 min-w-[220px] border border-emerald-100/60"

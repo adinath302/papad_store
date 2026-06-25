@@ -23,7 +23,12 @@ const FAQSection = dynamic(() => import("@/components/Home/FAQSection"), {
 });
 
 export default async function Home() {
-  const products = (await prisma.product.findMany({ include: { productvariant: true } })) || [];
+  let products: any[] = [];
+  try {
+    products = await prisma.product.findMany({ include: { productvariant: true } });
+  } catch {
+    // Database unavailable during build
+  }
 
   return (
     <main className="relative w-full bg-[#faf8f5] overflow-x-hidden">

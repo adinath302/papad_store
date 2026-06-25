@@ -1,0 +1,370 @@
+"use client";
+
+import { useState, useRef } from "react";
+import {
+  Package, Plus, Trash2, Image as ImageIcon,
+  FileText, Hash, Link2, IndianRupee, Pencil, Upload,
+} from "lucide-react";
+import Image from "next/image";
+import type { Product } from "./types";
+
+type FormState = {
+  name: string;
+  nameMarathi: string;
+  description: string;
+  stock: string;
+  image: string;
+  variants: { label: string; price: string }[];
+};
+
+type ProductsTabProps = {
+  products: Product[];
+  isOwner: boolean;
+  hasPerm: (resource: string, action: string) => boolean;
+  onProductChange: () => void;
+  toast: (msg: string, type: "success" | "error") => void;
+};
+
+export default function ProductsTab({ products, isOwner, hasPerm, onProductChange, toast }: ProductsTabProps) {
+  const [showForm, setShowForm] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [form, setForm] = useState<FormState>({
+    name: "", nameMarathi: "", description: "", stock: "", image: "",
+    variants: [{ label: "", price: "" }],
+  });
+
+  const resetForm = () => {
+    setForm({ name: "", nameMarathi: "", description: "", stock: "", image: "", variants: [{ label: "", price: "" }] });
+    setEditingProductId(null);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast("Please select an image file", "error");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast("Image must be under 5MB", "error");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const base64 = event.target?.result as string;
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: base64 }),
+        });
+        const data = await res.json();
+        if (data.image) {
+          setForm((prev) => ({ ...prev, image: data.image }));
+          toast("Image uploaded successfully!", "success");
+        } else {
+          toast("Upload failed: " + (data.error || "Unknown error"), "error");
+        }
+        setUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      toast("Image upload failed", "error");
+      setUploading(false);
+    }
+  };
+
+  const addVariant = () => setForm((prev) => ({
+    ...prev, variants: [...prev.variants, { label: "", price: "" }],
+  }));
+
+  const updateVariant = (index: number, field: "label" | "price", value: string) => {
+    setForm((prev) => {
+      const updated = [...prev.variants];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, variants: updated };
+    });
+  };
+
+  const removeVariant = (index: number) => {
+    setForm((prev) => ({
+      ...prev, variants: prev.variants.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleEdit = (product: Product) => {
+    setForm({
+      name: product.name,
+      nameMarathi: (product as any).nameMarathi || "",
+      description: product.description || "",
+      stock: product.stock?.toString() || "",
+      image: product.image || "",
+      variants: product.productvariant.map((v) => ({ label: v.label, price: v.price.toString() })),
+    });
+    setEditingProductId(product.id);
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const body = {
+      name: form.name,
+      nameMarathi: form.nameMarathi || null,
+      description: form.description || null,
+      stock: form.stock ? Number(form.stock) : null,
+      productType: "variant",
+      image: form.image || null,
+      thumbnail: form.image || null,
+      variants: form.variants.filter((v) => v.label.trim() && v.price).map((v) => ({ label: v.label.trim(), price: Number(v.price) })),
+    };
+    const isEditing = !!editingProductId;
+    const res = await fetch(isEditing ? `/api/products/${editingProductId}` : "/api/products", {
+      method: isEditing ? "PATCH" : "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (res.ok) {
+      toast(isEditing ? "Product updated successfully!" : "Product added successfully!", "success");
+      resetForm();
+      setShowForm(false);
+      onProductChange();
+    } else {
+      const err = await res.json();
+      toast(`Error: ${err.details || err.error}`, "error");
+    }
+  };
+
+  const deleteProduct = async (id: string) => {
+    if (!confirm("Delete this product permanently?")) return;
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      onProductChange();
+    } else {
+      toast("Failed to delete product", "error");
+    }
+  };
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Products</h1>
+          <p className="text-sm text-stone-500 mt-1">{products.length} product{products.length !== 1 ? "s" : ""} • Manage your catalog</p>
+        </div>
+        {(isOwner || hasPerm("products", "create")) && (
+          <button onClick={() => { if (showForm && editingProductId) resetForm(); setShowForm(!showForm); }}
+            className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all shadow-sm">
+            <Plus size={15} strokeWidth={2.5} />
+            {showForm ? "Cancel" : "Add Product"}
+          </button>
+        )}
+      </div>
+
+      {showForm && (
+        <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 mb-8 shadow-sm">
+          <div className="flex items-center gap-3 mb-8">
+            <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center">
+              <Package size={18} className="text-stone-600" strokeWidth={1.5} />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-stone-900">{editingProductId ? "Edit Product" : "New Product"}</h2>
+              <p className="text-sm text-stone-400">Fill in the details below</p>
+            </div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-4 flex items-center gap-2">
+                <FileText size={14} /> Basic Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="md:col-span-2">
+                  <input required name="name" value={form.name} placeholder="Product name" onChange={handleChange}
+                    className="w-full border border-stone-200 rounded-xl px-4 py-3 outline-none focus:border-stone-400 bg-white text-stone-900 placeholder:text-stone-300 text-sm transition-all" />
+                </div>
+                <div className="md:col-span-2">
+                  <textarea name="description" value={form.description} placeholder="Product description (optional)" rows={2} onChange={handleChange}
+                    className="w-full border border-stone-200 rounded-xl px-4 py-3 outline-none focus:border-stone-400 bg-white text-stone-900 placeholder:text-stone-300 text-sm transition-all resize-none" />
+                </div>
+                <div>
+                  <input name="nameMarathi" value={form.nameMarathi} placeholder="नाव मराठीत (optional)" onChange={handleChange}
+                    className="w-full border border-stone-200 rounded-xl px-4 py-3 outline-none focus:border-stone-400 bg-white text-stone-900 placeholder:text-stone-300 text-sm transition-all" />
+                </div>
+                <div className="relative">
+                  <Hash size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+                  <input name="stock" type="number" value={form.stock} placeholder="Stock count" onChange={handleChange}
+                    className="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-stone-400 bg-white text-stone-900 placeholder:text-stone-300 text-sm transition-all" />
+                </div>
+                <div className="md:col-span-2">
+                  <div className="flex items-start gap-3">
+                    <div className="relative flex-1">
+                      <Link2 size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
+                      <input name="image" value={form.image} placeholder="Or paste image URL (optional)" onChange={handleChange}
+                        className="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-stone-400 bg-white text-stone-900 placeholder:text-stone-300 text-sm transition-all" />
+                    </div>
+                    <div>
+                      <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploading}
+                        className="flex items-center gap-2 px-4 py-3 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-all disabled:opacity-50">
+                        {uploading ? (
+                          <span className="w-4 h-4 border-2 border-stone-500 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Upload size={16} />
+                        )}
+                        {uploading ? "Uploading..." : "Upload"}
+                      </button>
+                    </div>
+                  </div>
+                  {form.image && (
+                    <div className="mt-3 relative w-20 h-20 rounded-xl overflow-hidden ring-1 ring-stone-200">
+                      <Image src={form.image} alt="Preview" fill className="object-cover" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-2">
+                  <IndianRupee size={14} /> Variants & Pricing
+                </h3>
+                <button type="button" onClick={addVariant}
+                  className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 hover:text-emerald-600 transition-colors">
+                  <Plus size={14} strokeWidth={2.5} /> Add Variant
+                </button>
+              </div>
+              <div className="space-y-2.5">
+                {form.variants.map((v, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl p-3">
+                    <div className="flex-1 min-w-0">
+                      <input placeholder="e.g. 200g, 500g, 1kg" value={v.label}
+                        onChange={(e) => updateVariant(i, "label", e.target.value)}
+                        className="w-full border-0 bg-transparent px-2 py-1.5 outline-none text-sm text-stone-900 placeholder:text-stone-300 font-medium" />
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-stone-400 text-xs font-medium">₹</span>
+                      <input type="number" placeholder="Price" value={v.price}
+                        onChange={(e) => updateVariant(i, "price", e.target.value)}
+                        className="w-24 border border-stone-200 rounded-lg px-3 py-1.5 outline-none focus:border-stone-400 bg-white text-sm text-stone-900 placeholder:text-stone-300 text-right" />
+                    </div>
+                    {form.variants.length > 1 && (
+                      <button type="button" onClick={() => removeVariant(i)}
+                        className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                        <Trash2 size={15} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              {form.variants.length === 0 && (
+                <p className="text-xs text-stone-400 text-center py-6">Add at least one variant</p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2 border-t border-stone-100">
+              <button type="button" onClick={() => { resetForm(); setShowForm(false); }}
+                className="px-6 py-2.5 text-xs font-bold text-stone-500 hover:text-stone-700 transition-colors">Cancel</button>
+              <button type="submit"
+                disabled={form.variants.filter((v) => v.label.trim() && v.price).length === 0}
+                className="px-8 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm">
+                {editingProductId ? "Update Product" : "Save Product"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
+        {products.length > 0 ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-stone-100 bg-stone-50">
+                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Product</th>
+                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden lg:table-cell">मराठी</th>
+                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden md:table-cell">Variants</th>
+                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Stock</th>
+                  <th className="text-right px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50">
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-stone-100 rounded-xl overflow-hidden flex-shrink-0 ring-1 ring-stone-200">
+                          {product.image ? (
+                            <Image src={product.image} alt={product.name} width={40} height={40}
+                              className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <ImageIcon size={16} className="text-stone-300" />
+                            </div>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-semibold text-stone-800">{product.name}</p>
+                          {product.description && (
+                            <p className="text-xs text-stone-400 mt-0.5 line-clamp-1 max-w-[200px]">{product.description}</p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 hidden lg:table-cell text-stone-500 text-sm">{(product as any).nameMarathi || "—"}</td>
+                    <td className="px-5 py-4 hidden md:table-cell">
+                      <div className="flex flex-wrap gap-1.5">
+                        {product.productvariant.map((v) => (
+                          <span key={v.id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-100 text-stone-700 rounded-lg text-[11px] font-medium">
+                            {v.label}<span className="text-stone-400">•</span>₹{v.price}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
+                    <td className="px-5 py-4 hidden sm:table-cell text-stone-600 font-medium">{product.stock ?? "—"}</td>
+                    <td className="px-5 py-4 text-right whitespace-nowrap">
+                      {(isOwner || hasPerm("products", "edit")) && (
+                        <button onClick={() => handleEdit(product)}
+                          className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all mr-1" title="Edit product">
+                          <Pencil size={15} />
+                        </button>
+                      )}
+                      {(isOwner || hasPerm("products", "delete")) && (
+                        <button onClick={() => deleteProduct(product.id)}
+                          className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete product">
+                          <Trash2 size={15} />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className="text-center py-20">
+            <Package size={44} className="mx-auto text-stone-200 mb-4" strokeWidth={1} />
+            <p className="text-stone-400 text-sm mb-4">No products yet</p>
+            {(isOwner || hasPerm("products", "create")) && (
+              <button onClick={() => { resetForm(); setShowForm(true); }}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all shadow-sm">
+                <Plus size={15} strokeWidth={2.5} /> Add Your First Product
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

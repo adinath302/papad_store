@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { isOwner } from "@/lib/permissions";
+import { isOwner, OWNER_EMAIL } from "@/lib/permissions";
 
 export async function GET() {
   const cookieStore = await cookies();
@@ -30,5 +30,6 @@ export async function GET() {
       isOwner: isOwner(user.email),
       permissions: user.permissions,
     },
+    ownerEmail: OWNER_EMAIL,
   });
 }

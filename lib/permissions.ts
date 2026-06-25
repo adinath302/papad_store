@@ -34,7 +34,8 @@ export const RESOURCE_LABELS: Record<Resource, string> = {
   dashboard: "Dashboard",
 };
 
-export const OWNER_EMAIL = "shivshambho@gmail.com";
+export const OWNER_EMAIL =
+  process.env.OWNER_EMAIL || "shivshambho@gmail.com";
 
 export function isOwner(email: string | null | undefined): boolean {
   return email?.toLowerCase() === OWNER_EMAIL.toLowerCase();

@@ -87,3 +87,13 @@ main {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
 }
+
+/* Heritage marquee for mobile */
+@keyframes heritage-scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-heritage-scroll {
+  animation: heritage-scroll 25s linear infinite;
+}

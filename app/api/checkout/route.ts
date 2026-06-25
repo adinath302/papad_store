@@ -4,7 +4,6 @@ import { isRazorpayConfigured } from "@/lib/razorpay";
 import crypto from "crypto";
 import { sendAdminOrderNotification, sendCustomerOrderConfirmation } from "@/lib/email";
 import { calculateShippingFee } from "@/lib/shipping";
-import { generateOrderReference } from "@/lib/indiapost";
 
 export const runtime = "nodejs";
 
@@ -29,6 +28,7 @@ export async function POST(req: Request) {
       guestItems,
       shippingMethod,
       shippingCost: clientShippingCost,
+      couponCode,
     } = body;
 
     if (
@@ -141,7 +141,38 @@ export async function POST(req: Request) {
     }, 0);
 
     const shippingCost = clientShippingCost ?? calculateShippingFee(subtotal, state);
-    const totalAmount = subtotal + shippingCost;
+    let totalAmount = subtotal + shippingCost;
+    let discount = 0;
+
+    if (couponCode) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: couponCode.toUpperCase() },
+      });
+
+      if (coupon && coupon.isActive && (!coupon.expiresAt || new Date(coupon.expiresAt) > new Date())) {
+        if (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) {
+          if (!coupon.minCartValue || subtotal >= coupon.minCartValue) {
+            if (coupon.type === "PERCENTAGE") {
+              discount = Math.round((subtotal * coupon.value) / 100);
+              if (coupon.maxDiscount && discount > coupon.maxDiscount) {
+                discount = coupon.maxDiscount;
+              }
+            } else if (coupon.type === "FIXED") {
+              discount = coupon.value;
+            } else if (coupon.type === "FREE_SHIPPING") {
+              discount = shippingCost;
+            }
+
+            totalAmount = Math.max(0, subtotal + shippingCost - discount);
+
+            await prisma.coupon.update({
+              where: { id: coupon.id },
+              data: { usedCount: { increment: 1 } },
+            });
+          }
+        }
+      }
+    }
 
     const order = await prisma.order.create({
       data: {
@@ -225,18 +256,6 @@ export async function POST(req: Request) {
         (e) => console.error("Customer email error:", e),
       );
     }
-
-    // Generate IndiaPost order reference
-    const orderRef = generateOrderReference(updatedOrder.id);
-    await prisma.order.update({
-      where: { id: updatedOrder.id },
-      data: {
-        courierName: "IndiaPost - Speed Post",
-        trackingId: orderRef,
-      },
-    });
-    updatedOrder.courierName = "IndiaPost - Speed Post";
-    updatedOrder.trackingId = orderRef;
 
     return Response.json(updatedOrder);
   } catch (error: any) {

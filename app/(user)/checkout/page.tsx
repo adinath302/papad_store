@@ -62,6 +62,11 @@ export default function CheckoutPage() {
   const [selectedCourier, setSelectedCourier] = useState<any | null>(null);
   const [courierLoading, setCourierLoading] = useState(false);
   const [courierError, setCourierError] = useState("");
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [discount, setDiscount] = useState(0);
+  const [couponLoading, setCouponLoading] = useState(false);
+  const [couponError, setCouponError] = useState("");
 
   const { toast } = useToast();
 
@@ -214,9 +219,48 @@ export default function CheckoutPage() {
     return calculateShippingFee(subtotal, form.state);
   }, [subtotal, form.state, selectedCourier]);
 
+  const applyCoupon = useCallback(async () => {
+    if (!couponCode.trim()) return;
+    setCouponLoading(true);
+    setCouponError("");
+    try {
+      const res = await fetch("/api/coupons/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode, cartTotal: subtotal + shippingCost }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setCouponError(data.error);
+        setAppliedCoupon(null);
+        setDiscount(0);
+      } else {
+        setAppliedCoupon(data);
+        if (data.type === "FREE_SHIPPING") {
+          setDiscount(shippingCost);
+        } else {
+          setDiscount(data.discount);
+        }
+        setCouponError("");
+      }
+    } catch {
+      setCouponError("Failed to validate coupon");
+    } finally {
+      setCouponLoading(false);
+    }
+  }, [couponCode, subtotal, shippingCost]);
+
+  const removeCoupon = () => {
+    setCouponCode("");
+    setAppliedCoupon(null);
+    setDiscount(0);
+    setCouponError("");
+  };
+
   const handleRazorpayPayment = useCallback(async () => {
     const body: any = { state: form.state };
     if (selectedCourier) body.shippingCost = selectedCourier.rate;
+    if (appliedCoupon) body.couponCode = appliedCoupon.code;
     if (isGuest) {
       const guestItems = getGuestCart();
       body.guestItems = guestItems.map((gi) => ({
@@ -259,6 +303,9 @@ export default function CheckoutPage() {
             if (selectedCourier) {
               checkoutBody.shippingMethod = selectedCourier.service;
               checkoutBody.shippingCost = selectedCourier.rate;
+            }
+            if (appliedCoupon) {
+              checkoutBody.couponCode = appliedCoupon.code;
             }
             if (isGuest) {
               const guestItems = getGuestCart();
@@ -342,6 +389,9 @@ export default function CheckoutPage() {
       if (selectedCourier) {
         body.shippingMethod = selectedCourier.service;
         body.shippingCost = selectedCourier.rate;
+      }
+      if (appliedCoupon) {
+        body.couponCode = appliedCoupon.code;
       }
       if (isGuest) {
         const guestItems = getGuestCart();
@@ -743,6 +793,32 @@ export default function CheckoutPage() {
                 })}
               </div>
 
+                {/* Coupon */}
+                <div className="pt-4">
+                  {appliedCoupon ? (
+                    <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                      <div>
+                        <span className="text-sm font-bold text-emerald-800">{appliedCoupon.code}</span>
+                        <span className="text-xs text-emerald-600 ml-2">
+                          {appliedCoupon.type === "FREE_SHIPPING" ? "Free Shipping" : `-₹${discount}`}
+                        </span>
+                      </div>
+                      <button onClick={removeCoupon} className="text-xs text-red-500 hover:text-red-700 font-bold">Remove</button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <input value={couponCode} onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                        placeholder="Coupon code"
+                        className="flex-1 border border-stone-200 rounded-xl px-4 py-2.5 outline-none focus:border-stone-400 text-sm" />
+                      <button onClick={applyCoupon} disabled={couponLoading || !couponCode.trim()}
+                        className="px-4 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all disabled:opacity-40">
+                        {couponLoading ? "..." : "Apply"}
+                      </button>
+                    </div>
+                  )}
+                  {couponError && <p className="text-xs text-red-500 mt-1.5">{couponError}</p>}
+                </div>
+
                 <div className="space-y-3 pt-4 border-t border-stone-100">
                   <div className="flex justify-between text-sm text-stone-500">
                     <span>Subtotal</span>
@@ -756,9 +832,15 @@ export default function CheckoutPage() {
                       <span className="text-stone-600">₹{shippingCost}</span>
                     )}
                   </div>
+                  {discount > 0 && (
+                    <div className="flex justify-between text-sm text-emerald-700">
+                      <span>Discount</span>
+                      <span>-₹{discount}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between text-lg font-bold text-stone-900 pt-2 border-t border-stone-100">
                     <span>Total</span>
-                    <span>₹{subtotal + shippingCost}</span>
+                    <span>₹{Math.max(0, subtotal + shippingCost - discount)}</span>
                   </div>
                 </div>
 

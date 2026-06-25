@@ -3,16 +3,18 @@
 import { useState, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, Loader2, Plus, Minus } from "lucide-react";
-import { addToGuestCart, isLoggedIn } from "@/lib/guest-cart";
+import { Star, Loader2, Plus, Minus, Heart } from "lucide-react";
+import { addToGuestCart, isLoggedIn, notifyCartUpdate } from "@/lib/guest-cart";
+import { toggleGuestWishlist } from "@/lib/guest-wishlist";
 import { useToast } from "@/components/Toast/ToastProvider";
 
-const ProductCard = memo(function ProductCard({ product }: any) {
+const ProductCard = memo(function ProductCard({ product, wishlisted: initialWishlisted }: any) {
   const [loading, setLoading] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState(
     product.productvariant?.[0] ?? null,
   );
+  const [wishlisted, setWishlisted] = useState(initialWishlisted ?? false);
   const { toast } = useToast();
 
   const price = selectedVariant?.price ?? 0;
@@ -49,6 +51,7 @@ const ProductCard = memo(function ProductCard({ product }: any) {
         toast(data.error, "error");
       } else {
         toast(`${quantity}x ${product.name} added to cart!`, "success");
+        notifyCartUpdate();
       }
     } catch {
       toast("Something went wrong while adding to cart.", "error");
@@ -61,29 +64,50 @@ const ProductCard = memo(function ProductCard({ product }: any) {
 
   return (
     <div className="group flex flex-col bg-white rounded-2xl border border-stone-200/80 overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full">
-      <Link
-        href={`/products/${product.id}`}
-        className="relative aspect-square bg-stone-100 block overflow-hidden"
-      >
-        <Image
-          src={
-            product.image ||
-            "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
-          }
-          alt={product.name}
-          fill
-          loading="lazy"
-          sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-        />
-        {outOfStock && (
-          <span className="absolute inset-0 bg-stone-900/50 flex items-center justify-center">
-            <span className="bg-white text-stone-900 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
-              Out of Stock
-            </span>
-          </span>
-        )}
-      </Link>
+        <div className="relative aspect-square bg-stone-100 block overflow-hidden">
+          <Link href={`/products/${product.id}`} className="absolute inset-0">
+            <Image
+              src={
+                product.image ||
+                "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
+              }
+              alt={product.name}
+              fill
+              loading="lazy"
+              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+            {outOfStock && (
+              <span className="absolute inset-0 bg-stone-900/50 flex items-center justify-center">
+                <span className="bg-white text-stone-900 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                  Out of Stock
+                </span>
+              </span>
+            )}
+          </Link>
+          <button
+            onClick={async (e) => {
+              e.preventDefault();
+              if (isLoggedIn()) {
+                const res = await fetch("/api/wishlist", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ productId: product.id }),
+                });
+                const data = await res.json();
+                setWishlisted(data.added);
+                toast(data.added ? "Added to wishlist" : "Removed from wishlist", "success");
+              } else {
+                const added = toggleGuestWishlist(product.id);
+                setWishlisted(added);
+                toast(added ? "Added to wishlist" : "Removed from wishlist", "success");
+              }
+            }}
+            className="absolute top-2.5 right-2.5 z-10 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm"
+          >
+            <Heart size={15} className={wishlisted ? "fill-red-500 text-red-500" : "text-stone-500"} />
+          </button>
+        </div>
 
       <div className="flex flex-col flex-1 p-4 space-y-3">
         <div>

@@ -16,11 +16,15 @@ export async function POST(req: Request) {
     let totalWeight = 0;
     let subtotal = 0;
 
+    const productIds = [...new Set(items.map((gi: any) => gi.productId))];
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      include: { productvariant: true },
+    });
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
     for (const gi of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: gi.productId },
-        include: { productvariant: true },
-      });
+      const product = productMap.get(gi.productId);
       if (!product) continue;
 
       if (gi.variantId) {

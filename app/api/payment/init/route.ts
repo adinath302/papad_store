@@ -24,7 +24,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { state, guestItems, shippingCost: clientShippingCost } = body;
+    const { state, guestItems, shippingCost: clientShippingCost, couponCode } = body;
 
     let subtotal = 0;
 
@@ -95,7 +95,30 @@ export async function POST(req: Request) {
     }
 
     const shippingCost = clientShippingCost ?? calculateShippingFee(subtotal, state);
-    const totalAmount = subtotal + shippingCost;
+    let totalAmount = subtotal + shippingCost;
+
+    if (couponCode) {
+      const coupon = await prisma.coupon.findUnique({
+        where: { code: couponCode.toUpperCase() },
+      });
+
+      if (coupon && coupon.isActive && (!coupon.expiresAt || new Date(coupon.expiresAt) > new Date())) {
+        if (!coupon.usageLimit || coupon.usedCount < coupon.usageLimit) {
+          if (!coupon.minCartValue || subtotal >= coupon.minCartValue) {
+            let discount = 0;
+            if (coupon.type === "PERCENTAGE") {
+              discount = Math.round((subtotal * coupon.value) / 100);
+              if (coupon.maxDiscount && discount > coupon.maxDiscount) discount = coupon.maxDiscount;
+            } else if (coupon.type === "FIXED") {
+              discount = coupon.value;
+            } else if (coupon.type === "FREE_SHIPPING") {
+              discount = shippingCost;
+            }
+            totalAmount = Math.max(0, subtotal + shippingCost - discount);
+          }
+        }
+      }
+    }
 
     const receipt = `rcpt_${Date.now()}`;
 

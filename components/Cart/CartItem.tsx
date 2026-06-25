@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { Trash2, Plus, Minus, Loader2 } from "lucide-react";
-import { useState, memo, useMemo } from "react";
+import { Trash2, Plus, Minus } from "lucide-react";
+import { memo, useMemo } from "react";
 import { useToast } from "@/components/Toast/ToastProvider";
 import {
   removeFromGuestCart,
   updateGuestCartQuantity,
   getGuestCart,
+  notifyCartUpdate,
 } from "@/lib/guest-cart";
 
 export type CartItemData = {
@@ -30,7 +31,6 @@ const CartItem = memo(function CartItem({
   item: CartItemData;
   onUpdate?: () => void;
 }) {
-  const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const isGuest = item.id.startsWith("guest-");
 
@@ -61,23 +61,24 @@ const CartItem = memo(function CartItem({
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await fetch("/api/cart", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: item.id, action }),
-      });
-      const data = await res.json();
-      if (data.error) {
-        toast(data.error, "error");
-      } else {
-        onUpdate?.();
-      }
-    } catch {
-      toast("Failed to update quantity", "error");
-    } finally {
-      setLoading(false);
+    const prevQty = item.quantity;
+    const newQty = action === "increase" ? prevQty + 1 : prevQty - 1;
+    if (newQty < 1) return;
+    item.quantity = newQty;
+    onUpdate?.();
+
+    const res = await fetch("/api/cart", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: item.id, action }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      item.quantity = prevQty;
+      onUpdate?.();
+      toast(data.error, "error");
+    } else {
+      notifyCartUpdate();
     }
   };
 
@@ -88,21 +89,16 @@ const CartItem = memo(function CartItem({
       return;
     }
 
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/cart?id=${item.id}`, {
-        method: "DELETE",
-      });
-      const data = await res.json();
-      if (data.error) {
-        toast(data.error, "error");
-      } else {
-        onUpdate?.();
-      }
-    } catch {
-      toast("Failed to remove item", "error");
-    } finally {
-      setLoading(false);
+    onUpdate?.();
+
+    const res = await fetch(`/api/cart?id=${item.id}`, {
+      method: "DELETE",
+    });
+    const data = await res.json();
+    if (data.error) {
+      toast(data.error, "error");
+    } else {
+      notifyCartUpdate();
     }
   };
 
@@ -131,29 +127,20 @@ const CartItem = memo(function CartItem({
         <div className="flex items-center gap-2 mt-2">
           <button
             onClick={() => handleQuantity("decrease")}
-            disabled={loading}
             aria-label="Decrease quantity"
-            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
           >
             <Minus size={16} />
           </button>
 
           <span className="text-sm sm:text-base font-bold text-zinc-900 w-8 text-center">
-            {loading ? (
-              <Loader2
-                size={16}
-                className="animate-spin inline text-zinc-900"
-              />
-            ) : (
-              item.quantity
-            )}
+            {item.quantity}
           </span>
 
           <button
             onClick={() => handleQuantity("increase")}
-            disabled={loading}
             aria-label="Increase quantity"
-            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-50"
+            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
           >
             <Plus size={16} />
           </button>
@@ -166,9 +153,8 @@ const CartItem = memo(function CartItem({
 
       <button
         onClick={handleDelete}
-        disabled={loading}
         aria-label="Remove item"
-        className="p-2 text-zinc-400 hover:text-red-500 transition-colors disabled:opacity-50 rounded-lg"
+        className="p-2 text-zinc-400 hover:text-red-500 transition-colors rounded-lg"
       >
         <Trash2 size={18} />
       </button>
