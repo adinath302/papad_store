@@ -13,6 +13,7 @@ type FormState = {
   nameMarathi: string;
   description: string;
   stock: string;
+  weight: string;
   image: string;
   variants: { label: string; price: string }[];
 };
@@ -31,12 +32,12 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<FormState>({
-    name: "", nameMarathi: "", description: "", stock: "", image: "",
+    name: "", nameMarathi: "", description: "", stock: "", weight: "", image: "",
     variants: [{ label: "", price: "" }],
   });
 
   const resetForm = () => {
-    setForm({ name: "", nameMarathi: "", description: "", stock: "", image: "", variants: [{ label: "", price: "" }] });
+    setForm({ name: "", nameMarathi: "", description: "", stock: "", weight: "", image: "", variants: [{ label: "", price: "" }] });
     setEditingProductId(null);
   };
 
@@ -109,6 +110,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
       nameMarathi: (product as any).nameMarathi || "",
       description: product.description || "",
       stock: product.stock?.toString() || "",
+      weight: product.weight?.toString() || "",
       image: product.image || "",
       variants: product.productvariant.map((v) => ({ label: v.label, price: v.price.toString() })),
     });
@@ -123,6 +125,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
       nameMarathi: form.nameMarathi || null,
       description: form.description || null,
       stock: form.stock ? Number(form.stock) : null,
+      weight: form.weight ? Number(form.weight) : null,
       productType: "variant",
       image: form.image || null,
       thumbnail: form.image || null,
@@ -205,6 +208,16 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
                   <Hash size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none" />
                   <input name="stock" type="number" value={form.stock} placeholder="Stock count" onChange={handleChange}
                     className="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-stone-400 bg-white text-stone-900 placeholder:text-stone-300 text-sm transition-all" />
+                </div>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 pointer-events-none text-xs font-bold">g</span>
+                  <input name="weight" type="number" value={form.weight} placeholder="Weight (grams)" onChange={handleChange}
+                    className="w-full border border-stone-200 rounded-xl pl-10 pr-4 py-3 outline-none focus:border-stone-400 bg-white text-stone-900 placeholder:text-stone-300 text-sm transition-all" />
+                  {form.weight && (
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-stone-400">
+                      {(parseInt(form.weight) / 1000).toFixed(2).replace(/\.?0+$/, "")} kg
+                    </span>
+                  )}
                 </div>
                 <div className="md:col-span-2">
                   <div className="flex items-start gap-3">
@@ -296,6 +309,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
                   <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden lg:table-cell">मराठी</th>
                   <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden md:table-cell">Variants</th>
                   <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Stock</th>
+                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Weight</th>
                   <th className="text-right px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
@@ -333,6 +347,9 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
                       </div>
                     </td>
                     <td className="px-5 py-4 hidden sm:table-cell text-stone-600 font-medium">{product.stock ?? "—"}</td>
+                    <td className="px-5 py-4 hidden sm:table-cell text-stone-600 text-sm">
+                      {product.weight > 0 ? `${product.weight}g${product.weight >= 1000 ? ` / ${(product.weight / 1000).toFixed(1).replace(/\.0$/, "")}kg` : ""}` : "—"}
+                    </td>
                     <td className="px-5 py-4 text-right whitespace-nowrap">
                       {(isOwner || hasPerm("products", "edit")) && (
                         <button onClick={() => handleEdit(product)}

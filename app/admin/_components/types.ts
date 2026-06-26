@@ -3,6 +3,7 @@ export type Product = {
   name: string;
   description: string | null;
   stock: number | null;
+  weight: number;
   image: string | null;
   thumbnail: string | null;
   productType: string;

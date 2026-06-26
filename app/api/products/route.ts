@@ -1,6 +1,6 @@
 import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { can } from "@/lib/permissions";
+import { can, isOwner } from "@/lib/permissions";
 import { cookies } from "next/headers";
 
 async function getCurrentUser() {
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     if (!currentUser || currentUser.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!can(currentUser.permissions, "products", "create")) {
+    if (!isOwner(currentUser.email) && !can(currentUser.permissions, "products", "create")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
         description: body.description || null,
 
         stock: Number(body.stock) || 0,
+        weight: body.weight ? Number(body.weight) : 200,
 
         image: body.image || null,
 

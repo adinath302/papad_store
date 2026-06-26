@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { can } from "@/lib/permissions";
+import { can, isOwner } from "@/lib/permissions";
 import { cookies } from "next/headers";
 
 async function getCurrentUser() {
@@ -23,7 +23,7 @@ export async function PATCH(
     if (!currentUser || currentUser.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!can(currentUser.permissions, "products", "edit")) {
+    if (!isOwner(currentUser.email) && !can(currentUser.permissions, "products", "edit")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -39,6 +39,7 @@ export async function PATCH(
         nameMarathi: body.nameMarathi || null,
         description: body.description || null,
         stock: body.stock ? Number(body.stock) : null,
+        weight: body.weight ? Number(body.weight) : 200,
         image: body.image || null,
         thumbnail: body.image || null,
         productType: body.productType || "weight",
@@ -71,7 +72,7 @@ export async function DELETE(
     if (!currentUser || currentUser.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (!can(currentUser.permissions, "products", "delete")) {
+    if (!isOwner(currentUser.email) && !can(currentUser.permissions, "products", "delete")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

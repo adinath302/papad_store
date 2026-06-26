@@ -10,14 +10,14 @@ const contactDetails = [
   },
   {
     label: "Email",
-    value: "hello@papadcompany.com",
-    href: "mailto:hello@papadcompany.com",
+    value: "adinathgaware23072003@gmail.com",
+    href: "mailto:adinathgaware23072003@gmail.com",
     description: "We reply within 24 hours",
   },
   {
     label: "Office",
-    value: "123 Spice Route, Heritage Lane, Rajasthan, India",
-    href: "https://maps.google.com/?q=Rajasthan+India",
+    value: "Nordhan branch, sangamner road, ward no 7, maharashtra, India",
+    href: "https://maps.app.goo.gl/BCwKdfB5vpKHSmC38",
     description: "Visit us by appointment",
   },
 ];
@@ -49,14 +49,20 @@ export default function ContactPage() {
           We&apos;d love to hear from you
         </h1>
         <p className="text-stone-500 max-w-lg mx-auto text-sm leading-relaxed animate-fade-in [animation-delay:150ms]">
-          Whether you have a question about our papads, need help with an order, or just want to say namaste — we&apos;re here for you.
+          Whether you have a question about our papads, need help with an order,
+          or just want to say namaste — we&apos;re here for you.
         </p>
       </div>
 
       {/* Contact Cards */}
       <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-5 mb-16">
         {contactDetails.map((item, i) => {
-          const Icon = item.label === "Phone" ? Phone : item.label === "Email" ? Mail : MapPin;
+          const Icon =
+            item.label === "Phone"
+              ? Phone
+              : item.label === "Email"
+                ? Mail
+                : MapPin;
           return (
             <a
               key={item.label}
@@ -75,9 +81,7 @@ export default function ContactPage() {
               <p className="text-stone-900 font-semibold text-sm mb-1">
                 {item.value}
               </p>
-              <p className="text-stone-400 text-xs">
-                {item.description}
-              </p>
+              <p className="text-stone-400 text-xs">{item.description}</p>
             </a>
           );
         })}
@@ -89,7 +93,8 @@ export default function ContactPage() {
           <Headphones size={32} className="mx-auto mb-4 text-amber-400" />
           <h2 className="text-2xl font-serif mb-2">Need help right now?</h2>
           <p className="text-stone-300 text-sm max-w-md mx-auto mb-6">
-            Call or WhatsApp us — we personally handle every inquiry. No bots, no waiting.
+            Call or WhatsApp us — we personally handle every inquiry. No bots,
+            no waiting.
           </p>
           <a
             href="tel:+917822901803"
@@ -121,7 +126,11 @@ export default function ContactPage() {
                   stroke="currentColor"
                   strokeWidth={2}
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </summary>
               <div className="px-6 pb-4 text-sm text-stone-500 leading-relaxed border-t border-stone-100 pt-3">
@@ -138,8 +147,18 @@ export default function ContactPage() {
           href="/products"
           className="inline-flex items-center gap-2 text-sm font-semibold text-emerald-800 hover:text-emerald-700 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M15 19l-7-7 7-7"
+            />
           </svg>
           Back to Shop
         </Link>

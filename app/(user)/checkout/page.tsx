@@ -11,7 +11,6 @@ import {
   Truck,
   ShieldCheck,
   CreditCard,
-  Loader2,
 } from "lucide-react";
 import { useToast } from "@/components/Toast/ToastProvider";
 import { SkeletonCheckout } from "@/components/Skeleton/Skeleton";
@@ -58,10 +57,7 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [savedAddress, setSavedAddress] = useState<SavedAddress | null>(null);
   const [isGuest, setIsGuest] = useState(true);
-  const [couriers, setCouriers] = useState<any[]>([]);
-  const [selectedCourier, setSelectedCourier] = useState<any | null>(null);
-  const [courierLoading, setCourierLoading] = useState(false);
-  const [courierError, setCourierError] = useState("");
+
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
   const [discount, setDiscount] = useState(0);
@@ -149,62 +145,6 @@ export default function CheckoutPage() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (form.pincode.length !== 6 || items.length === 0) {
-      setCouriers([]);
-      setSelectedCourier(null);
-      return;
-    }
-
-    let cancelled = false;
-
-    const fetchRates = async () => {
-      setCourierLoading(true);
-      setCourierError("");
-      try {
-        const body: any = {
-          pincode: form.pincode,
-          cod: form.paymentType === "COD",
-          items: items.map((item) => ({
-            productId: item.product.id,
-            variantId: item.variantId || null,
-            quantity: item.quantity,
-          })),
-        };
-
-        const res = await fetch("/api/shipping/rates", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-        });
-        const data = await res.json();
-        if (cancelled) return;
-
-        if (data.error) {
-          setCourierError(data.error);
-          setCouriers([]);
-        } else if (data.couriers && data.couriers.length > 0) {
-          setCouriers(data.couriers);
-          setSelectedCourier(null);
-        } else {
-          setCouriers([]);
-          setCourierError("No courier available for this pincode");
-        }
-      } catch {
-        if (!cancelled) setCourierError("Failed to check shipping rates");
-      } finally {
-        if (!cancelled) setCourierLoading(false);
-      }
-    };
-
-    const t = setTimeout(fetchRates, 500);
-    return () => {
-      cancelled = true;
-      clearTimeout(t);
-    };
-  }, [form.pincode, form.paymentType, items]);
-
-
   const subtotal = useMemo(
     () =>
       items.reduce(
@@ -214,10 +154,10 @@ export default function CheckoutPage() {
     [items],
   );
 
-  const shippingCost = useMemo(() => {
-    if (selectedCourier) return selectedCourier.rate;
-    return calculateShippingFee(subtotal, form.state);
-  }, [subtotal, form.state, selectedCourier]);
+  const shippingCost = useMemo(
+    () => calculateShippingFee(subtotal, form.state),
+    [subtotal, form.state],
+  );
 
   const applyCoupon = useCallback(async () => {
     if (!couponCode.trim()) return;
@@ -258,17 +198,12 @@ export default function CheckoutPage() {
   };
 
   const handleRazorpayPayment = useCallback(async () => {
-    const body: any = { state: form.state };
-    if (selectedCourier) body.shippingCost = selectedCourier.rate;
+    const body: any = { state: form.state, items: items.map((item) => ({
+      productId: item.product.id,
+      variantId: item.variantId || null,
+      quantity: item.quantity,
+    })) };
     if (appliedCoupon) body.couponCode = appliedCoupon.code;
-    if (isGuest) {
-      const guestItems = getGuestCart();
-      body.guestItems = guestItems.map((gi) => ({
-        productId: gi.productId,
-        variantId: gi.variantId || null,
-        quantity: gi.quantity,
-      }));
-    }
 
     const initRes = await fetch("/api/payment/init", {
       method: "POST",
@@ -300,71 +235,64 @@ export default function CheckoutPage() {
               razorpayPaymentId: response.razorpay_payment_id,
               razorpaySignature: response.razorpay_signature,
             };
-            if (selectedCourier) {
-              checkoutBody.shippingMethod = selectedCourier.service;
-              checkoutBody.shippingCost = selectedCourier.rate;
-            }
             if (appliedCoupon) {
               checkoutBody.couponCode = appliedCoupon.code;
             }
-            if (isGuest) {
-              const guestItems = getGuestCart();
-              checkoutBody.guestItems = guestItems.map((gi) => ({
-                productId: gi.productId,
-                variantId: gi.variantId || null,
-                quantity: gi.quantity,
-              }));
-            }
+      checkoutBody.items = items.map((item) => ({
+        productId: item.product.id,
+        variantId: item.variantId || null,
+        quantity: item.quantity,
+      }));
 
-          const checkoutRes = await fetch("/api/checkout", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(checkoutBody),
-          });
-
-          const checkoutData = await checkoutRes.json();
-
-          if (checkoutData.error) {
-            toast(checkoutData.error, "error");
-            setPlacing(false);
-            return;
-          }
-
-          if (form.saveAddress && !isGuest) {
-            await fetch("/api/address", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(form),
-            });
-          }
-
-          clearGuestCart();
-          router.push(`/order-confirmation?id=${checkoutData.id}`);
-        },
-        modal: {
-          ondismiss: function () {
-            setPlacing(false);
-          },
-        },
-        prefill: {
-          name: form.fullName,
-          email: "",
-          contact: form.phone,
-        },
-        theme: {
-          color: "#065f46",
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function () {
-        toast("Payment failed. Please try again.", "error");
-        setPlacing(false);
+      const checkoutRes = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(checkoutBody),
       });
-      rzp.open();
-    };
-    document.body.appendChild(script);
-  }, [form, router, isGuest]);
+
+      const checkoutData = await checkoutRes.json();
+
+      if (checkoutData.error) {
+        toast(checkoutData.error, "error");
+        setPlacing(false);
+        return;
+      }
+
+      if (form.saveAddress && !isGuest) {
+        await fetch("/api/address", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        });
+      }
+
+      clearGuestCart();
+      router.push(`/order-confirmation?id=${checkoutData.id}`);
+    },
+    modal: {
+      ondismiss: function () {
+        setPlacing(false);
+      },
+    },
+    prefill: {
+      name: form.fullName,
+      email: "",
+      contact: form.phone,
+    },
+    theme: {
+      color: "#065f46",
+    },
+  };
+
+  const rzp = new (window as any).Razorpay(options);
+  rzp.on("payment.failed", function () {
+    toast("Payment failed. Please try again.", "error");
+    setPlacing(false);
+  });
+  rzp.open();
+};
+document.body.appendChild(script);
+}, [form, router, items]);
 
   const handleSubmit = async () => {
     const errors = new Set<string>();
@@ -386,21 +314,14 @@ export default function CheckoutPage() {
 
     try {
       const body: any = { ...form };
-      if (selectedCourier) {
-        body.shippingMethod = selectedCourier.service;
-        body.shippingCost = selectedCourier.rate;
-      }
       if (appliedCoupon) {
         body.couponCode = appliedCoupon.code;
       }
-      if (isGuest) {
-        const guestItems = getGuestCart();
-        body.guestItems = guestItems.map((gi) => ({
-          productId: gi.productId,
-          variantId: gi.variantId || null,
-          quantity: gi.quantity,
-        }));
-      }
+      body.items = items.map((item) => ({
+        productId: item.product.id,
+        variantId: item.variantId || null,
+        quantity: item.quantity,
+      }));
 
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -618,64 +539,6 @@ export default function CheckoutPage() {
                     )}
                   </div>
                 </div>
-
-                {form.pincode.length === 6 && (courierLoading || couriers.length > 0 || courierError) && (
-                  <div className="pt-2">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Truck size={16} className="text-emerald-700" />
-                      <span className="text-xs font-bold uppercase tracking-wider text-stone-500">
-                        Shipping Options
-                      </span>
-                    </div>
-
-                    {courierLoading && (
-                      <div className="flex items-center gap-2 text-sm text-stone-400 py-2">
-                        <Loader2 size={16} className="animate-spin" />
-                        Checking available couriers...
-                      </div>
-                    )}
-
-                    {courierError && !courierLoading && (
-                      <p className="text-sm text-amber-600 py-2">{courierError}</p>
-                    )}
-
-                    {!courierLoading && couriers.length > 0 && (
-                      <div className="space-y-2">
-                        {couriers.map((c: any) => (
-                          <label
-                            key={c.service}
-                            className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${
-                              selectedCourier?.service === c.service
-                                ? "border-emerald-600 bg-emerald-50"
-                                : "border-stone-200 hover:border-stone-400"
-                            }`}
-                          >
-                            <input
-                              type="radio"
-                              name="courier"
-                              checked={selectedCourier?.service === c.service}
-                              onChange={() => setSelectedCourier(c)}
-                              className="accent-emerald-700"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-stone-800">
-                                {c.service}
-                              </p>
-                              {c.estimated_delivery && (
-                                <p className="text-xs text-stone-400">
-                                  Estimated delivery: {c.estimated_delivery}
-                                </p>
-                              )}
-                            </div>
-                            <span className="text-sm font-bold text-stone-800">
-                              ₹{c.rate}
-                            </span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
 
                 <label className="flex items-center gap-3 cursor-pointer pt-2">
                   <input

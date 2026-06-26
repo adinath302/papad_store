@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Package, ArrowLeft } from "lucide-react";
+import { Package, ArrowLeft, Truck } from "lucide-react";
 import { SkeletonOrders } from "@/components/Skeleton/Skeleton";
 
 type OrderItem = {
@@ -18,6 +18,7 @@ type Order = {
   paymentType: string;
   createdAt: string;
   fullName: string;
+  trackingId: string | null;
   orderitem: OrderItem[];
 };
 
@@ -131,7 +132,14 @@ export default function OrdersPage() {
 
                 <div className="mt-4 pt-4 border-t border-stone-100 flex items-center justify-between text-xs text-stone-400">
                   <span>{order.paymentType}</span>
-                  <span>{order.fullName}</span>
+                  <div className="flex items-center gap-3">
+                    {order.trackingId && order.trackingId !== "PENDING" && (
+                      <Link href={`/track?order=${order.id}`} className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-600 font-bold transition-colors">
+                        <Truck size={14} /> Track
+                      </Link>
+                    )}
+                    <span>{order.fullName}</span>
+                  </div>
                 </div>
               </div>
             ))}

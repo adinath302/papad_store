@@ -24,74 +24,42 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { state, guestItems, shippingCost: clientShippingCost, couponCode } = body;
+    const { state, items: clientItems, shippingCost: clientShippingCost, couponCode } = body;
+
+    if (!clientItems || !Array.isArray(clientItems) || clientItems.length === 0) {
+      return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+    }
 
     let subtotal = 0;
-
-    if (!userId) {
-      if (!guestItems || !Array.isArray(guestItems) || guestItems.length === 0) {
-        return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
+    for (const ci of clientItems) {
+      const product = await prisma.product.findUnique({
+        where: { id: ci.productId },
+        include: { productvariant: true },
+      });
+      if (!product) {
+        return NextResponse.json(
+          { error: `Product not found: ${ci.productId}` },
+          { status: 400 },
+        );
       }
-
-      for (const gi of guestItems) {
-        const product = await prisma.product.findUnique({
-          where: { id: gi.productId },
-          include: { productvariant: true },
-        });
-        if (!product) {
+      let price = 0;
+      if (ci.variantId) {
+        const variant = product.productvariant.find(
+          (v) => v.id === ci.variantId,
+        );
+        if (!variant) {
           return NextResponse.json(
-            { error: `Product not found: ${gi.productId}` },
+            { error: `Variant not found for ${product.name}` },
             { status: 400 },
           );
         }
-        let price = 0;
-        if (gi.variantId) {
-          const variant = product.productvariant.find(
-            (v) => v.id === gi.variantId,
-          );
-          if (!variant) {
-            return NextResponse.json(
-              { error: `Variant not found for ${product.name}` },
-              { status: 400 },
-            );
-          }
-          price = variant.price;
-        } else {
-          price = product.productvariant.length > 0
-            ? product.productvariant[0].price
-            : 0;
-        }
-        subtotal += price * gi.quantity;
+        price = variant.price;
+      } else {
+        price = product.productvariant.length > 0
+          ? product.productvariant[0].price
+          : 0;
       }
-    } else {
-      const cartItems = await prisma.cartitem.findMany({
-        where: { userId },
-        include: {
-          product: {
-            include: { productvariant: true },
-          },
-        },
-      });
-
-      if (cartItems.length === 0) {
-        return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
-      }
-
-      for (const item of cartItems) {
-        let price = 0;
-        if (item.variantId) {
-          const variant = item.product.productvariant.find(
-            (v) => v.id === item.variantId,
-          );
-          if (variant) price = variant.price;
-        } else {
-          price =
-            item.product.productvariant.length > 0
-              ? item.product.productvariant[0].price
-              : 0;
-        }
-        subtotal += price * item.quantity;
-      }
+      subtotal += price * ci.quantity;
     }
 
     const shippingCost = clientShippingCost ?? calculateShippingFee(subtotal, state);

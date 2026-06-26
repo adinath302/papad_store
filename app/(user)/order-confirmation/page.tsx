@@ -10,7 +10,6 @@ import {
   Package,
   MapPin,
   CreditCard,
-  Truck,
 } from "lucide-react";
 import { SkeletonOrderConfirmation } from "@/components/Skeleton/Skeleton";
 
@@ -170,35 +169,7 @@ export default function OrderConfirmationPage() {
           </div>
         </div>
 
-        {/* Tracking */}
-        {order.trackingId && order.trackingId !== "PENDING" && (
-          <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 mb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Truck size={20} className="text-emerald-700" />
-              <h2 className="text-lg font-serif text-stone-900">Tracking</h2>
-            </div>
-            <div className="text-sm text-stone-600 space-y-2">
-              <div className="flex items-center justify-between bg-stone-50 rounded-xl p-4">
-                <div>
-                  <p className="text-xs text-stone-400 uppercase tracking-wider font-medium">
-                    Courier
-                  </p>
-                  <p className="font-medium text-stone-800 mt-0.5">
-                    {order.courierName || "Shiprocket"}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-xs text-stone-400 uppercase tracking-wider font-medium">
-                    Tracking ID
-                  </p>
-                  <p className="font-mono font-bold text-stone-800 mt-0.5 text-sm">
-                    {order.trackingId}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Actions */}
         <div className="flex flex-col sm:flex-row gap-4">

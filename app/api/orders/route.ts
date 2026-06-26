@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { can, isOwner } from "@/lib/permissions";
 import { cookies } from "next/headers";
 import { sendCustomerShippingNotification } from "@/lib/email";
+import { getTrackingUrl } from "@/lib/tracking";
 
 async function getCurrentUser() {
   const cookieStore = await cookies();
@@ -60,11 +61,11 @@ export async function PATCH(req: Request) {
       );
     }
 
-    if (status && !can(currentUser.permissions, "orders", "update_status")) {
+    if (status && !isOwner(currentUser.email) && !can(currentUser.permissions, "orders", "update_status")) {
       return NextResponse.json({ error: "Forbidden: cannot update order status" }, { status: 403 });
     }
 
-    if ((courierName !== undefined || trackingId !== undefined) && !can(currentUser.permissions, "orders", "add_tracking")) {
+    if ((courierName !== undefined || trackingId !== undefined) && !isOwner(currentUser.email) && !can(currentUser.permissions, "orders", "add_tracking")) {
       return NextResponse.json({ error: "Forbidden: cannot add tracking info" }, { status: 403 });
     }
 
@@ -88,11 +89,13 @@ export async function PATCH(req: Request) {
       (data.trackingId !== undefined || data.status === "SHIPPED");
 
     if (shouldNotify && order.user?.email) {
+      const trackingUrl = getTrackingUrl(order.courierName, order.trackingId);
       sendCustomerShippingNotification(order.user.email, {
         orderId: order.id,
         fullName: order.fullName,
         courierName: order.courierName || "",
         trackingId: order.trackingId || "",
+        trackingUrl,
         items: order.orderitem.map((oi) => ({
           name: oi.product.name,
           quantity: oi.quantity,

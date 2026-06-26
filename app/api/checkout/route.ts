@@ -25,7 +25,7 @@ export async function POST(req: Request) {
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature,
-      guestItems,
+      items: clientItems,
       shippingMethod,
       shippingCost: clientShippingCost,
       couponCode,
@@ -70,61 +70,45 @@ export async function POST(req: Request) {
       }
     }
 
-    let cartItems: any[] = [];
+    if (!clientItems || !Array.isArray(clientItems) || clientItems.length === 0) {
+      return Response.json({ error: "Cart is empty" }, { status: 400 });
+    }
 
-    if (!userId) {
-      if (!guestItems || !Array.isArray(guestItems) || guestItems.length === 0) {
-        return Response.json({ error: "Cart is empty" }, { status: 400 });
-      }
-
-      for (const gi of guestItems) {
-        const product = await prisma.product.findUnique({
-          where: { id: gi.productId },
-          include: { productvariant: true },
-        });
-        if (!product) {
-          return Response.json(
-            { error: `Product not found: ${gi.productId}` },
-            { status: 400 },
-          );
-        }
-        if (product.stock != null && product.stock < gi.quantity) {
-          return Response.json(
-            { error: `${product.name} has insufficient stock` },
-            { status: 400 },
-          );
-        }
-        if (gi.variantId) {
-          const variant = product.productvariant.find(
-            (v) => v.id === gi.variantId,
-          );
-          if (!variant) {
-            return Response.json(
-              { error: `Variant not found for ${product.name}` },
-              { status: 400 },
-            );
-          }
-        }
-        cartItems.push({
-          productId: gi.productId,
-          variantId: gi.variantId || null,
-          quantity: gi.quantity,
-          product,
-        });
-      }
-    } else {
-      cartItems = await prisma.cartitem.findMany({
-        where: { userId },
-        include: {
-          product: {
-            include: { productvariant: true },
-          },
-        },
+    const cartItems: any[] = [];
+    for (const ci of clientItems) {
+      const product = await prisma.product.findUnique({
+        where: { id: ci.productId },
+        include: { productvariant: true },
       });
-
-      if (cartItems.length === 0) {
-        return Response.json({ error: "Cart is empty" }, { status: 400 });
+      if (!product) {
+        return Response.json(
+          { error: `Product not found: ${ci.productId}` },
+          { status: 400 },
+        );
       }
+      if (product.stock != null && product.stock < ci.quantity) {
+        return Response.json(
+          { error: `${product.name} has insufficient stock` },
+          { status: 400 },
+        );
+      }
+      if (ci.variantId) {
+        const variant = product.productvariant.find(
+          (v) => v.id === ci.variantId,
+        );
+        if (!variant) {
+          return Response.json(
+            { error: `Variant not found for ${product.name}` },
+            { status: 400 },
+          );
+        }
+      }
+      cartItems.push({
+        productId: ci.productId,
+        variantId: ci.variantId || null,
+        quantity: ci.quantity,
+        product,
+      });
     }
 
     const subtotal = cartItems.reduce((sum, item: any) => {

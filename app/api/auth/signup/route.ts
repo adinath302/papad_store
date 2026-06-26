@@ -50,6 +50,13 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
     });
 
+    cookieStore.set("isLoggedIn", "true", {
+      httpOnly: false,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+    });
+
     return Response.json({
       id: user.id,
       name: user.name,

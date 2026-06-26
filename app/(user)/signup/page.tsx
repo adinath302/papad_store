@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Mail, Lock, User, Eye, EyeOff, UserPlus, Check } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
+import { getGuestCart, clearGuestCart } from "@/lib/guest-cart";
 import { useToast } from "@/components/Toast/ToastProvider";
 
 export const dynamic = "force-dynamic";
@@ -45,6 +46,24 @@ export default function SignupPage() {
         setError(data.error);
         setIsLoading(false);
         return;
+      }
+
+      const guestItems = getGuestCart();
+      if (guestItems.length > 0) {
+        await Promise.all(
+          guestItems.map((item) =>
+            fetch("/api/cart", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                productId: item.productId,
+                variantId: item.variantId,
+                quantity: item.quantity,
+              }),
+            }),
+          ),
+        );
+        clearGuestCart();
       }
 
       const redirect = searchParams.get("redirect") || "/";

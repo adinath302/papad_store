@@ -97,3 +97,12 @@ main {
 .animate-heritage-scroll {
   animation: heritage-scroll 25s linear infinite;
 }
+
+/* Mobile drawer / sidebar background fix */
+.mobile-drawer-panel {
+  background-color: #ffffff !important;
+}
+
+.mobile-drawer-overlay {
+  background-color: rgba(0, 0, 0, 0.65) !important;
+}

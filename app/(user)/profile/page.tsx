@@ -54,6 +54,7 @@ type Order = {
   status: string;
   totalAmount: number;
   createdAt: string;
+  trackingId: string | null;
   orderitem: OrderItem[];
 };
 
@@ -74,10 +75,6 @@ function formatDate(dateStr: string) {
     month: "short",
     year: "numeric",
   });
-}
-
-function formatPrice(paise: number) {
-  return `₹${(paise / 100).toLocaleString("en-IN")}`;
 }
 
 export default function ProfilePage() {
@@ -203,37 +200,31 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-stone-900 pt-20 pb-16">
-      {/* Decorative background elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-96 h-96 bg-emerald-800/20 rounded-full blur-3xl" />
-        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-amber-800/10 rounded-full blur-3xl" />
-      </div>
-
-      <div className="relative max-w-5xl mx-auto px-4 md:px-6">
-        {/* Profile Header Card */}
-        <div className="bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 p-6 md:p-10 mb-8 shadow-2xl">
+    <main className="min-h-screen bg-[#faf8f5] pt-28 pb-20">
+      <div className="max-w-5xl mx-auto px-4 md:px-6">
+        {/* Profile Header */}
+        <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 mb-8 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center gap-6">
             <div className="relative">
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white text-3xl md:text-4xl font-bold shadow-lg shadow-emerald-900/30">
+              <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-emerald-800 flex items-center justify-center text-white text-3xl md:text-4xl font-serif font-bold shadow-sm">
                 {(user?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
               </div>
               {user?.isAdmin && (
-                <div className="absolute -top-1 -right-1 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center shadow-lg">
+                <div className="absolute -top-1 -right-1 w-6 h-6 bg-amber-400 rounded-full flex items-center justify-center shadow-sm">
                   <Shield size={12} className="text-stone-900" />
                 </div>
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl md:text-3xl font-bold text-white">
+              <h1 className="text-2xl md:text-3xl font-serif text-stone-900">
                 {user?.name || "Your Account"}
               </h1>
-              <div className="flex items-center gap-2 text-emerald-200/70 text-sm mt-1">
+              <div className="flex items-center gap-2 text-stone-400 text-sm mt-1">
                 <Mail size={14} />
                 <span className="truncate">{user?.email}</span>
               </div>
               {user?.isAdmin && (
-                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-400/10 border border-amber-400/20 rounded-full text-amber-300 text-[11px] font-semibold uppercase tracking-wider">
+                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 border border-amber-200 rounded-full text-amber-700 text-[11px] font-bold uppercase tracking-wider">
                   <Shield size={11} />
                   Admin
                 </div>
@@ -242,7 +233,7 @@ export default function ProfilePage() {
 
             <button
               onClick={handleLogout}
-              className="self-start md:self-center flex items-center gap-2 px-5 py-2.5 bg-white/10 hover:bg-red-500/20 text-white/70 hover:text-red-300 rounded-xl text-sm font-semibold border border-white/10 hover:border-red-500/30 transition-all"
+              className="self-start md:self-center flex items-center gap-2 px-5 py-2.5 bg-white border border-stone-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-stone-500 rounded-xl text-sm font-bold transition-all"
             >
               <LogOut size={15} />
               Logout
@@ -251,26 +242,26 @@ export default function ProfilePage() {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mt-8">
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-              <div className="flex items-center gap-2 text-emerald-300/70 text-xs uppercase tracking-wider font-semibold mb-1">
+            <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+              <div className="flex items-center gap-2 text-stone-400 text-xs uppercase tracking-wider font-bold mb-1">
                 <Package size={13} />
                 Orders
               </div>
-              <p className="text-2xl font-bold text-white">{orders.length}</p>
+              <p className="text-2xl font-bold text-stone-900">{orders.length}</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/5">
-              <div className="flex items-center gap-2 text-emerald-300/70 text-xs uppercase tracking-wider font-semibold mb-1">
+            <div className="bg-stone-50 rounded-xl p-4 border border-stone-100">
+              <div className="flex items-center gap-2 text-stone-400 text-xs uppercase tracking-wider font-bold mb-1">
                 <MapPin size={13} />
                 Addresses
               </div>
-              <p className="text-2xl font-bold text-white">{addresses.length}</p>
+              <p className="text-2xl font-bold text-stone-900">{addresses.length}</p>
             </div>
-            <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-emerald-500/10 to-amber-500/5 rounded-2xl p-4 border border-emerald-500/10">
-              <div className="flex items-center gap-2 text-emerald-300/70 text-xs uppercase tracking-wider font-semibold mb-1">
+            <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-emerald-50 to-white rounded-xl p-4 border border-emerald-100">
+              <div className="flex items-center gap-2 text-emerald-600 text-xs uppercase tracking-wider font-bold mb-1">
                 <CreditCard size={13} />
                 Member since
               </div>
-              <p className="text-sm font-medium text-white/80">
+              <p className="text-sm font-medium text-stone-600">
                 {new Date().getFullYear()}
               </p>
             </div>
@@ -283,10 +274,10 @@ export default function ProfilePage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold tracking-wide transition-all whitespace-nowrap ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold tracking-wide transition-all whitespace-nowrap ${
                 activeTab === tab
-                  ? "bg-white text-emerald-900 shadow-lg shadow-emerald-900/20"
-                  : "bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/80 border border-white/10"
+                  ? "bg-stone-900 text-white shadow-sm"
+                  : "bg-white text-stone-500 hover:text-stone-800 border border-stone-200 shadow-sm"
               }`}
             >
               {tab === "Account" && <User size={15} />}
@@ -301,12 +292,12 @@ export default function ProfilePage() {
         {activeTab === "Account" && (
           <div className="grid gap-6 md:grid-cols-2">
             {/* Profile Details */}
-            <div className="bg-white rounded-3xl border border-stone-200 p-6 md:p-8 shadow-sm">
+            <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 shadow-sm">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <User size={20} className="text-emerald-700" />
+                <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center">
+                  <User size={20} className="text-stone-600" />
                 </div>
-                <h2 className="text-lg font-bold text-stone-900">
+                <h2 className="text-lg font-serif text-stone-900">
                   Profile Details
                 </h2>
               </div>
@@ -327,7 +318,7 @@ export default function ProfilePage() {
                       <button
                         onClick={handleSaveName}
                         disabled={savingName}
-                        className="p-2.5 bg-emerald-800 text-white rounded-xl hover:bg-emerald-700 transition disabled:opacity-50"
+                        className="p-2.5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition disabled:opacity-50"
                       >
                         <Save size={16} />
                       </button>
@@ -373,7 +364,7 @@ export default function ProfilePage() {
               {user?.isAdmin && (
                 <Link
                   href="/admin"
-                  className="flex items-center gap-4 p-5 bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-200 rounded-2xl hover:shadow-md transition-all group"
+                  className="flex items-center gap-4 p-5 bg-amber-50 border border-amber-200 rounded-2xl hover:shadow-sm transition-all group"
                 >
                   <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center group-hover:bg-amber-200 transition-colors">
                     <Shield size={22} className="text-amber-800" />
@@ -395,10 +386,10 @@ export default function ProfilePage() {
 
               <Link
                 href="/orders"
-                className="flex items-center gap-4 p-5 bg-white border border-stone-200 rounded-2xl hover:shadow-md transition-all group"
+                className="flex items-center gap-4 p-5 bg-white border border-stone-200 rounded-2xl hover:shadow-sm transition-all group"
               >
-                <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
-                  <ShoppingBag size={22} className="text-emerald-800" />
+                <div className="w-12 h-12 rounded-xl bg-stone-100 flex items-center justify-center group-hover:bg-stone-200 transition-colors">
+                  <ShoppingBag size={22} className="text-stone-600" />
                 </div>
                 <div className="flex-1">
                   <p className="font-bold text-stone-800 text-sm">
@@ -418,13 +409,13 @@ export default function ProfilePage() {
         )}
 
         {activeTab === "Addresses" && (
-          <div className="bg-white rounded-3xl border border-stone-200 p-6 md:p-8 shadow-sm">
+          <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <MapPin size={20} className="text-emerald-700" />
+                <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center">
+                  <MapPin size={20} className="text-stone-600" />
                 </div>
-                <h2 className="text-lg font-bold text-stone-900">
+                <h2 className="text-lg font-serif text-stone-900">
                   Saved Addresses
                 </h2>
               </div>
@@ -438,7 +429,7 @@ export default function ProfilePage() {
             </div>
 
             {showAddAddress && (
-              <div className="mb-8 p-6 bg-gradient-to-br from-stone-50 to-white border border-stone-200 rounded-2xl space-y-4">
+              <div className="mb-8 p-6 bg-stone-50 border border-stone-200 rounded-xl space-y-4">
                 <h3 className="text-sm font-bold text-stone-800 mb-1">
                   New Address
                 </h3>
@@ -526,11 +517,11 @@ export default function ProfilePage() {
                 {addresses.map((addr) => (
                   <div
                     key={addr.id}
-                    className="relative p-5 border border-stone-200 rounded-2xl hover:border-emerald-200 hover:shadow-sm transition-all bg-white group"
+                    className="relative p-5 border border-stone-200 rounded-xl hover:border-emerald-200 hover:shadow-sm transition-all bg-white group"
                   >
                     <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <Home size={16} className="text-emerald-700" />
+                      <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <Home size={16} className="text-stone-500" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="font-semibold text-stone-900 text-sm">
@@ -556,12 +547,12 @@ export default function ProfilePage() {
         )}
 
         {activeTab === "Orders" && (
-          <div className="bg-white rounded-3xl border border-stone-200 p-6 md:p-8 shadow-sm">
+          <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 shadow-sm">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center">
-                <Package size={20} className="text-emerald-700" />
+              <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center">
+                <Package size={20} className="text-stone-600" />
               </div>
-              <h2 className="text-lg font-bold text-stone-900">
+              <h2 className="text-lg font-serif text-stone-900">
                 Order History
               </h2>
             </div>
@@ -588,7 +579,7 @@ export default function ProfilePage() {
                   <Link
                     key={order.id}
                     href={`/order-confirmation?id=${order.id}`}
-                    className="block p-5 border border-stone-200 rounded-2xl hover:border-emerald-200 hover:shadow-md transition-all group"
+                    className="block p-5 border border-stone-200 rounded-xl hover:border-emerald-200 hover:shadow-sm transition-all group"
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -625,8 +616,13 @@ export default function ProfilePage() {
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-lg font-bold text-stone-900">
-                          {formatPrice(order.totalAmount)}
+                          ₹{order.totalAmount}
                         </p>
+                        {order.trackingId && order.trackingId !== "PENDING" && (
+                          <span className="text-[10px] font-bold text-emerald-700 flex items-center gap-1 justify-end mt-1">
+                            <Package size={11} /> Shipped
+                          </span>
+                        )}
                         <ChevronRight
                           size={16}
                           className="text-stone-300 group-hover:text-emerald-600 group-hover:translate-x-1 transition-all ml-auto mt-1"
@@ -640,6 +636,6 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   );
 }

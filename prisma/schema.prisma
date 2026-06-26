@@ -81,6 +81,7 @@ model product {
   nameMarathi    String?
   description    String?
   stock          Int?
+  weight         Int              @default(200)
   image          String?
   thumbnail      String?
   productType    String           @default("weight")

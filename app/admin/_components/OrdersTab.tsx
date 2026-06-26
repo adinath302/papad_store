@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingBag, Calculator } from "lucide-react";
 import type { Order } from "./types";
 import { statusStyles } from "./types";
 
@@ -16,6 +16,22 @@ export default function OrdersTab({ orders, isOwner, hasPerm, onOrderChange }: O
   const [shippingOrderId, setShippingOrderId] = useState<string | null>(null);
   const [shipCourier, setShipCourier] = useState("IndiaPost - Speed Post");
   const [shipTracking, setShipTracking] = useState("");
+  const [actualShipping, setActualShipping] = useState<Record<string, { rate: number; weight: number; loading?: boolean }>>({});
+
+  const calcActualShipping = async (orderId: string) => {
+    setActualShipping((prev) => ({ ...prev, [orderId]: { rate: 0, weight: 0, loading: true } }));
+    try {
+      const res = await fetch(`/api/orders/actual-shipping?id=${orderId}`);
+      const data = await res.json();
+      if (data.rate != null) {
+        setActualShipping((prev) => ({ ...prev, [orderId]: { rate: data.rate, weight: data.weight, loading: false } }));
+      } else {
+        setActualShipping((prev) => ({ ...prev, [orderId]: { rate: -1, weight: data.weight || 0, loading: false } }));
+      }
+    } catch {
+      setActualShipping((prev) => ({ ...prev, [orderId]: { rate: -1, weight: 0, loading: false } }));
+    }
+  };
 
   const updateOrderStatus = async (id: string, status: string) => {
     await fetch("/api/orders", {
@@ -85,13 +101,34 @@ export default function OrdersTab({ orders, isOwner, hasPerm, onOrderChange }: O
                     </td>
                     <td className="px-5 py-4 text-stone-600 hidden sm:table-cell">₹{order.totalAmount - order.shippingCost}</td>
                     <td className="px-5 py-4 text-stone-600">
-                      <div>
-                        {order.shippingCost > 0 ? (
-                          <span className="font-semibold">₹{order.shippingCost}</span>
-                        ) : (
-                          <span className="text-emerald-600 text-[11px] font-medium">Free</span>
+                      <div className="flex items-center gap-2">
+                        <div>
+                          {order.shippingCost > 0 ? (
+                            <span className="font-semibold">₹{order.shippingCost}</span>
+                          ) : (
+                            <span className="text-emerald-600 text-[11px] font-medium">Free</span>
+                          )}
+                        </div>
+                        {(isOwner || hasPerm("orders", "update_status")) && (
+                          <button onClick={() => calcActualShipping(order.id)}
+                            className="p-1.5 text-stone-400 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all"
+                            title="Calculate actual shipping cost">
+                            <Calculator size={14} />
+                          </button>
                         )}
                       </div>
+                      {actualShipping[order.id] && !actualShipping[order.id].loading && (
+                        <div className={`text-[11px] mt-1 ${actualShipping[order.id].rate > 0 ? "text-emerald-700" : "text-amber-600"}`}>
+                          {actualShipping[order.id].rate > 0
+                            ? `Actual: ₹${actualShipping[order.id].rate} (${actualShipping[order.id].weight}g${actualShipping[order.id].weight >= 1000 ? ` / ${(actualShipping[order.id].weight / 1000).toFixed(1)}kg` : ""})`
+                            : actualShipping[order.id].rate === -1
+                              ? "Rate unavailable"
+                              : "Calculating..."}
+                        </div>
+                      )}
+                      {actualShipping[order.id]?.loading && (
+                        <div className="text-[11px] text-stone-400 mt-1">Calculating...</div>
+                      )}
                       {order.courierName && (
                         <p className="text-[10px] text-stone-400 mt-0.5 truncate max-w-[130px]" title={order.courierName}>{order.courierName}</p>
                       )}

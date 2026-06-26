@@ -90,6 +90,7 @@ export default function Footer() {
             <div className="space-y-5">
               <h4 className="text-white font-bold tracking-wider text-xs uppercase">Policies</h4>
               <ul className="space-y-3 text-sm">
+                <li><FooterLink href="/track">Track Order</FooterLink></li>
                 <li><FooterLink href="/returns">Returns Policy</FooterLink></li>
                 <li><FooterLink href="/shipping-policy">Shipping Policy</FooterLink></li>
                 <li><FooterLink href="/wishlist">My Wishlist</FooterLink></li>
