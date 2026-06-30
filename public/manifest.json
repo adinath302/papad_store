@@ -1,0 +1,16 @@
+{
+  "name": "Papad Store — Crafted with Tradition",
+  "short_name": "Papad Store",
+  "description": "Handcrafted papads, kurdai, and traditional Indian snacks since 1984. Order online for free delivery across India.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf8f5",
+  "theme_color": "#065f46",
+  "orientation": "portrait-primary",
+  "categories": ["food", "shopping", "lifestyle"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

@@ -1,42 +1,101 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Star, Quote } from "lucide-react";
 
-const reviews = [
+type Review = {
+  id: string;
+  name: string;
+  rating: number;
+  comment: string;
+  createdAt: string | null;
+  product: { name: string };
+};
+
+const fallbackReviews: Review[] = [
   {
+    id: "fallback-0",
     name: "Priya Sharma",
-    location: "Mumbai",
-    text: "The moong papads are exactly like my grandmother used to make. Crispy, fresh, and perfectly spiced. Will definitely order again!",
     rating: 5,
+    comment:
+      "The moong papads are exactly like my grandmother used to make. Crispy, fresh, and perfectly spiced. Will definitely order again!",
+    createdAt: null,
+    product: { name: "" },
   },
   {
+    id: "fallback-1",
     name: "Rajesh Kumar",
-    location: "Hyderabad",
-    text: "Excellent packaging — not a single papad was broken. Delivery was quick and the masala variant is our new family favorite.",
     rating: 5,
+    comment:
+      "Excellent packaging — not a single papad was broken. Delivery was quick and the masala variant is our new family favorite.",
+    createdAt: null,
+    product: { name: "" },
   },
   {
+    id: "fallback-2",
     name: "Ananya Patel",
-    location: "Ahmedabad",
-    text: "Authentic taste that takes me back to Rajasthan. The garlic papads are incredible with evening chai. Highly recommended!",
     rating: 5,
+    comment:
+      "Authentic taste that takes me back to Rajasthan. The garlic papads are incredible with evening chai. Highly recommended!",
+    createdAt: null,
+    product: { name: "" },
   },
   {
+    id: "fallback-3",
     name: "Suresh Menon",
-    location: "Bangalore",
-    text: "Ordered the festive combo for Diwali — guests loved it. Quality is consistent and prices are very fair for handmade products.",
     rating: 4,
+    comment:
+      "Ordered the festive combo for Diwali — guests loved it. Quality is consistent and prices are very fair for handmade products.",
+    createdAt: null,
+    product: { name: "" },
   },
 ];
 
+function formatDate(dateStr: string | null) {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("en-IN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export default function ReviewsSection() {
+  const [reviews, setReviews] = useState<Review[]>(fallbackReviews);
   const [index, setIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    fetch("/api/reviews/featured")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.reviews && data.reviews.length > 0) {
+          setReviews(data.reviews);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (isPaused) {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      return;
+    }
+    intervalRef.current = setInterval(() => {
+      setIndex((i) => (i + 1) % reviews.length);
+    }, 5000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [isPaused, reviews.length]);
 
   const prev = () =>
     setIndex((i) => (i === 0 ? reviews.length - 1 : i - 1));
   const next = () =>
     setIndex((i) => (i === reviews.length - 1 ? 0 : i + 1));
+
+  const review = reviews[index];
 
   return (
     <section className="py-16 md:py-24 bg-white">
@@ -50,7 +109,11 @@ export default function ReviewsSection() {
           </h2>
         </div>
 
-        <div className="relative max-w-3xl mx-auto">
+        <div
+          className="relative max-w-3xl mx-auto"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
           <div className="bg-[#faf8f5] rounded-3xl border border-stone-200/80 p-8 md:p-12 text-center shadow-sm">
             <Quote
               size={32}
@@ -59,7 +122,7 @@ export default function ReviewsSection() {
             />
 
             <p className="text-stone-700 text-base md:text-lg leading-relaxed mb-8 min-h-[4.5rem]">
-              &ldquo;{reviews[index].text}&rdquo;
+              &ldquo;{review.comment}&rdquo;
             </p>
 
             <div className="flex justify-center gap-0.5 mb-4">
@@ -68,7 +131,7 @@ export default function ReviewsSection() {
                   key={i}
                   size={14}
                   className={
-                    i < reviews[index].rating
+                    i < review.rating
                       ? "text-amber-500 fill-amber-500"
                       : "text-stone-300"
                   }
@@ -76,9 +139,12 @@ export default function ReviewsSection() {
               ))}
             </div>
 
-            <p className="font-semibold text-stone-900">{reviews[index].name}</p>
+            <p className="font-semibold text-stone-900">{review.name}</p>
             <p className="text-xs text-stone-500 mt-1">
-              Verified Buyer · {reviews[index].location}
+              {review.product.name
+                ? `Verified Buyer · ${review.product.name}`
+                : "Verified Buyer"}
+              {review.createdAt && ` · ${formatDate(review.createdAt)}`}
             </p>
           </div>
 

@@ -1,5 +1,8 @@
 import nodemailer from "nodemailer";
 
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
+const SUPPORT_PHONE = process.env.SUPPORT_PHONE || "+91 98765 43210";
+
 type OrderEmailData = {
   orderId: string;
   fullName: string;
@@ -26,7 +29,7 @@ function getTransporter() {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST,
     port: Number(process.env.SMTP_PORT) || 587,
-    secure: false,
+    secure: process.env.SMTP_SECURE === "true",
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
@@ -106,7 +109,7 @@ export async function sendAdminOrderNotification(data: OrderEmailData) {
         </div>
 
         <p style="margin-top:20px;font-size:12px;color:#999;text-align:center;">
-          <a href="${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/admin" style="color:#065f46;">View in Admin Panel →</a>
+          <a href="${BASE_URL}/admin" style="color:#065f46;">View in Admin Panel →</a>
         </p>
       </div>
     </div>
@@ -198,7 +201,7 @@ export async function sendCustomerOrderConfirmation(
         </div>
 
         <div style="text-align:center;margin-top:24px;">
-          <a href="${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/orders" style="display:inline-block;background:#065f46;color:#fff;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
+          <a href="${BASE_URL}/orders" style="display:inline-block;background:#065f46;color:#fff;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
             View My Order
           </a>
         </div>
@@ -209,8 +212,8 @@ export async function sendCustomerOrderConfirmation(
           <span style="font-size:11px;">Crafted with tradition since 1984</span>
         </p>
         <p style="font-size:11px;color:#bbb;text-align:center;margin-top:16px;">
-          Need help? Reply to this email or call +91 98765 43210<br>
-          <a href="${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/privacy" style="color:#065f46;">Privacy Policy</a>
+          Need help? Reply to this email or call ${SUPPORT_PHONE}<br>
+          <a href="${BASE_URL}/privacy" style="color:#065f46;">Privacy Policy</a>
         </p>
       </div>
     </div>
@@ -303,7 +306,7 @@ export async function sendCustomerShippingNotification(
         </div>
         ` : ""}
         <p style="font-size:12px;color:#999;text-align:center;margin-top:12px;">
-          Or track anytime at <a href="${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/track" style="color:#065f46;font-weight:600;">${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/track</a>
+            Or track anytime at <a href="${BASE_URL}/track" style="color:#065f46;font-weight:600;">${BASE_URL}/track</a>
         </p>
 
         <p style="margin-top:24px;font-size:12px;color:#999;text-align:center;line-height:1.6;">
@@ -312,8 +315,8 @@ export async function sendCustomerShippingNotification(
           <span style="font-size:11px;">Crafted with tradition since 1984</span>
         </p>
         <p style="font-size:11px;color:#bbb;text-align:center;margin-top:16px;">
-          Need help? Reply to this email or call +91 98765 43210<br>
-          <a href="${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/privacy" style="color:#065f46;">Privacy Policy</a>
+          Need help? Reply to this email or call ${SUPPORT_PHONE}<br>
+          <a href="${BASE_URL}/privacy" style="color:#065f46;">Privacy Policy</a>
         </p>
       </div>
     </div>
@@ -328,5 +331,114 @@ export async function sendCustomerShippingNotification(
     });
   } catch (error) {
     console.error("Failed to send shipping notification:", error);
+  }
+}
+
+const STATUS_EMAILS: Record<string, { icon: string; title: string; message: string }> = {
+  CONFIRMED: {
+    icon: "✅",
+    title: "Order Confirmed",
+    message: "Your order has been confirmed and we're preparing it fresh in our kitchen.",
+  },
+  SHIPPED: {
+    icon: "🚚",
+    title: "Order Shipped",
+    message: "Your order has been packed and handed over to the courier partner.",
+  },
+  DELIVERED: {
+    icon: "📦",
+    title: "Order Delivered",
+    message: "Your order has been delivered. We hope you enjoy every bite!",
+  },
+  CANCELLED: {
+    icon: "❌",
+    title: "Order Cancelled",
+    message: "Your order has been cancelled. If you have any questions, please reach out.",
+  },
+};
+
+export async function sendCustomerOrderStatusUpdate(
+  email: string,
+  data: OrderEmailData,
+) {
+  const transporter = getTransporter();
+  if (!transporter || !email) return;
+
+  const statusInfo = STATUS_EMAILS[data.status];
+  if (!statusInfo) return;
+
+  const itemsHtml = data.items
+    .map(
+      (item) =>
+        `<tr>
+          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;">${item.name}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#888;text-align:center;">× ${item.quantity}</td>
+        </tr>`,
+    )
+    .join("");
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
+      <div style="background:#065f46;padding:32px 24px;border-radius:16px 16px 0 0;text-align:center;">
+        <div style="font-size:48px;margin-bottom:12px;">${statusInfo.icon}</div>
+        <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">${statusInfo.title}</h1>
+        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">${statusInfo.message}</p>
+      </div>
+      <div style="background:#fff;border:1px solid #e5e5e5;border-top:0;padding:32px;border-radius:0 0 16px 16px;">
+        <p style="color:#333;font-size:15px;line-height:1.6;">
+          Namaste <strong style="color:#065f46;">${data.fullName}</strong>,
+        </p>
+        <p style="color:#666;font-size:14px;line-height:1.6;">${statusInfo.message}</p>
+
+        <div style="background:#faf8f5;border-radius:12px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr>
+                <th style="text-align:left;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Product</th>
+                <th style="text-align:right;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Qty</th>
+              </tr>
+            </thead>
+            <tbody>${itemsHtml}</tbody>
+          </table>
+          <div style="border-top:2px solid #065f46;margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:#065f46;">
+            <span>Total</span>
+            <span>₹${data.totalAmount}</span>
+          </div>
+        </div>
+
+        <div style="background:#fef3c7;border-radius:12px;padding:16px;text-align:center;margin:20px 0;border:1px solid #fde68a;">
+          <p style="color:#92400e;font-size:13px;margin:0;line-height:1.6;">
+            🏡 <strong>Handmade with love,</strong> sun-dried to perfection.
+          </p>
+        </div>
+
+        <div style="text-align:center;margin-top:24px;">
+          <a href="${BASE_URL}/orders" style="display:inline-block;background:#065f46;color:#fff;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
+            View My Orders
+          </a>
+        </div>
+
+        <p style="margin-top:24px;font-size:12px;color:#999;text-align:center;line-height:1.6;">
+          Warm regards,<br>
+          <strong style="color:#065f46;">The Shivshambho Family</strong><br>
+          <span style="font-size:11px;">Crafted with tradition since 1984</span>
+        </p>
+        <p style="font-size:11px;color:#bbb;text-align:center;margin-top:16px;">
+          Need help? Reply to this email or call ${SUPPORT_PHONE}<br>
+          <a href="${BASE_URL}/privacy" style="color:#065f46;">Privacy Policy</a>
+        </p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM,
+      to: email,
+      subject: `${statusInfo.icon} ${statusInfo.title} #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send status update email:", error);
   }
 }

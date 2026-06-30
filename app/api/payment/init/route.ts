@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { validateCsrfToken } from "@/lib/csrf";
 import {
   razorpay,
   getRazorpayKeyId,
@@ -9,6 +10,11 @@ import { prisma } from "@/lib/prisma";
 import { calculateShippingFee } from "@/lib/shipping";
 
 export async function POST(req: Request) {
+  const csrfToken = req.headers.get("x-csrf-token");
+  if (!(await validateCsrfToken(csrfToken))) {
+    return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+  }
+
   const cookieStore = await cookies();
   const userId = cookieStore.get("userId")?.value;
 

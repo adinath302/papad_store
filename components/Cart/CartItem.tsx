@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { Trash2, Plus, Minus } from "lucide-react";
-import { memo, useMemo } from "react";
+import { Trash2, Plus, Minus, Loader2 } from "lucide-react";
+import { memo, useMemo, useState } from "react";
 import { useToast } from "@/components/Toast/ToastProvider";
 import {
   removeFromGuestCart,
@@ -33,6 +33,8 @@ const CartItem = memo(function CartItem({
 }) {
   const { toast } = useToast();
   const isGuest = item.id.startsWith("guest-");
+  const [pendingQty, setPendingQty] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState(false);
 
   const variant = useMemo(() => {
     if (item.variantId) {
@@ -46,59 +48,71 @@ const CartItem = memo(function CartItem({
   const price = variant?.price ?? 0;
 
   const handleQuantity = async (action: "increase" | "decrease") => {
+    setPendingQty(true);
     if (isGuest) {
       const guestCart = getGuestCart();
       const guestItem = guestCart.find(
         (i) => i.productId === item.product.id && i.variantId === (item.variantId ?? i.variantId),
       );
-      if (!guestItem) return;
+      if (!guestItem) { setPendingQty(false); return; }
       const newQty =
         action === "increase"
           ? guestItem.quantity + 1
           : guestItem.quantity - 1;
       updateGuestCartQuantity(item.product.id, newQty, item.variantId ?? undefined);
       onUpdate?.();
+      setPendingQty(false);
       return;
     }
 
     const prevQty = item.quantity;
     const newQty = action === "increase" ? prevQty + 1 : prevQty - 1;
-    if (newQty < 1) return;
+    if (newQty < 1) { setPendingQty(false); return; }
     item.quantity = newQty;
     onUpdate?.();
 
-    const res = await fetch("/api/cart", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: item.id, action }),
-    });
-    const data = await res.json();
-    if (data.error) {
-      item.quantity = prevQty;
-      onUpdate?.();
-      toast(data.error, "error");
-    } else {
-      notifyCartUpdate();
+    try {
+      const res = await fetch("/api/cart", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, action }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        item.quantity = prevQty;
+        onUpdate?.();
+        toast(data.error, "error");
+      } else {
+        notifyCartUpdate();
+      }
+    } finally {
+      setPendingQty(false);
     }
   };
 
   const handleDelete = async () => {
+    setPendingDelete(true);
     if (isGuest) {
       removeFromGuestCart(item.product.id, item.variantId ?? undefined);
       onUpdate?.();
+      setPendingDelete(false);
       return;
     }
 
     onUpdate?.();
 
-    const res = await fetch(`/api/cart?id=${item.id}`, {
-      method: "DELETE",
-    });
-    const data = await res.json();
-    if (data.error) {
-      toast(data.error, "error");
-    } else {
-      notifyCartUpdate();
+    try {
+      const res = await fetch(`/api/cart?id=${item.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.error) {
+        toast(data.error, "error");
+      } else {
+        notifyCartUpdate();
+      }
+    } finally {
+      setPendingDelete(false);
     }
   };
 
@@ -127,10 +141,11 @@ const CartItem = memo(function CartItem({
         <div className="flex items-center gap-2 mt-2">
           <button
             onClick={() => handleQuantity("decrease")}
+            disabled={pendingQty}
             aria-label="Decrease quantity"
-            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-40"
           >
-            <Minus size={16} />
+            {pendingQty ? <Loader2 size={16} className="animate-spin" /> : <Minus size={16} />}
           </button>
 
           <span className="text-sm sm:text-base font-bold text-zinc-900 w-8 text-center">
@@ -139,10 +154,11 @@ const CartItem = memo(function CartItem({
 
           <button
             onClick={() => handleQuantity("increase")}
+            disabled={pendingQty}
             aria-label="Increase quantity"
-            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-40"
           >
-            <Plus size={16} />
+            {pendingQty ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
           </button>
         </div>
 
@@ -153,10 +169,11 @@ const CartItem = memo(function CartItem({
 
       <button
         onClick={handleDelete}
+        disabled={pendingDelete}
         aria-label="Remove item"
-        className="p-2 text-zinc-400 hover:text-red-500 transition-colors rounded-lg"
+        className="p-2 text-zinc-400 hover:text-red-500 transition-colors rounded-lg disabled:opacity-40"
       >
-        <Trash2 size={18} />
+        {pendingDelete ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
       </button>
     </div>
   );

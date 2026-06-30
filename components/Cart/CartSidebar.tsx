@@ -54,7 +54,14 @@ export default function CartSidebar({
       }
 
       const res = await fetch("/api/cart");
-      const data = (await res.json()) as CartItemData[];
+      if (!res.ok) {
+        console.error("Cart fetch failed:", res.status, res.statusText);
+        setItems([]);
+        setLoading(false);
+        return;
+      }
+      const text = await res.text();
+      const data = (text ? JSON.parse(text) : []) as CartItemData[];
       setItems(data);
     } catch (error) {
       console.error("Fetch cart error:", error);

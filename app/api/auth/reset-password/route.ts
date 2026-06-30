@@ -7,7 +7,7 @@ export async function POST(req: Request) {
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
-    const { allowed } = checkRateLimit(`reset-pw:${ip}`, 5, 60_000);
+    const { allowed } = await checkRateLimit(`reset-pw:${ip}`, 5, 60_000);
     if (!allowed) {
       return Response.json(
         { error: "Too many attempts. Try again later." },
@@ -32,7 +32,6 @@ export async function POST(req: Request) {
 
     const resetToken = await prisma.passwordresettoken.findUnique({
       where: { token },
-      include: { user: true },
     });
 
     if (!resetToken) {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
@@ -33,6 +34,11 @@ export async function POST(req: Request) {
   }
 
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const body = await req.json();
     const { fullName, phone, address1, address2, city, state, pincode, saveAddress } = body;
 

@@ -137,9 +137,19 @@ export default function LoginPage() {
             disabled={isLoading}
             className="w-full bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 group transition-all disabled:opacity-50"
           >
-            {isLoading ? "Signing in..." : "Sign In"}
-            {!isLoading && (
-              <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
+            {isLoading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                </svg>
+                Signing in...
+              </span>
+            ) : (
+              <>
+                Sign In
+                <ArrowRight className="group-hover:translate-x-1 transition-transform" size={18} />
+              </>
             )}
           </button>
 

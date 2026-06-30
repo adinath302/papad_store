@@ -3,14 +3,14 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard, Package, ShoppingBag,
-  LogOut, Shield, Tag,
+  LogOut, Shield, Tag, History,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useToast } from "@/components/Toast/ToastProvider";
 import type { Product, Order, AdminUser, PermissionMap } from "./_components/types";
 
-type Tab = "dashboard" | "products" | "orders" | "users" | "coupons";
+type Tab = "dashboard" | "products" | "orders" | "users" | "coupons" | "activity";
 
 const DashboardTab = dynamic(() => import("./_components/DashboardTab"), {
   loading: () => <div className="h-64 flex items-center justify-center"><div className="w-6 h-6 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" /></div>,
@@ -32,6 +32,10 @@ const CouponsTab = dynamic(() => import("./_components/CouponsTab"), {
   loading: () => <div className="h-64 flex items-center justify-center"><div className="w-6 h-6 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" /></div>,
 });
 
+const ActivityLogTab = dynamic(() => import("./_components/ActivityLogTab"), {
+  loading: () => <div className="h-64 flex items-center justify-center"><div className="w-6 h-6 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" /></div>,
+});
+
 export default function AdminPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
@@ -42,7 +46,6 @@ export default function AdminPage() {
   const [ownerEmail, setOwnerEmail] = useState("");
   const [currentPerms, setCurrentPerms] = useState<PermissionMap | null>(null);
   const [admins, setAdmins] = useState<AdminUser[]>([]);
-  const OWNER_EMAIL = "shivshambho@gmail.com";
 
   const fetchProducts = useCallback(async () => {
     const res = await fetch("/api/products");
@@ -87,6 +90,7 @@ export default function AdminPage() {
   if (isOwner || hasPerm("products", "view")) baseTabs.push({ id: "products", label: "Products", icon: Package });
   if (isOwner || hasPerm("orders", "view")) baseTabs.push({ id: "orders", label: "Orders", icon: ShoppingBag });
 
+  if (isOwner) baseTabs.push({ id: "activity", label: "Activity", icon: History });
   const tabs = isOwner ? [...baseTabs, { id: "users" as Tab, label: "Users", icon: Shield }, { id: "coupons" as Tab, label: "Coupons", icon: Tag }] : baseTabs;
 
   return (
@@ -152,6 +156,7 @@ export default function AdminPage() {
             {activeTab === "orders" && <OrdersTab orders={orders} isOwner={isOwner} hasPerm={hasPerm} onOrderChange={fetchOrders} />}
             {activeTab === "users" && isOwner && <UsersTab admins={admins} isOwner={isOwner} ownerEmail={ownerEmail} toast={toast} onAdminChange={fetchAdmins} />}
             {activeTab === "coupons" && isOwner && <CouponsTab isOwner={isOwner} toast={toast} />}
+            {activeTab === "activity" && isOwner && <ActivityLogTab />}
           </>
         )}
       </main>

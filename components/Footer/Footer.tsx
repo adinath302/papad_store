@@ -46,11 +46,10 @@ export default function Footer() {
             <div className="space-y-5">
               <h3 className="text-xl font-serif text-white">Shivshambho</h3>
               <p className="text-xs text-amber-500 font-semibold tracking-widest uppercase -mt-3">
-                crafted with tradition
+                Crafted with tradition
               </p>
               <p className="text-sm leading-relaxed max-w-xs text-stone-400">
-                Preserving the authentic taste of Indian heritage since 1984.
-                Hand-crafted with love, sun-dried to perfection.
+                Handcrafted papads, kurdai, and traditional Indian snacks made with authentic family recipes since 1984.
               </p>
               <div className="flex gap-3">
                 <SocialIcon icon={<InstagramIcon />} href="#" />
@@ -64,25 +63,27 @@ export default function Footer() {
               <ul className="space-y-3 text-sm">
                 <li><FooterLink href="/products">Shop All</FooterLink></li>
                 <li><FooterLink href="/products">Our Varieties</FooterLink></li>
+                <li><FooterLink href="/about">About Us</FooterLink></li>
+                <li><FooterLink href="/faq">FAQ</FooterLink></li>
                 <li><FooterLink href="/">Our Heritage</FooterLink></li>
-                <li><FooterLink href="/contact">Contact Us</FooterLink></li>
+                <li><FooterLink href="/contact">Track Order</FooterLink></li>
               </ul>
             </div>
 
             <div className="space-y-5">
-              <h4 className="text-white font-bold tracking-wider text-xs uppercase">Get in Touch</h4>
+              <h4 className="text-white font-bold tracking-wider text-xs uppercase">Contact</h4>
               <ul className="space-y-3 text-sm">
                 <li className="flex items-start gap-3">
                   <MapPin size={16} className="text-amber-500 shrink-0 mt-0.5" />
-                  <span>123 Spice Route, Heritage Lane, Rajasthan, India</span>
+                  <span>Nordhan branch, sangamner road, ward no 7, maharashtra, India</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <Phone size={16} className="text-amber-500 shrink-0" />
-                  <span>+91 98765 43210</span>
+                  <span>+91 78229 01803</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <Mail size={16} className="text-amber-500 shrink-0" />
-                  <span>hello@papadcompany.com</span>
+                  <span>adinathgaware23072003@gmail.com</span>
                 </li>
               </ul>
             </div>
@@ -103,8 +104,8 @@ export default function Footer() {
             <div className="flex gap-6">
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
               <Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link>
-              <Link href="/returns" className="hover:text-white transition-colors">Returns</Link>
-              <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping</Link>
+              <Link href="/returns" className="hover:text-white transition-colors">Returns Policy</Link>
+              <Link href="/shipping-policy" className="hover:text-white transition-colors">Shipping Policy</Link>
             </div>
           </div>
         </div>

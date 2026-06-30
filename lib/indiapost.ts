@@ -58,9 +58,15 @@ export async function checkPincode(pincode: string): Promise<{
       return { valid: true, city, state };
     }
     return { valid: false };
-  } catch {
+  } catch (err) {
+    console.error("IndiaPost pincode lookup failed:", err);
     return { valid: false };
   }
+}
+
+export function estimateZone(state: string): Zone {
+  if (state === PICKUP_STATE) return "same_state";
+  return "rest_of_india";
 }
 
 function determineZone(deliveryState: string, deliveryCity: string): Zone {
@@ -79,7 +85,7 @@ function determineZone(deliveryState: string, deliveryCity: string): Zone {
   return "rest_of_india";
 }
 
-function calculateSpeedPostRate(weightGrams: number, zone: Zone): number {
+export function calculateSpeedPostRate(weightGrams: number, zone: Zone): number {
   const zoneKey = zone === "same_state" ? "sameState" : zone === "rest_of_india" ? "restOfIndia" : zone;
   const slab = RATE_SLABS.find((s) => weightGrams <= s.maxWeight);
 
@@ -108,6 +114,7 @@ export async function getIndiaPostOptions(params: {
   const pincodeInfo = await checkPincode(params.deliveryPincode);
 
   if (!pincodeInfo.valid || !pincodeInfo.state || !pincodeInfo.city) {
+    // Fallback: return a flat-rate estimate when IndiaPost API is unavailable
     return { options: [], pincodeInfo: null };
   }
 

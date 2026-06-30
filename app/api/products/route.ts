@@ -1,4 +1,5 @@
-import { NextResponse, NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { can, isOwner } from "@/lib/permissions";
 import { cookies } from "next/headers";
@@ -27,8 +28,7 @@ export async function GET() {
       },
     });
   } catch (error: any) {
-    console.log("FULL PRODUCT ERROR:");
-    console.dir(error, { depth: null });
+    console.error("FULL PRODUCT ERROR:", error);
 
     return NextResponse.json(
       {
@@ -40,8 +40,13 @@ export async function GET() {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const currentUser = await getCurrentUser();
     if (!currentUser || currentUser.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -67,8 +72,11 @@ export async function POST(req: NextRequest) {
 
         productType: body.productType || "weight",
 
+        metaTitle: body.metaTitle || null,
+        metaDescription: body.metaDescription || null,
+
         productvariant: {
-          create: body.variants.map((v: any) => ({
+          create: (body.variants || []).map((v: any) => ({
             label: v.label,
             price: Number(v.price),
           })),
@@ -82,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(product);
   } catch (error: any) {
-    console.log(error);
+    console.error(error);
 
     return NextResponse.json(
       {

@@ -79,9 +79,10 @@ export default function OrdersPage() {
         ) : (
           <div className="space-y-6">
             {orders.map((order) => (
-              <div
+              <Link
                 key={order.id}
-                className="bg-white rounded-xl border border-stone-200 p-6"
+                href={`/orders/${order.id}`}
+                className="block bg-white rounded-xl border border-stone-200 p-6 hover:border-emerald-200 hover:shadow-sm transition-all"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                   <div>
@@ -141,7 +142,7 @@ export default function OrdersPage() {
                     <span>{order.fullName}</span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

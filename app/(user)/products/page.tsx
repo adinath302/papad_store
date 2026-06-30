@@ -4,6 +4,8 @@ import FilterSidebar from "@/components/Products/FilterSidebar";
 import SearchBar from "@/components/Products/SearchBar";
 import SortSelect from "@/components/Products/SortSelect";
 
+const PER_PAGE = 12;
+
 export default async function ProductPage({
   searchParams,
 }: {
@@ -17,6 +19,7 @@ export default async function ProductPage({
   const sort =
     typeof params.sort === "string" ? params.sort.trim() : "featured";
   const inStock = params.inStock === "true";
+  const page = Math.max(1, parseInt(typeof params.page === "string" ? params.page : "1") || 1);
 
   const where: any = {};
 
@@ -37,26 +40,28 @@ export default async function ProductPage({
   }
 
   let products: any[] = [];
+  let totalCount = 0;
   try {
-    products = await prisma.product.findMany({
-      where,
-      include: { productvariant: true },
-    });
-  } catch {
-    // Database may be unavailable during build
-  }
+    [products, totalCount] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: { productvariant: true },
+        skip: (page - 1) * PER_PAGE,
+        take: PER_PAGE,
+      }),
+      prisma.product.count({ where }),
+    ]);
+  } catch {}
 
   if (sort === "price_asc") {
-    products.sort(
-      (a: any, b: any) =>
-        Math.min(...a.productvariant.map((v: any) => v.price)) -
-        Math.min(...b.productvariant.map((v: any) => v.price)),
+    products.sort((a: any, b: any) =>
+      Math.min(...a.productvariant.map((v: any) => v.price)) -
+      Math.min(...b.productvariant.map((v: any) => v.price)),
     );
   } else if (sort === "price_desc") {
-    products.sort(
-      (a: any, b: any) =>
-        Math.min(...b.productvariant.map((v: any) => v.price)) -
-        Math.min(...a.productvariant.map((v: any) => v.price)),
+    products.sort((a: any, b: any) =>
+      Math.min(...b.productvariant.map((v: any) => v.price)) -
+      Math.min(...a.productvariant.map((v: any) => v.price)),
     );
   }
 
@@ -90,12 +95,12 @@ export default async function ProductPage({
           <div className="flex-1">
             <div className="flex justify-between items-center mb-8 pb-4 border-b border-zinc-100">
               <span className="text-xs font-bold tracking-widest uppercase text-zinc-400">
-                {products.length} Products Found
+                {totalCount} Product{totalCount !== 1 ? "s" : ""} Found
               </span>
               <SortSelect currentSort={sort} />
             </div>
 
-            <ProductList products={products} />
+            <ProductList products={products} totalCount={totalCount} currentPage={page} perPage={PER_PAGE} />
           </div>
         </div>
       </div>

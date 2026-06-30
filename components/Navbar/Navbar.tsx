@@ -2,13 +2,19 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useCartCount } from "@/lib/cart-context";
+
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
 
 const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const cartCount = useCartCount();
 
   useEffect(() => {
@@ -27,6 +33,9 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
   }, []);
 
   useEffect(() => {
+    const loggedIn = getCookie("isLoggedIn") === "true";
+    setIsLoggedIn(loggedIn);
+
     const cached = sessionStorage.getItem("nav_auth");
     if (cached) {
       try {
@@ -34,264 +43,180 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
         if (data.isAdmin) setIsAdmin(true);
       } catch {}
     }
-    const controller = new AbortController();
-    fetch("/api/auth/me", { signal: controller.signal })
-      .then((r) => r.json())
-      .then((data) => {
-        const isAdminUser = data.user?.isAdmin === true;
-        setIsAdmin(isAdminUser);
-        sessionStorage.setItem("nav_auth", JSON.stringify({ isAdmin: isAdminUser }));
-      })
-      .catch(() => {});
-    return () => controller.abort();
-  }, []); 
+    if (loggedIn) {
+      const controller = new AbortController();
+      fetch("/api/auth/me", { signal: controller.signal })
+        .then((r) => r.json())
+        .then((data) => {
+          const isAdminUser = data.user?.isAdmin === true;
+          setIsAdmin(isAdminUser);
+          setIsLoggedIn(true);
+          sessionStorage.setItem("nav_auth", JSON.stringify({ isAdmin: isAdminUser }));
+        })
+        .catch(() => {});
+      return () => controller.abort();
+    }
+  }, []);
 
-  const navItems = [
-    { name: "Home", path: "/" },
-    { name: "Products", path: "/products" },
-    { name: "Contact Us", path: "/contact" },
+  const navLinks = [
+    { href: "/", label: "Home" },
+    { href: "/products", label: "Products" },
+    { href: "/about", label: "About Us" },
+    { href: "/faq", label: "FAQ" },
+    { href: "/contact", label: "Contact Us" },
+    { href: "/track", label: "Track Order" },
   ];
 
   return (
-    <>
-      <header
-        className={`fixed top-0 z-50 w-full transition-all duration-300 ${
-          scrolled
-            ? "bg-white/95 backdrop-blur-md shadow-sm border-b border-stone-200/80 py-2"
-            : "bg-white/95 backdrop-blur-sm py-3"
-        }`}
-      >
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="flex items-center justify-between gap-4">
-            {/* Left: mobile menu + desktop logo */}
-            <div className="flex items-center gap-3 min-w-[120px]">
-              <button
-                onClick={() => setIsOpen(true)}
-                className="md:hidden p-2 hover:bg-stone-100 rounded-xl transition-colors text-stone-700"
-                aria-label="Open menu"
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M4 6h16M4 12h16M4 18h16"
-                  />
-                </svg>
-              </button>
-
-              <Link
-                href="/"
-                className="hover:opacity-80 transition-opacity"
-              >
-                <Image
-                  src="/logo.png"
-                  alt="Shivshambho"
-                  width={110}
-                  height={36}
-                  className="h-7 md:h-8 w-auto object-contain"
-                />
-              </Link>
+    <header
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled
+          ? "bg-white/90 backdrop-blur-lg shadow-sm border-b border-stone-200/60"
+          : "bg-white border-b border-stone-100"
+      }`}
+    >
+      <nav className="mx-auto max-w-7xl px-4 md:px-8">
+        <div className="flex items-center justify-between h-[72px]">
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="md:hidden p-2 -ml-2 rounded-xl hover:bg-stone-100 transition-colors"
+            aria-label="Toggle menu"
+          >
+            <div className="w-5 h-4 relative flex flex-col justify-between">
+              <span className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
+              <span className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "opacity-0" : ""}`} />
+              <span className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
             </div>
+          </button>
 
-            {/* Center: desktop nav */}
-            <nav className="hidden md:flex items-center gap-8">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.path}
-                  className="text-xs font-semibold tracking-wide uppercase text-stone-600 hover:text-emerald-800 transition-colors relative group"
-                >
-                  {item.name}
-                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-amber-500 group-hover:w-full transition-all duration-300" />
-                </Link>
-              ))}
-            </nav>
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            <div className="w-8 h-8 bg-emerald-800 rounded-lg flex items-center justify-center group-hover:bg-emerald-700 transition-colors">
+              <span className="text-white font-bold text-xs">S</span>
+            </div>
+            <div className="hidden sm:block">
+              <p className="font-semibold text-stone-800 text-sm leading-tight">Shivshambho</p>
+              <p className="text-[9px] text-stone-400 tracking-[0.2em] uppercase leading-tight">Crafted with tradition</p>
+            </div>
+          </Link>
 
-            {/* Right: actions */}
-            <div className="flex items-center justify-end gap-1 md:gap-2 min-w-[120px]">
-              <button
-                onClick={onCartToggle}
-                className="p-2.5 hover:bg-stone-100 rounded-xl transition-colors relative text-stone-700"
-                aria-label="Open cart"
+          {/* Desktop Links */}
+          <div className="hidden md:flex items-center gap-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="px-3.5 py-2 text-xs font-semibold text-stone-600 hover:text-stone-900 hover:bg-stone-50 rounded-xl transition-all"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                  />
-                </svg>
-                {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-amber-500 text-white text-[10px] font-bold leading-none min-w-[18px] h-[18px] flex items-center justify-center rounded-full border-2 border-white px-1">
-                    {cartCount > 99 ? "99+" : cartCount}
-                  </span>
-                )}
-              </button>
+                {link.label}
+              </Link>
+            ))}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:text-emerald-800 hover:bg-emerald-50 rounded-xl transition-all"
+              >
+                Admin
+              </Link>
+            )}
+          </div>
 
-              {isAdmin && (
-                <Link
-                  href="/admin"
-                  className="hidden md:flex p-2.5 hover:bg-amber-50 rounded-xl transition-colors text-amber-700"
-                  aria-label="Admin panel"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                    />
-                  </svg>
-                </Link>
+          {/* Right Actions */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onCartToggle}
+              className="relative p-2.5 rounded-xl hover:bg-stone-100 transition-colors"
+              aria-label="Open cart"
+            >
+              <svg className="w-5 h-5 text-stone-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              </svg>
+              {cartCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-emerald-700 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                  {cartCount > 9 ? "9+" : cartCount}
+                </span>
               )}
-
+            </button>
+            {isLoggedIn ? (
               <Link
                 href="/profile"
-                className="hidden md:flex p-2.5 hover:bg-stone-100 rounded-xl transition-colors text-stone-700"
-                aria-label="My account"
+                className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all"
               >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                  />
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
                 </svg>
+                My Account
               </Link>
-            </div>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden sm:inline-flex px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
-      </header>
+      </nav>
 
-      {/* FIXED: The drawer is now outside the header element block */}
+      {/* Mobile Drawer */}
       {isOpen && (
-        <div>
-          <div
-            onClick={() => setIsOpen(false)}
-            className="fixed inset-0 z-[60] md:hidden mobile-drawer-overlay"
-          />
-
-          <div
-            className="fixed inset-y-0 left-0 w-[300px] z-[70] shadow-2xl md:hidden flex flex-col mobile-drawer-panel"
-          >
-            <div className="p-8 flex flex-col min-h-0 flex-1">
-              <div className="flex justify-between items-center mb-10">
-                <Image
-                  src="/logo.png"
-                  alt="Shivshambho"
-                  width={90}
-                  height={30}
-                  className="h-6 w-auto"
-                />
-                <button
-                  onClick={() => setIsOpen(false)}
-                  className="p-2 hover:bg-stone-100 rounded-full"
-                  aria-label="Close menu"
-                >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-
-              <nav className="flex flex-col gap-1">
-                {navItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    href={item.path}
-                    onClick={() => setIsOpen(false)}
-                    className="block py-3 px-2 text-lg font-medium text-stone-800 hover:text-emerald-800 hover:pl-4 transition-all border-b border-stone-100"
-                  >
-                    {item.name}
-                  </Link>
-                ))}
-              </nav>
-
-              <div className="mt-auto border-t border-stone-100 pt-6 space-y-3">
-                {isAdmin && (
-                  <Link
-                    href="/admin"
-                    onClick={() => setIsOpen(false)}
-                    className="flex items-center gap-3 text-amber-700 hover:text-amber-800 transition-colors"
-                  >
-                    <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center">
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-                        />
-                      </svg>
-                    </div>
-                    <span className="font-semibold text-xs uppercase tracking-wider">
-                      Admin Panel
-                    </span>
-                  </Link>
-                )}
+        <div className="md:hidden border-t border-stone-100 bg-white/95 backdrop-blur-lg">
+          <div className="px-4 py-4 space-y-1">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsOpen(false)}
+                className="block px-4 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 rounded-xl transition-all"
+              >
+                {link.label}
+              </Link>
+            ))}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                onClick={() => setIsOpen(false)}
+                className="block px-4 py-3 text-sm font-semibold text-emerald-700 hover:bg-emerald-50 rounded-xl transition-all"
+              >
+                Admin
+              </Link>
+            )}
+            <hr className="my-3 border-stone-100" />
+            {isLoggedIn ? (
+              <>
                 <Link
                   href="/profile"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 text-stone-600 hover:text-emerald-800 transition-colors"
+                  className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-stone-900 bg-stone-100 rounded-xl"
                 >
-                  <div className="w-10 h-10 bg-stone-100 rounded-full flex items-center justify-center text-stone-700">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                  <span className="font-semibold text-xs uppercase tracking-wider">
-                    My Account
-                  </span>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  </svg>
+                  My Account
                 </Link>
-              </div>
-            </div>
+                <Link
+                  href="/orders"
+                  onClick={() => setIsOpen(false)}
+                  className="block px-4 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 rounded-xl transition-all"
+                >
+                  My Orders
+                </Link>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                onClick={() => setIsOpen(false)}
+                className="block px-4 py-3 text-sm font-semibold text-stone-900 bg-stone-100 rounded-xl text-center"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
       )}
-    </>
+    </header>
   );
 };
 

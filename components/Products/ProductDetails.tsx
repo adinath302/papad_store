@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -18,23 +18,39 @@ import {
 } from "lucide-react";
 import { addToGuestCart, isLoggedIn, notifyCartUpdate } from "@/lib/guest-cart";
 import { useToast } from "@/components/Toast/ToastProvider";
+import ProductReviews from "./ProductReviews";
+import ProductGallery from "@/components/ProductGallery";
+import RecentlyViewed from "@/components/RecentlyViewed";
+import StockNotificationForm from "@/components/StockNotificationForm";
 
 export default function ProductDetails({
   product,
   relatedProducts,
 }: {
-  product: any;
+  product: {
+    id: string;
+    name: string;
+    nameMarathi?: string;
+    image: string | null;
+    stock: number | null;
+    description?: string;
+    productvariant: { id: string; price: number; label: string }[];
+    productimage: { id: string; url: string; alt: string | null }[];
+  };
   relatedProducts?: any[];
 }) {
   const [selectedVariant, setSelectedVariant] = useState(
-    product.productvariant[0],
+    product.productvariant?.[0] ?? null,
   );
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [added, setAdded] = useState(false);
   const { toast } = useToast();
 
+  const hasVariants = product.productvariant?.length > 0;
+
   const addToCart = async () => {
+    if (!selectedVariant) return;
     setLoading(true);
     try {
       if (!isLoggedIn()) {
@@ -78,6 +94,32 @@ export default function ProductDetails({
 
   const outOfStock = product.stock === 0;
 
+  useEffect(() => {
+    const loggedIn = document.cookie.includes("isLoggedIn=true");
+    if (loggedIn) {
+      fetch("/api/recently-viewed", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: product.id }),
+      }).catch(() => {});
+    } else {
+      try {
+        const raw = localStorage.getItem("papad_recently_viewed");
+        let viewed: { id: string; name: string; image: string | null; price: number }[] = raw ? JSON.parse(raw) : [];
+        viewed = viewed.filter((v) => v.id !== product.id);
+        const prices = product.productvariant?.map((v: any) => v.price);
+        viewed.unshift({
+          id: product.id,
+          name: product.name,
+          image: product.image || null,
+          price: prices?.length ? Math.min(...prices) : 0,
+        });
+        viewed = viewed.slice(0, 8);
+        localStorage.setItem("papad_recently_viewed", JSON.stringify(viewed));
+      } catch {}
+    }
+  }, [product.id]);
+
   return (
     <div className="min-h-screen bg-[#faf8f5]">
       <div className="max-w-7xl mx-auto px-4 md:px-8 pt-28 pb-20">
@@ -102,20 +144,26 @@ export default function ProductDetails({
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16">
           {/* Left: Image */}
           <div className="space-y-4">
-            <div className="relative aspect-square bg-stone-100 rounded-3xl overflow-hidden">
-              <Image
-                src={
-                  product.image ||
-                  "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
-                }
-                alt={product.name}
-                fill
-                priority
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 50vw"
-              />
+            <div className="relative">
+              {product.productimage?.length > 0 ? (
+                <ProductGallery images={product.productimage} title={product.name} />
+              ) : (
+                <div className="relative aspect-square bg-stone-100 rounded-3xl overflow-hidden">
+                  <Image
+                    src={
+                      product.image ||
+                      "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
+                    }
+                    alt={product.name}
+                    fill
+                    priority
+                    className="object-cover"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                  />
+                </div>
+              )}
               {outOfStock && (
-                <div className="absolute inset-0 bg-stone-900/40 flex items-center justify-center">
+                <div className="absolute inset-0 bg-stone-900/40 flex items-center justify-center rounded-2xl">
                   <span className="bg-white text-stone-900 text-xs font-bold uppercase tracking-wider px-5 py-2 rounded-full">
                     Out of Stock
                   </span>
@@ -126,28 +174,7 @@ export default function ProductDetails({
 
           {/* Right: Details */}
           <div className="flex flex-col">
-            {/* Category badge */}
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full">
-                {product.productType === "weight"
-                  ? "By Weight"
-                  : "By Pieces"}
-              </span>
-              <div className="flex items-center gap-1 text-amber-500">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    size={14}
-                    className={
-                      i < 4
-                        ? "fill-amber-400 text-amber-400"
-                        : "fill-stone-200 text-stone-200"
-                    }
-                  />
-                ))}
-                <span className="text-xs text-stone-400 ml-1">(4.8)</span>
-              </div>
-            </div>
+
 
             {/* Name */}
             <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif text-stone-900 leading-tight">
@@ -161,12 +188,22 @@ export default function ProductDetails({
 
             {/* Price */}
             <div className="mt-6 flex items-baseline gap-3">
-              <span className="text-4xl font-bold text-stone-900">
-                ₹{selectedVariant.price}
-              </span>
-              {product.productvariant.length > 1 && (
-                <span className="text-sm text-stone-400">
-                  / {selectedVariant.label}
+              {selectedVariant ? (
+                <>
+                  <span className="text-4xl font-bold text-stone-900">
+                    ₹{selectedVariant.price}
+                  </span>
+                  {product.productvariant.length > 1 && (
+                    <span className="text-sm text-stone-400">
+                      / {selectedVariant.label}
+                    </span>
+                  )}
+                </>
+              ) : (
+                <span className="text-4xl font-bold text-stone-900">
+                  ₹{Math.min(
+                    ...product.productvariant.map((v: any) => v.price),
+                  )}
                 </span>
               )}
             </div>
@@ -191,13 +228,13 @@ export default function ProductDetails({
                   className="flex items-center gap-2 text-xs text-stone-500"
                 >
                   <item.icon size={14} className="text-emerald-700 shrink-0" />
-                  <span>{item.text}</span>
+                  <span className="whitespace-nowrap">{item.text}</span>
                 </div>
               ))}
             </div>
 
             {/* Variant Selector */}
-            {product.productvariant.length > 1 && (
+            {hasVariants && (
               <div className="mt-8">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-3">
                   Select Size
@@ -208,7 +245,7 @@ export default function ProductDetails({
                       key={variant.id}
                       onClick={() => setSelectedVariant(variant)}
                       className={`px-5 py-3 rounded-xl border text-sm font-medium transition-all ${
-                        selectedVariant.id === variant.id
+                        selectedVariant?.id === variant.id
                           ? "bg-emerald-800 text-white border-emerald-800 shadow-md"
                           : "bg-white border-stone-200 text-stone-700 hover:border-stone-400"
                       }`}
@@ -216,7 +253,7 @@ export default function ProductDetails({
                       {variant.label}
                       <span
                         className={`block text-xs mt-0.5 ${
-                          selectedVariant.id === variant.id
+                          selectedVariant?.id === variant.id
                             ? "text-emerald-200"
                             : "text-stone-400"
                         }`}
@@ -230,8 +267,8 @@ export default function ProductDetails({
             )}
 
             {/* Quantity + Add to Cart */}
-            <div className="mt-8 flex items-center gap-4">
-              <div className="flex items-center bg-white border border-stone-200 rounded-xl">
+            <div className="mt-8 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+              <div className="flex items-center self-start bg-white border border-stone-200 rounded-xl">
                 <button
                   onClick={() =>
                     setQuantity((prev) => (prev > 1 ? prev - 1 : 1))
@@ -253,7 +290,7 @@ export default function ProductDetails({
 
               <button
                 onClick={addToCart}
-                disabled={loading || outOfStock}
+                disabled={loading || outOfStock || !selectedVariant}
                 className="flex-1 bg-emerald-800 hover:bg-emerald-700 text-white py-4 px-8 rounded-xl font-bold text-sm tracking-wide transition-all disabled:bg-stone-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading ? (
@@ -283,8 +320,10 @@ export default function ProductDetails({
               </p>
             )}
 
+            <StockNotificationForm productId={product.id} inStock={(product.stock ?? 0) > 0} />
+
             {/* Share */}
-            <div className="mt-8 pt-8 border-t border-stone-200 flex items-center gap-4">
+            <div className="mt-8 pt-8 border-t border-stone-200 flex flex-wrap items-center gap-4">
               <button className="flex items-center gap-2 text-xs text-stone-400 hover:text-stone-600 transition-colors">
                 <Share2 size={14} />
                 Share
@@ -323,15 +362,19 @@ export default function ProductDetails({
             </div>
           </section>
         )}
+
+        <ProductReviews productId={product.id} />
+
+        <RecentlyViewed />
       </div>
     </div>
   );
 }
 
 function RelatedProductCard({ product }: { product: any }) {
-  const price = Math.min(
-    ...product.productvariant.map((v: any) => v.price),
-  );
+  const price = product.productvariant?.length
+    ? Math.min(...product.productvariant.map((v: any) => v.price))
+    : 0;
 
   return (
     <Link

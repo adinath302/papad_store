@@ -1,3 +1,11 @@
+export type ProductImage = {
+  id: string;
+  productId: string;
+  url: string;
+  alt: string | null;
+  sortOrder: number;
+};
+
 export type Product = {
   id: string;
   name: string;
@@ -17,12 +25,24 @@ export type OrderItem = {
   product: { id: string; name: string };
 };
 
+export type Refund = {
+  id: string;
+  orderId: string;
+  amount: number;
+  reason: string | null;
+  razorpayRefundId: string | null;
+  status: string;
+  createdAt: string;
+};
+
 export type Order = {
   id: string;
   userId: string | null;
   paymentType: string;
   totalAmount: number;
   shippingCost: number;
+  actualShippingCost: number;
+  totalWeight: number;
   status: string;
   fullName: string;
   phone: string;
@@ -33,9 +53,11 @@ export type Order = {
   pincode: string;
   trackingId: string | null;
   courierName: string | null;
+  razorpayPaymentId: string | null;
   createdAt: string;
   user: { id: string; name: string | null; email: string } | null;
   orderitem: OrderItem[];
+  refund: Refund[];
 };
 
 export type AdminUser = {

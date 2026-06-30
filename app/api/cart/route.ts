@@ -1,8 +1,14 @@
+import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
 export async function POST(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return Response.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const body = await req.json();
     const { productId, variantId, quantity } = body;
 
@@ -40,33 +46,43 @@ export async function POST(req: Request) {
 
     return Response.json(item);
   } catch (error: any) {
-    console.log("CART POST ERROR:", error);
+    console.error("CART POST ERROR:", error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
 
 export async function GET() {
-  const cookieStore = await cookies();
-  const userId = cookieStore.get("userId")?.value;
+  try {
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
 
-  if (!userId) {
-    return Response.json([], { status: 200 });
-  }
+    if (!userId) {
+      return Response.json([], { status: 200 });
+    }
 
-  const items = await prisma.cartitem.findMany({
-    where: { userId },
-    include: {
-      product: {
-        include: { productvariant: true },
+    const items = await prisma.cartitem.findMany({
+      where: { userId },
+      include: {
+        product: {
+          include: { productvariant: true },
+        },
       },
-    },
-  });
+    });
 
-  return Response.json(items);
+    return Response.json(items);
+  } catch (error: any) {
+    console.error("CART GET ERROR:", error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return Response.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
 
@@ -74,16 +90,21 @@ export async function DELETE(req: Request) {
       return Response.json({ error: "Missing ID" }, { status: 400 });
     }
 
-    await prisma.cartitem.delete({ where: { id } });
+    await prisma.cartitem.deleteMany({ where: { id } });
     return Response.json({ message: "Deleted successfully" });
   } catch (error: any) {
-    console.log("DELETE ERROR:", error.message);
+    console.error("DELETE ERROR:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }
 
 export async function PATCH(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return Response.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const body = await req.json();
     const { id, action } = body;
 
@@ -102,7 +123,7 @@ export async function PATCH(req: Request) {
     }
 
     if (newQuantity <= 0) {
-      await prisma.cartitem.delete({ where: { id } });
+      await prisma.cartitem.deleteMany({ where: { id } });
       return Response.json({ message: "Item removed" });
     }
 
@@ -113,7 +134,7 @@ export async function PATCH(req: Request) {
 
     return Response.json(updated);
   } catch (error: any) {
-    console.log("PATCH ERROR:", error.message);
+    console.error("PATCH ERROR:", error.message);
     return Response.json({ error: error.message }, { status: 500 });
   }
 }

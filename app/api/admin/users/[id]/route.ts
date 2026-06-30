@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { isOwner } from "@/lib/permissions";
 import { cookies } from "next/headers";
 import { Prisma } from "@prisma/client";
+import { validateCsrfToken } from "@/lib/csrf";
 
 async function getCurrentUser() {
   const cookieStore = await cookies();
@@ -20,6 +21,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -57,6 +63,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

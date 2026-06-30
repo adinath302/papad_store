@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
@@ -27,6 +28,11 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
+  const csrfToken = req.headers.get("x-csrf-token");
+  if (!(await validateCsrfToken(csrfToken))) {
+    return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+  }
+
   const currentUser = await getCurrentUser();
   if (!currentUser || currentUser.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -56,6 +62,11 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  const csrfToken = req.headers.get("x-csrf-token");
+  if (!(await validateCsrfToken(csrfToken))) {
+    return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+  }
+
   const currentUser = await getCurrentUser();
   if (!currentUser || currentUser.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -63,10 +74,10 @@ export async function PATCH(req: Request) {
 
   try {
     const body = await req.json();
-    const { id, ...data } = body;
+    const { code, type, value, minCartValue, maxDiscount, usageLimit, expiresAt, isActive, id } = body;
     const coupon = await prisma.coupon.update({
       where: { id },
-      data,
+      data: { code, type, value, minCartValue, maxDiscount, usageLimit, expiresAt, isActive },
     });
     return NextResponse.json(coupon);
   } catch (error: any) {
@@ -75,6 +86,11 @@ export async function PATCH(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  const csrfToken = req.headers.get("x-csrf-token");
+  if (!(await validateCsrfToken(csrfToken))) {
+    return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+  }
+
   const currentUser = await getCurrentUser();
   if (!currentUser || currentUser.role !== "ADMIN") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

@@ -59,6 +59,7 @@ model order {
   createdAt         DateTime    @default(now())
   user              user?       @relation(fields: [userId], references: [id], map: "Order_userId_fkey")
   orderitem         orderitem[]
+  refund            refund[]
 
   @@index([userId], map: "Order_userId_fkey")
 }
@@ -76,19 +77,26 @@ model orderitem {
 }
 
 model product {
-  id             String           @id @default(cuid())
-  name           String
-  nameMarathi    String?
-  description    String?
-  stock          Int?
-  weight         Int              @default(200)
-  image          String?
-  thumbnail      String?
-  productType    String           @default("weight")
-  cartitem       cartitem[]
-  wishlistitem   wishlistitem[]
-  orderitem      orderitem[]
-  productvariant productvariant[]
+  id              String           @id @default(cuid())
+  name            String
+  nameMarathi     String?
+  description     String?
+  stock           Int?
+  lowStockThreshold Int?           @default(10)
+  weight          Int              @default(200)
+  image           String?
+  thumbnail       String?
+  productType     String           @default("weight")
+  metaTitle       String?
+  metaDescription  String?
+  cartitem        cartitem[]
+  wishlistitem    wishlistitem[]
+  orderitem       orderitem[]
+  productvariant  productvariant[]
+  productimage    productimage[]
+  review          review[]
+  recentlyviewed  recentlyviewed[]
+  stocknotification stocknotification[]
 }
 
 model productvariant {
@@ -108,17 +116,20 @@ enum Role {
 }
 
 model user {
-  id                  String     @id @default(cuid())
+  id                  String         @id @default(cuid())
   name                String?
-  email               String     @unique(map: "User_email_key")
+  email               String         @unique(map: "User_email_key")
   password            String
-  role                Role       @default(USER)
+  role                Role           @default(USER)
   permissions         Json?
   address             address[]
   cartitem            cartitem[]
   wishlistitem        wishlistitem[]
   order               order[]
   passwordresettoken  passwordresettoken?
+  recentlyviewed      recentlyviewed[]
+  review              review[]
+  activitylog         activitylog[]
 }
 
 model wishlistitem {
@@ -131,6 +142,84 @@ model wishlistitem {
 
   @@index([userId], map: "WishlistItem_userId_idx")
   @@index([productId], map: "WishlistItem_productId_idx")
+}
+
+model productimage {
+  id        String   @id @default(cuid())
+  productId String
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  product   product  @relation(fields: [productId], references: [id], map: "ProductImage_productId_fkey", onDelete: Cascade)
+
+  @@index([productId], map: "ProductImage_productId_idx")
+}
+
+model recentlyviewed {
+  id        String   @id @default(cuid())
+  userId    String?
+  productId String
+  viewedAt  DateTime @default(now())
+  product   product  @relation(fields: [productId], references: [id], map: "RecentlyViewed_productId_fkey")
+  user      user?    @relation(fields: [userId], references: [id], map: "RecentlyViewed_userId_fkey")
+
+  @@index([userId], map: "RecentlyViewed_userId_idx")
+  @@index([productId], map: "RecentlyViewed_productId_idx")
+}
+
+model stocknotification {
+  id        String   @id @default(cuid())
+  email     String
+  productId String
+  notified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  product   product  @relation(fields: [productId], references: [id], map: "StockNotification_productId_fkey")
+
+  @@index([productId], map: "StockNotification_productId_idx")
+}
+
+model refund {
+  id              String   @id @default(cuid())
+  orderId         String
+  amount          Int
+  reason          String?
+  razorpayRefundId String?
+  status          String   @default("PENDING")
+  createdAt       DateTime @default(now())
+  order           order    @relation(fields: [orderId], references: [id], map: "Refund_orderId_fkey")
+
+  @@index([orderId], map: "Refund_orderId_idx")
+}
+
+model activitylog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  resource  String
+  resourceId String?
+  details   String?
+  createdAt DateTime @default(now())
+  user      user?    @relation(fields: [userId], references: [id], map: "ActivityLog_userId_fkey")
+
+  @@index([userId], map: "ActivityLog_userId_idx")
+  @@index([resource], map: "ActivityLog_resource_idx")
+  @@index([createdAt], map: "ActivityLog_createdAt_idx")
+}
+
+model review {
+  id        String   @id @default(cuid())
+  productId String
+  userId    String?
+  name      String
+  email     String?
+  rating    Int
+  comment   String
+  createdAt DateTime @default(now())
+  product   product  @relation(fields: [productId], references: [id], map: "Review_productId_fkey")
+  user      user?    @relation(fields: [userId], references: [id], map: "Review_userId_fkey")
+
+  @@index([productId], map: "Review_productId_idx")
 }
 
 model coupon {

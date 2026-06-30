@@ -5,6 +5,8 @@ import PromoBar from "@/components/Home/PromoBar";
 import TrustMarquee from "@/components/Home/TrustMarquee";
 import CategoryGrid from "@/components/Home/CategoryGrid";
 import CombosSection from "@/components/Home/CombosSection";
+import TrustMetrics from "@/components/Home/TrustMetrics";
+import BestsellerReviews from "@/components/Home/BestsellerReviews";
 import ProductCard from "@/components/Products/ProductCard";
 import Link from "next/link";
 
@@ -24,8 +26,34 @@ const FAQSection = dynamic(() => import("@/components/Home/FAQSection"), {
 
 export default async function Home() {
   let products: any[] = [];
+  let ordersDelivered = 0;
+  let happyCustomers = 0;
+  let productsMade = 0;
+
   try {
     products = await prisma.product.findMany({ include: { productvariant: true } });
+  } catch {
+    // Database unavailable during build
+  }
+
+  try {
+    const deliveredOrders = await prisma.order.findMany({
+      where: { status: "DELIVERED" },
+      select: { id: true, userId: true },
+    });
+    ordersDelivered = deliveredOrders.length;
+
+    const uniqueUserIds = new Set(deliveredOrders.map((o) => o.userId).filter(Boolean));
+    happyCustomers = uniqueUserIds.size;
+
+    const deliveredOrderIds = deliveredOrders.map((o) => o.id);
+    if (deliveredOrderIds.length > 0) {
+      const items = await prisma.orderitem.findMany({
+        where: { orderId: { in: deliveredOrderIds } },
+        select: { quantity: true },
+      });
+      productsMade = items.reduce((sum, item) => sum + item.quantity, 0);
+    }
   } catch {
     // Database unavailable during build
   }
@@ -43,7 +71,7 @@ export default async function Home() {
       </section>
 
       {/* Scrolling trust badges */}
-      <TrustMarquee />
+      <TrustMarquee customerCount={happyCustomers > 0 ? happyCustomers : undefined} />
 
       {/* Category shortcuts */}
       <CategoryGrid />
@@ -87,8 +115,17 @@ export default async function Home() {
               </p>
             </div>
           )}
+
+          <BestsellerReviews productIds={products.map((p) => p.id)} />
         </div>
       </section>
+
+      {/* Trust Metrics */}
+      <TrustMetrics
+        ordersDelivered={ordersDelivered}
+        happyCustomers={happyCustomers}
+        productsMade={productsMade}
+      />
 
       {/* Combos */}
       <CombosSection />

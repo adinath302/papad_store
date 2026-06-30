@@ -8,7 +8,7 @@ export async function POST(req: Request) {
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
-    const { allowed } = checkRateLimit(`forgot-pw:${ip}`, 3, 60_000);
+    const { allowed } = await checkRateLimit(`forgot-pw:${ip}`, 3, 60_000);
     if (!allowed) {
       return Response.json(
         { error: "Too many requests. Try again later." },

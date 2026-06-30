@@ -13,10 +13,12 @@ const promos = [
 const STORAGE_KEY = "papad_promo_dismissed";
 
 export default function PromoBar() {
+  const [mounted, setMounted] = useState(false);
   const [dismissed, setDismissed] = useState(true);
   const [current, setCurrent] = useState(0);
 
   useEffect(() => {
+    setMounted(true);
     setDismissed(localStorage.getItem(STORAGE_KEY) === "true");
   }, []);
 
@@ -33,6 +35,7 @@ export default function PromoBar() {
     localStorage.setItem(STORAGE_KEY, "true");
   }, []);
 
+  if (!mounted) return null;
   if (dismissed) return null;
 
   const { text, icon: Icon } = promos[current];

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { setCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: Request) {
   try {
@@ -9,7 +10,7 @@ export async function POST(req: Request) {
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
     const rateKey = `signup:${ip}`;
-    const { allowed } = checkRateLimit(rateKey, 5, 60_000);
+    const { allowed } = await checkRateLimit(rateKey, 5, 60_000);
     if (!allowed) {
       return Response.json(
         { error: "Too many sign-up attempts. Try again later." },
@@ -55,7 +56,10 @@ export async function POST(req: Request) {
       sameSite: "lax",
       path: "/",
       maxAge: 60 * 60 * 24 * 7,
+      secure: process.env.NODE_ENV === "production",
     });
+
+    await setCsrfToken();
 
     return Response.json({
       id: user.id,

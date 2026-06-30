@@ -1,5 +1,11 @@
+import type { Metadata } from "next";
 import { Phone, Mail, MapPin, Headphones } from "lucide-react";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Contact Us | Papad Store",
+  description: "Get in touch with Papad Store. We'd love to hear from you.",
+};
 
 const contactDetails = [
   {

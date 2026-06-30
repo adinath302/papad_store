@@ -1,13 +1,20 @@
-import { Leaf, ShieldCheck, Truck, Award } from "lucide-react";
+import { Leaf, ShieldCheck, Truck, Award, Users } from "lucide-react";
 
-const badges = [
-  { icon: Truck, text: "Ships Across India" },
-  { icon: Leaf, text: "100% Natural Ingredients" },
-  { icon: Award, text: "Traditional Recipes" },
-  { icon: ShieldCheck, text: "Quality Sealed Packaging" },
-];
+interface TrustMarqueeProps {
+  customerCount?: number;
+}
 
-export default function TrustMarquee() {
+export default function TrustMarquee({ customerCount }: TrustMarqueeProps) {
+  const badges = [
+    { icon: Truck, text: "Ships Across India" },
+    { icon: Leaf, text: "100% Natural Ingredients" },
+    { icon: Award, text: "Traditional Recipes" },
+    { icon: ShieldCheck, text: "Quality Sealed Packaging" },
+    ...(customerCount && customerCount > 0
+      ? [{ icon: Users, text: `${customerCount}+ Happy Customers` }]
+      : []),
+  ];
+
   const items = [...badges, ...badges, ...badges];
 
   return (

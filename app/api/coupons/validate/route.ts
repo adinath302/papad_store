@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { validateCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const { code, cartTotal } = await req.json();
 
     if (!code || !cartTotal) {

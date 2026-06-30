@@ -29,6 +29,7 @@ type UserDetails = {
   email?: string | null;
   role?: string | null;
   isAdmin?: boolean;
+  createdAt?: string;
 };
 
 type Address = {
@@ -262,7 +263,7 @@ export default function ProfilePage() {
                 Member since
               </div>
               <p className="text-sm font-medium text-stone-600">
-                {new Date().getFullYear()}
+                {user?.createdAt ? new Date(user.createdAt).getFullYear() : new Date().getFullYear()}
               </p>
             </div>
           </div>
@@ -320,7 +321,14 @@ export default function ProfilePage() {
                         disabled={savingName}
                         className="p-2.5 bg-stone-900 text-white rounded-xl hover:bg-stone-800 transition disabled:opacity-50"
                       >
-                        <Save size={16} />
+                        {savingName ? (
+                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                          </svg>
+                        ) : (
+                          <Save size={16} />
+                        )}
                       </button>
                       <button
                         onClick={() => {
@@ -496,9 +504,17 @@ export default function ProfilePage() {
                 <button
                   onClick={handleAddAddress}
                   disabled={savingAddress}
-                  className="w-full bg-stone-900 text-white font-bold py-3 rounded-xl hover:bg-stone-800 transition text-sm disabled:opacity-50"
+                  className="w-full bg-stone-900 text-white font-bold py-3 rounded-xl hover:bg-stone-800 transition text-sm disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {savingAddress ? "Saving..." : "Save Address"}
+                  {savingAddress ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      Saving...
+                    </>
+                  ) : "Save Address"}
                 </button>
               </div>
             )}

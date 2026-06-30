@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
+import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { can, isOwner } from "@/lib/permissions";
 import { cookies } from "next/headers";
-import { sendCustomerShippingNotification } from "@/lib/email";
+import { sendCustomerShippingNotification, sendCustomerOrderStatusUpdate } from "@/lib/email";
 import { getTrackingUrl } from "@/lib/tracking";
+import { calculateSpeedPostRate, estimateZone } from "@/lib/indiapost";
 
 async function getCurrentUser() {
   const cookieStore = await cookies();
@@ -16,7 +18,7 @@ async function getCurrentUser() {
   return user;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser || currentUser.role !== "ADMIN") {
@@ -26,18 +28,59 @@ export async function GET() {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const orders = await prisma.order.findMany({
-      include: {
-        orderitem: {
-          include: { product: true },
+    const { searchParams } = new URL(req.url);
+    const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+    const search = searchParams.get("search") || "";
+    const status = searchParams.get("status") || "";
+
+    const where: any = {};
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: "insensitive" } },
+        { phone: { contains: search } },
+      ];
+    }
+    if (status) where.status = status;
+
+    const [orders, totalCount] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          orderitem: {
+            include: { product: true },
+          },
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+          refund: true,
         },
-        user: {
-          select: { id: true, name: true, email: true },
-        },
-      },
-      orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    const ordersWithActualCost = orders.map((order) => {
+      const totalWeight = order.orderitem.reduce((sum, item) => {
+        return sum + (item.product.weight || 200) * item.quantity;
+      }, 0);
+      const zone = estimateZone(order.state);
+      const actualRate = calculateSpeedPostRate(totalWeight || 500, zone);
+      return {
+        ...order,
+        actualShippingCost: actualRate,
+        totalWeight,
+      };
     });
-    return NextResponse.json(orders);
+
+    return NextResponse.json({
+      orders: ordersWithActualCost,
+      totalCount,
+      page,
+      totalPages: Math.ceil(totalCount / limit),
+    });
   } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Failed to fetch orders" },
@@ -48,6 +91,11 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const currentUser = await getCurrentUser();
     if (!currentUser || currentUser.role !== "ADMIN") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -74,33 +122,78 @@ export async function PATCH(req: Request) {
     if (courierName !== undefined) data.courierName = courierName;
     if (trackingId !== undefined) data.trackingId = trackingId;
 
-    const order = await prisma.order.update({
+    const prevOrder = await prisma.order.findUnique({
       where: { id },
-      data,
-      include: {
-        orderitem: { include: { product: true } },
-        user: { select: { id: true, name: true, email: true } },
-      },
+      include: { orderitem: true },
     });
 
-    const shouldNotify =
-      order.trackingId &&
-      order.trackingId !== "PENDING" &&
-      (data.trackingId !== undefined || data.status === "SHIPPED");
+    const order = await prisma.$transaction(async (tx) => {
+      const updated = await tx.order.update({
+        where: { id },
+        data,
+        include: {
+          orderitem: { include: { product: true } },
+          user: { select: { id: true, name: true, email: true } },
+        },
+      });
 
-    if (shouldNotify && order.user?.email) {
-      const trackingUrl = getTrackingUrl(order.courierName, order.trackingId);
-      sendCustomerShippingNotification(order.user.email, {
-        orderId: order.id,
-        fullName: order.fullName,
-        courierName: order.courierName || "",
-        trackingId: order.trackingId || "",
-        trackingUrl,
-        items: order.orderitem.map((oi) => ({
-          name: oi.product.name,
-          quantity: oi.quantity,
-        })),
-      }).catch((e) => console.error("Shipping email error:", e));
+      // Restore stock when cancelling
+      if (status === "CANCELLED" && prevOrder && prevOrder.status !== "CANCELLED") {
+        for (const item of prevOrder.orderitem) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+
+      return updated;
+    });
+
+    if (order.user?.email) {
+      // Send status update email for any status change
+      if (status && prevOrder && prevOrder.status !== status) {
+        const emailData = {
+          orderId: order.id,
+          fullName: order.fullName,
+          phone: order.phone,
+          address: order.address1 + (order.address2 ? `, ${order.address2}` : ""),
+          city: order.city,
+          state: order.state,
+          pincode: order.pincode,
+          totalAmount: order.totalAmount,
+          paymentType: order.paymentType,
+          status: order.status,
+          items: order.orderitem.map((oi) => ({
+            name: oi.product.name,
+            quantity: oi.quantity,
+          })),
+        };
+        sendCustomerOrderStatusUpdate(order.user.email, emailData).catch(
+          (e) => console.error("Status email error:", e),
+        );
+      }
+
+      // Send shipping notification when tracking is added
+      const shouldNotify =
+        order.trackingId &&
+        order.trackingId !== "PENDING" &&
+        (data.trackingId !== undefined || data.status === "SHIPPED");
+
+      if (shouldNotify) {
+        const trackingUrl = getTrackingUrl(order.courierName, order.trackingId);
+        sendCustomerShippingNotification(order.user.email, {
+          orderId: order.id,
+          fullName: order.fullName,
+          courierName: order.courierName || "",
+          trackingId: order.trackingId || "",
+          trackingUrl,
+          items: order.orderitem.map((oi) => ({
+            name: oi.product.name,
+            quantity: oi.quantity,
+          })),
+        }).catch((e) => console.error("Shipping email error:", e));
+      }
     }
 
     return NextResponse.json(order);

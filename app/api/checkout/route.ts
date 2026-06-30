@@ -1,3 +1,4 @@
+import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { isRazorpayConfigured } from "@/lib/razorpay";
@@ -12,6 +13,11 @@ export async function POST(req: Request) {
   const userId = cookieStore.get("userId")?.value;
 
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return Response.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const body = await req.json();
     const {
       fullName,
@@ -74,6 +80,14 @@ export async function POST(req: Request) {
       return Response.json({ error: "Cart is empty" }, { status: 400 });
     }
 
+    // Validate pincode and phone format
+    if (!/^\d{6}$/.test(pincode)) {
+      return Response.json({ error: "Invalid pincode format" }, { status: 400 });
+    }
+    if (!/^(\+91|0)?[6-9]\d{9}$/.test(phone.replace(/\s/g, ""))) {
+      return Response.json({ error: "Invalid phone number format" }, { status: 400 });
+    }
+
     const cartItems: any[] = [];
     for (const ci of clientItems) {
       const product = await prisma.product.findUnique({
@@ -82,13 +96,7 @@ export async function POST(req: Request) {
       });
       if (!product) {
         return Response.json(
-          { error: `Product not found: ${ci.productId}` },
-          { status: 400 },
-        );
-      }
-      if (product.stock != null && product.stock < ci.quantity) {
-        return Response.json(
-          { error: `${product.name} has insufficient stock` },
+          { error: "Product not found" },
           { status: 400 },
         );
       }
@@ -98,7 +106,7 @@ export async function POST(req: Request) {
         );
         if (!variant) {
           return Response.json(
-            { error: `Variant not found for ${product.name}` },
+            { error: "Variant not found" },
             { status: 400 },
           );
         }
@@ -146,59 +154,78 @@ export async function POST(req: Request) {
             } else if (coupon.type === "FREE_SHIPPING") {
               discount = shippingCost;
             }
-
             totalAmount = Math.max(0, subtotal + shippingCost - discount);
-
-            await prisma.coupon.update({
-              where: { id: coupon.id },
-              data: { usedCount: { increment: 1 } },
-            });
           }
         }
       }
     }
 
-    const order = await prisma.order.create({
-      data: {
-        userId: userId || null,
-        paymentType: paymentType || "COD",
-        shippingCost,
-        shippingMethod: shippingMethod || null,
-        totalAmount,
-        status: paymentType === "Razorpay" ? "CONFIRMED" : "PENDING",
-        fullName,
-        phone,
-        address1,
-        address2: address2 || null,
-        city,
-        state,
-        pincode,
-        razorpayOrderId: razorpayOrderId || null,
-        razorpayPaymentId: razorpayPaymentId || null,
-      },
-    });
+    const order = await prisma.$transaction(async (tx) => {
+      // Check stock inside transaction to prevent race conditions
+      for (const item of cartItems) {
+        if (item.product.stock != null) {
+          const current = await tx.product.findUnique({
+            where: { id: item.productId },
+            select: { stock: true, name: true },
+          });
+          if (!current || current.stock == null) continue;
+          if (current.stock < item.quantity) {
+            throw new Error(`Insufficient stock for ${current.name}`);
+          }
+        }
+      }
 
-    await prisma.orderitem.createMany({
-      data: cartItems.map((item: any) => ({
-        orderId: order.id,
-        productId: item.productId,
-        quantity: item.quantity,
-      })),
-    });
+      const created = await tx.order.create({
+        data: {
+          userId: userId || null,
+          paymentType: paymentType || "COD",
+          shippingCost,
+          shippingMethod: shippingMethod || null,
+          totalAmount,
+          status: paymentType === "Razorpay" ? "CONFIRMED" : "PENDING",
+          fullName,
+          phone,
+          address1,
+          address2: address2 || null,
+          city,
+          state,
+          pincode,
+          razorpayOrderId: razorpayOrderId || null,
+          razorpayPaymentId: razorpayPaymentId || null,
+        },
+      });
 
-    // Decrement stock
-    for (const item of cartItems) {
-      if (item.product.stock != null) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
+      await tx.orderitem.createMany({
+        data: cartItems.map((item: any) => ({
+          orderId: created.id,
+          productId: item.productId,
+          quantity: item.quantity,
+        })),
+      });
+
+      // Decrement stock inside transaction
+      for (const item of cartItems) {
+        if (item.product.stock != null) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
+      }
+
+      if (couponCode && discount > 0) {
+        await tx.coupon.updateMany({
+          where: { code: couponCode.toUpperCase() },
+          data: { usedCount: { increment: 1 } },
         });
       }
-    }
 
-    if (userId) {
-      await prisma.cartitem.deleteMany({ where: { userId } });
-    }
+      if (userId) {
+        await tx.cartitem.deleteMany({ where: { userId } });
+      }
+
+      return created;
+    });
 
     const updatedOrder = await prisma.order.findUnique({
       where: { id: order.id },
@@ -243,9 +270,9 @@ export async function POST(req: Request) {
 
     return Response.json(updatedOrder);
   } catch (error: any) {
-    console.log("CHECKOUT ERROR:", error);
+    console.error("CHECKOUT ERROR:", error);
     return Response.json(
-      { error: error?.message ?? "Checkout failed" },
+      { error: error?.message?.includes("Insufficient stock") ? error.message : "Checkout failed" },
       { status: 500 },
     );
   }

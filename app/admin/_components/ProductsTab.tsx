@@ -4,19 +4,22 @@ import { useState, useRef } from "react";
 import {
   Package, Plus, Trash2, Image as ImageIcon,
   FileText, Hash, Link2, IndianRupee, Pencil, Upload,
+  GripVertical, X,
 } from "lucide-react";
 import Image from "next/image";
-import type { Product } from "./types";
+import type { Product, ProductImage } from "./types";
 
 type FormState = {
   name: string;
   nameMarathi: string;
   description: string;
-  stock: string;
-  weight: string;
-  image: string;
-  variants: { label: string; price: string }[];
-};
+  metaTitle: string;
+  metaDescription: string;
+    stock: string;
+    weight: string;
+    image: string;
+    variants: { label: string; price: string }[];
+  };
 
 type ProductsTabProps = {
   products: Product[];
@@ -31,14 +34,21 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imagesFileInputRef = useRef<HTMLInputElement>(null);
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>({
-    name: "", nameMarathi: "", description: "", stock: "", weight: "", image: "",
+    name: "", nameMarathi: "", description: "", metaTitle: "", metaDescription: "", stock: "", weight: "", image: "",
     variants: [{ label: "", price: "" }],
   });
 
   const resetForm = () => {
-    setForm({ name: "", nameMarathi: "", description: "", stock: "", weight: "", image: "", variants: [{ label: "", price: "" }] });
+    setForm({ name: "", nameMarathi: "", description: "", metaTitle: "", metaDescription: "", stock: "", weight: "", image: "", variants: [{ label: "", price: "" }] });
     setEditingProductId(null);
+    setProductImages([]);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -104,11 +114,97 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
     }));
   };
 
+  const fetchProductImages = async (productId: string) => {
+    const res = await fetch(`/api/products/images?productId=${productId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setProductImages(data);
+    } else {
+      setProductImages([]);
+    }
+  };
+
+  const handleImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploadingImages(true);
+    try {
+      const formData = new FormData();
+      formData.append("productId", editingProductId!);
+      for (const file of Array.from(files)) {
+        formData.append("files", file);
+      }
+      const res = await fetch("/api/products/images", {
+        method: "POST",
+        body: formData,
+      });
+      if (res.ok) {
+        toast("Images uploaded successfully!", "success");
+        fetchProductImages(editingProductId!);
+      } else {
+        const err = await res.json();
+        toast("Upload failed: " + (err.error || "Unknown error"), "error");
+      }
+    } catch {
+      toast("Image upload failed", "error");
+    } finally {
+      setUploadingImages(false);
+      if (imagesFileInputRef.current) imagesFileInputRef.current.value = "";
+    }
+  };
+
+  const handleDeleteImage = async (id: string) => {
+    if (!confirm("Delete this image?")) return;
+    const res = await fetch(`/api/products/images?id=${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast("Image deleted", "success");
+      if (editingProductId) fetchProductImages(editingProductId);
+    } else {
+      toast("Failed to delete image", "error");
+    }
+  };
+
+  const handleDragStart = (index: number) => setDraggedIndex(index);
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    setDragOverIndex(index);
+  };
+  const handleDragLeave = () => setDragOverIndex(null);
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    setDragOverIndex(null);
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      return;
+    }
+    const reordered = [...productImages];
+    const [moved] = reordered.splice(draggedIndex, 1);
+    reordered.splice(dropIndex, 0, moved);
+    const updated = reordered.map((img, i) => ({ ...img, sortOrder: i }));
+    setProductImages(updated);
+    setDraggedIndex(null);
+
+    const res = await fetch("/api/products/images", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        images: updated.map((img) => ({ id: img.id, sortOrder: img.sortOrder })),
+      }),
+    });
+    if (!res.ok) {
+      toast("Failed to reorder images", "error");
+      if (editingProductId) fetchProductImages(editingProductId);
+    }
+  };
+
   const handleEdit = (product: Product) => {
     setForm({
       name: product.name,
       nameMarathi: (product as any).nameMarathi || "",
       description: product.description || "",
+      metaTitle: (product as any).metaTitle || "",
+      metaDescription: (product as any).metaDescription || "",
       stock: product.stock?.toString() || "",
       weight: product.weight?.toString() || "",
       image: product.image || "",
@@ -116,35 +212,43 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
     });
     setEditingProductId(product.id);
     setShowForm(true);
+    fetchProductImages(product.id);
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const body = {
-      name: form.name,
-      nameMarathi: form.nameMarathi || null,
-      description: form.description || null,
-      stock: form.stock ? Number(form.stock) : null,
-      weight: form.weight ? Number(form.weight) : null,
-      productType: "variant",
-      image: form.image || null,
-      thumbnail: form.image || null,
-      variants: form.variants.filter((v) => v.label.trim() && v.price).map((v) => ({ label: v.label.trim(), price: Number(v.price) })),
-    };
-    const isEditing = !!editingProductId;
-    const res = await fetch(isEditing ? `/api/products/${editingProductId}` : "/api/products", {
-      method: isEditing ? "PATCH" : "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (res.ok) {
-      toast(isEditing ? "Product updated successfully!" : "Product added successfully!", "success");
-      resetForm();
-      setShowForm(false);
-      onProductChange();
-    } else {
-      const err = await res.json();
-      toast(`Error: ${err.details || err.error}`, "error");
+    setSaving(true);
+    try {
+      const body = {
+        name: form.name,
+        nameMarathi: form.nameMarathi || null,
+        description: form.description || null,
+        metaTitle: form.metaTitle || null,
+        metaDescription: form.metaDescription || null,
+        stock: form.stock ? Number(form.stock) : null,
+        weight: form.weight ? Number(form.weight) : null,
+        productType: "variant",
+        image: form.image || null,
+        thumbnail: form.image || null,
+        variants: form.variants.filter((v) => v.label.trim() && v.price).map((v) => ({ label: v.label.trim(), price: Number(v.price) })),
+      };
+      const isEditing = !!editingProductId;
+      const res = await fetch(isEditing ? `/api/products/${editingProductId}` : "/api/products", {
+        method: isEditing ? "PATCH" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        toast(isEditing ? "Product updated successfully!" : "Product added successfully!", "success");
+        resetForm();
+        setShowForm(false);
+        onProductChange();
+      } else {
+        const err = await res.json();
+        toast(`Error: ${err.details || err.error}`, "error");
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -248,6 +352,87 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
               </div>
             </div>
 
+            {/* Product Images */}
+            {editingProductId && (
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-4 flex items-center gap-2">
+                  <ImageIcon size={14} /> Product Images
+                </h3>
+                {productImages.length > 0 && (
+                  <div className="grid grid-cols-4 md:grid-cols-6 gap-3 mb-4">
+                    {productImages.map((img, i) => (
+                      <div
+                        key={img.id}
+                        draggable
+                        onDragStart={() => handleDragStart(i)}
+                        onDragOver={(e) => handleDragOver(e, i)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={(e) => handleDrop(e, i)}
+                        className={`relative w-24 h-24 rounded-lg border-2 overflow-hidden cursor-grab active:cursor-grabbing transition-all
+                          ${draggedIndex === i ? "opacity-50" : ""}
+                          ${dragOverIndex === i ? "border-emerald-500 scale-105" : "border-stone-200"}
+                        `}
+                      >
+                        <Image src={img.url} alt={img.alt || ""} fill className="object-cover pointer-events-none" />
+                        <div className="absolute top-1 right-1 z-10">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.id); }}
+                            className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
+                            title="Delete image"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                        <div className="absolute bottom-1 left-1 z-10">
+                          <GripVertical size={12} className="text-white drop-shadow" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex items-center gap-3">
+                  <input
+                    ref={imagesFileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleImagesUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => imagesFileInputRef.current?.click()}
+                    disabled={uploadingImages}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-bold transition-all disabled:opacity-50"
+                  >
+                    {uploadingImages ? (
+                      <span className="w-4 h-4 border-2 border-stone-500 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Upload size={16} />
+                    )}
+                    {uploadingImages ? "Uploading..." : "Add Images"}
+                  </button>
+                  <p className="text-xs text-stone-400">Upload multiple product images</p>
+                </div>
+              </div>
+            )}
+
+            {/* SEO */}
+            <div>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-4">SEO</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Meta Title (SEO)</label>
+                  <input name="metaTitle" value={form.metaTitle} onChange={handleChange} placeholder="Custom page title for search engines" className="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-stone-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-stone-500 mb-2">Meta Description (SEO)</label>
+                  <textarea name="metaDescription" value={form.metaDescription} onChange={handleChange} rows={2} placeholder="Custom description for search results" className="w-full border border-stone-200 rounded-lg px-4 py-2.5 text-sm outline-none focus:border-stone-400 resize-y" />
+                </div>
+              </div>
+            </div>
+
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-xs font-bold uppercase tracking-wider text-stone-500 flex items-center gap-2">
@@ -290,9 +475,17 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
               <button type="button" onClick={() => { resetForm(); setShowForm(false); }}
                 className="px-6 py-2.5 text-xs font-bold text-stone-500 hover:text-stone-700 transition-colors">Cancel</button>
               <button type="submit"
-                disabled={form.variants.filter((v) => v.label.trim() && v.price).length === 0}
-                className="px-8 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm">
-                {editingProductId ? "Update Product" : "Save Product"}
+                disabled={saving || form.variants.filter((v) => v.label.trim() && v.price).length === 0}
+                className="px-8 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-sm flex items-center gap-2">
+                {saving ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    Saving...
+                  </>
+                ) : editingProductId ? "Update Product" : "Save Product"}
               </button>
             </div>
           </form>

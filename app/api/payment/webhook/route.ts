@@ -9,20 +9,26 @@ export async function POST(req: Request) {
     const text = await req.text();
     const signature = req.headers.get("x-razorpay-signature") || "";
 
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || "";
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-    if (secret) {
-      const expectedSignature = crypto
-        .createHmac("sha256", secret)
-        .update(text)
-        .digest("hex");
+    if (!secret) {
+      console.error("RAZORPAY_WEBHOOK_SECRET is not configured");
+      return NextResponse.json(
+        { error: "Webhook secret not configured" },
+        { status: 500 },
+      );
+    }
 
-      if (expectedSignature !== signature) {
-        return NextResponse.json(
-          { error: "Invalid signature" },
-          { status: 400 },
-        );
-      }
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(text)
+      .digest("hex");
+
+    if (expectedSignature !== signature) {
+      return NextResponse.json(
+        { error: "Invalid signature" },
+        { status: 400 },
+      );
     }
 
     const event = JSON.parse(text);
@@ -33,16 +39,21 @@ export async function POST(req: Request) {
       const razorpayOrderId = payment.order_id;
       const razorpayPaymentId = payment.id;
 
-      await prisma.order.updateMany({
+      const order = await prisma.order.findFirst({
         where: { razorpayOrderId },
-        data: {
-          razorpayPaymentId,
-          status: "CONFIRMED",
-        },
       });
+      if (order) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: {
+            razorpayPaymentId,
+            status: "CONFIRMED",
+          },
+        });
+      }
 
       console.log(
-        `Webhook: Order ${razorpayOrderId} confirmed via payment ${razorpayPaymentId}`,
+        `Order ${razorpayOrderId} confirmed via payment ${razorpayPaymentId}`,
       );
     }
 
@@ -51,13 +62,30 @@ export async function POST(req: Request) {
       const payment = event.payload.payment.entity;
       const razorpayOrderId = payment.order_id;
 
-      await prisma.order.updateMany({
+      const failedOrder = await prisma.order.findFirst({
         where: { razorpayOrderId },
-        data: { status: "CANCELLED" },
+        include: { orderitem: true },
       });
 
+      if (failedOrder) {
+        await prisma.$transaction(async (tx) => {
+          await tx.order.update({
+            where: { id: failedOrder.id },
+            data: { status: "CANCELLED" },
+          });
+
+          // Restore stock
+          for (const item of failedOrder.orderitem) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+        });
+      }
+
       console.log(
-        `Webhook: Order ${razorpayOrderId} cancelled due to payment failure`,
+        `Order ${razorpayOrderId} cancelled due to payment failure`,
       );
     }
 

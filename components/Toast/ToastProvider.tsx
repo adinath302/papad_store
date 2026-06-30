@@ -9,7 +9,6 @@ import {
   type ReactNode,
 } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle, XCircle, AlertTriangle, Info } from "lucide-react";
 
 type ToastType = "success" | "error" | "info" | "warning";
 
@@ -31,33 +30,33 @@ export function useToast() {
   return ctx;
 }
 
-const icons: Record<ToastType, React.ElementType> = {
-  success: CheckCircle,
-  error: XCircle,
-  warning: AlertTriangle,
-  info: Info,
-};
-
-const styles: Record<ToastType, { bar: string; icon: string; bg: string }> = {
+const config: Record<
+  ToastType,
+  { border: string; bg: string; dot: string; label: string }
+> = {
   success: {
-    bar: "bg-emerald-500",
-    icon: "text-emerald-500",
-    bg: "bg-emerald-50",
+    border: "border-emerald-500",
+    bg: "bg-emerald-500",
+    dot: "bg-emerald-500",
+    label: "Success",
   },
   error: {
-    bar: "bg-red-500",
-    icon: "text-red-500",
-    bg: "bg-red-50",
+    border: "border-red-500",
+    bg: "bg-red-500",
+    dot: "bg-red-500",
+    label: "Error",
   },
   warning: {
-    bar: "bg-amber-500",
-    icon: "text-amber-500",
-    bg: "bg-amber-50",
+    border: "border-amber-500",
+    bg: "bg-amber-500",
+    dot: "bg-amber-500",
+    label: "Warning",
   },
   info: {
-    bar: "bg-blue-500",
-    icon: "text-blue-500",
-    bg: "bg-blue-50",
+    border: "border-blue-500",
+    bg: "bg-blue-500",
+    dot: "bg-blue-500",
+    label: "Info",
   },
 };
 
@@ -72,7 +71,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     (message: string, type: ToastType = "info") => {
       const id = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
       setToasts((prev) => [...prev, { id, type, message }]);
-      setTimeout(() => removeToast(id), 4200);
+      setTimeout(() => removeToast(id), 4000);
     },
     [removeToast],
   );
@@ -83,41 +82,54 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={ctxValue}>
       {children}
 
-      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] flex flex-col gap-3 pointer-events-none w-full max-w-[420px] px-4">
-        <AnimatePresence mode="popLayout">
+      <div className="fixed bottom-6 right-6 z-[999] flex flex-col-reverse gap-3 pointer-events-none">
+        <AnimatePresence>
           {toasts.map((t) => {
-            const Icon = icons[t.type];
-            const s = styles[t.type];
+            const c = config[t.type];
             return (
               <motion.div
                 key={t.id}
                 layout
-                initial={{ opacity: 0, y: -40, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.95 }}
-                transition={{ type: "spring", damping: 24, stiffness: 300 }}
-                className="pointer-events-auto relative flex items-start gap-3 w-full bg-white/90 backdrop-blur-xl rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.15)] border border-white/40 overflow-hidden"
+                initial={{ opacity: 0, x: 80, rotate: 4, scale: 0.9 }}
+                animate={{ opacity: 1, x: 0, rotate: 0, scale: 1 }}
+                exit={{ opacity: 0, x: 80, rotate: -2, scale: 0.9 }}
+                transition={{
+                  type: "spring",
+                  damping: 20,
+                  stiffness: 260,
+                  mass: 0.8,
+                }}
+                className="pointer-events-auto relative flex items-center gap-3 pl-3 pr-4 py-3 bg-white rounded-xl border-2 border-zinc-200 shadow-[0_8px_32px_rgba(0,0,0,0.12)] min-w-[300px] max-w-[400px]"
               >
-                <div className={`absolute left-0 top-0 bottom-0 w-[4px] ${s.bar}`} />
+                <div
+                  className={`size-2.5 shrink-0 rounded-full ${c.dot} shadow-[0_0_6px] ${t.type === "success" ? "shadow-emerald-500/50" : t.type === "error" ? "shadow-red-500/50" : t.type === "warning" ? "shadow-amber-500/50" : "shadow-blue-500/50"}`}
+                />
 
-                <div className={`ml-4 mt-3.5 mb-3.5 ${s.icon}`}>
-                  <Icon size={18} />
-                </div>
-
-                <div className="flex-1 py-3.5 pr-10">
-                  <p className="text-sm font-semibold text-stone-800 leading-snug">
-                    {t.message}
-                  </p>
-                </div>
+                <p className="text-sm font-semibold text-zinc-800 leading-snug flex-1">
+                  {t.message}
+                </p>
 
                 <button
                   onClick={() => removeToast(t.id)}
-                  className="absolute top-2.5 right-2.5 p-1 text-stone-300 hover:text-stone-600 transition-colors cursor-pointer rounded-md hover:bg-stone-100"
+                  className="p-1 text-zinc-300 hover:text-zinc-600 transition-colors cursor-pointer rounded-md hover:bg-zinc-100 shrink-0"
                 >
-                  <X size={14} />
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  >
+                    <path d="M3 3l8 8M11 3l-8 8" />
+                  </svg>
                 </button>
 
-                <div className={`absolute bottom-0 left-0 h-[3px] ${s.bar} animate-shrink`} />
+                <div
+                  className={`absolute bottom-0 left-0 h-[3px] rounded-full ${c.bg} toast-progress`}
+                  style={{ animation: "shrink 3.8s linear forwards" }}
+                />
               </motion.div>
             );
           })}
@@ -126,11 +138,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
       <style>{`
         @keyframes shrink {
-          from { width: 100%; }
+          from { width: calc(100% - 2px); }
           to { width: 0%; }
-        }
-        .animate-shrink {
-          animation: shrink 4s linear forwards;
         }
       `}</style>
     </ToastContext.Provider>
