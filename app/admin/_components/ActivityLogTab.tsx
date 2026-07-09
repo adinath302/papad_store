@@ -56,15 +56,15 @@ export default function ActivityLogTab() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Activity Log</h1>
-          <p className="text-sm text-stone-500 mt-1">{totalCount} event{totalCount !== 1 ? "s" : ""} • System audit trail</p>
+          <h1 className="text-xl md:text-2xl font-bold text-stone-900 tracking-tight">Activity Log</h1>
+          <p className="text-xs md:text-sm text-stone-500 mt-0.5">{totalCount} event{totalCount !== 1 ? "s" : ""} • System audit trail</p>
         </div>
         <select
           value={resourceFilter}
           onChange={(e) => { setResourceFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2 border border-stone-200 rounded-xl text-sm outline-none focus:border-stone-400 bg-white"
+          className="w-full sm:w-auto px-3 py-2 border border-stone-200 rounded-lg md:rounded-xl text-sm outline-none focus:border-stone-400 bg-white"
         >
           <option value="">All Resources</option>
           {resources.map((r) => (
@@ -80,7 +80,7 @@ export default function ActivityLogTab() {
           </div>
         ) : logs.length > 0 ? (
           <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto hidden md:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-100 bg-stone-50">
@@ -117,6 +117,29 @@ export default function ActivityLogTab() {
                   ))}
                 </tbody>
               </table>
+            </div>
+            <div className="md:hidden divide-y divide-stone-100">
+              {logs.map((log) => (
+                <div key={log.id} className="p-3 space-y-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[11px] text-stone-400 font-medium">{formatDateTime(log.createdAt)}</span>
+                    <span className="inline-block px-2 py-0.5 bg-stone-100 text-stone-600 rounded text-[10px] font-medium shrink-0">{log.action}</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      {log.user ? (
+                        <p className="text-sm font-semibold text-stone-800 truncate">{log.user.name || "Unknown"}</p>
+                      ) : (
+                        <span className="text-xs text-stone-400">System</span>
+                      )}
+                    </div>
+                    <span className="text-[11px] text-stone-500 shrink-0">
+                      {log.resource}{log.resourceId && <span className="text-stone-400 ml-1 text-[10px] font-mono">#{log.resourceId.slice(0, 8)}</span>}
+                    </span>
+                  </div>
+                  {log.details && <p className="text-[11px] text-stone-500 leading-snug">{log.details}</p>}
+                </div>
+              ))}
             </div>
 
             {totalPages > 1 && (

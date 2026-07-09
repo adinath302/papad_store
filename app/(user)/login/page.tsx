@@ -69,7 +69,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-[#faf8f5]">
       {/* Left Side: Form */}
-      <div className="flex flex-col justify-center items-center px-8 py-12">
+      <div className="flex flex-col justify-center items-center px-4 sm:px-8 py-10 md:py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -85,7 +85,7 @@ export default function LoginPage() {
                 crafted with tradition
               </span>
             </Link>
-            <h1 className="text-4xl font-serif text-stone-900 mb-2">
+            <h1 className="text-3xl md:text-4xl font-serif text-stone-900 mb-2">
               Welcome Back
             </h1>
             <p className="text-stone-500">

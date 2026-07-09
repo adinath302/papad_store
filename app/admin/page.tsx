@@ -5,6 +5,7 @@ import {
   LayoutDashboard, Package, ShoppingBag,
   LogOut, Shield, Tag, History,
 } from "lucide-react";
+import Image from "next/image";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useToast } from "@/components/Toast/ToastProvider";
@@ -71,7 +72,7 @@ export default function AdminPage() {
       const meData = await meRes.json();
       const isOwnerUser = meData.user?.isOwner;
       setIsOwner(isOwnerUser);
-      setOwnerEmail(meData.ownerEmail || "");
+      setOwnerEmail(meData.user?.ownerEmail || "");
       setCurrentPerms(meData.user?.permissions || null);
       await Promise.all([fetchProducts(), fetchOrders()]);
       if (isOwnerUser) await fetchAdmins();
@@ -95,11 +96,9 @@ export default function AdminPage() {
 
   return (
     <div className="flex min-h-screen bg-stone-50">
-      <aside className="hidden md:flex w-64 flex-col bg-white border-r border-stone-200 p-6 sticky top-0 h-screen">
+      <aside className="hidden lg:flex w-64 flex-col bg-white border-r border-stone-200 p-6 sticky top-0 h-screen">
         <Link href="/" className="flex items-center gap-3 mb-10 group">
-          <div className="w-9 h-9 bg-stone-900 rounded-xl flex items-center justify-center group-hover:bg-emerald-800 transition-colors">
-            <span className="text-white font-bold text-sm">P</span>
-          </div>
+          <Image src="/logo.png" alt="Shivshambho" width={96} height={96} className="w-24 h-24 object-contain rounded-lg" />
           <div>
             <p className="font-semibold text-stone-800 text-sm">Admin Panel</p>
             <p className="text-[10px] text-stone-400">Shivshambho</p>
@@ -122,25 +121,24 @@ export default function AdminPage() {
         </Link>
       </aside>
 
-      <main className="flex-1 p-4 md:p-10 overflow-x-hidden">
-        <div className="flex md:hidden items-center justify-between mb-6">
+      <main className="flex-1 p-3 md:p-10 overflow-x-hidden">
+        <div className="flex lg:hidden items-center justify-between mb-4 sticky top-0 z-40 bg-stone-50 -mx-3 px-3 py-3 border-b border-stone-200">
           <div>
-            <h1 className="text-lg font-bold text-stone-900">Admin Panel</h1>
-            <p className="text-xs text-stone-400">Shivshambho</p>
-            <p className="text-[9px] text-stone-300 tracking-widest uppercase">crafted with tradition</p>
+            <h1 className="text-base font-bold text-stone-900">Admin Panel</h1>
+            <p className="text-[10px] text-stone-400">Shivshambho</p>
           </div>
-          <Link href="/" className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-stone-500 hover:text-stone-700 hover:bg-stone-100 transition-all border border-stone-200">
-            <LogOut size={14} strokeWidth={1.5} /> Store
+          <Link href="/" className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold text-stone-500 hover:text-stone-700 hover:bg-stone-100 transition-all border border-stone-200">
+            <LogOut size={12} strokeWidth={1.5} /> Store
           </Link>
         </div>
 
-        <div className="flex md:hidden gap-2 mb-6 overflow-x-auto pb-2">
+        <div className="flex lg:hidden gap-1.5 mb-5 overflow-x-auto pb-1.5 no-scrollbar">
           {tabs.map((tab) => (
             <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                activeTab === tab.id ? "bg-stone-900 text-white shadow-sm" : "bg-white text-stone-500 border border-stone-200 shadow-sm"
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all shrink-0 ${
+                activeTab === tab.id ? "bg-stone-900 text-white shadow-sm" : "bg-white text-stone-500 border border-stone-200"
               }`}>
-              <tab.icon size={14} /> {tab.label}
+              <tab.icon size={13} /> {tab.label}
             </button>
           ))}
         </div>

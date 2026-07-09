@@ -238,27 +238,27 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between gap-4 flex-wrap">
+      <div className="mb-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Orders</h1>
-          <p className="text-sm text-stone-500 mt-1">{totalCount} order{totalCount !== 1 ? "s" : ""} • Track and manage</p>
+          <h1 className="text-xl md:text-2xl font-bold text-stone-900 tracking-tight">Orders</h1>
+          <p className="text-xs md:text-sm text-stone-500 mt-0.5">{totalCount} order{totalCount !== 1 ? "s" : ""} • Track and manage</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:flex-none">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
             <input
               id="order-search"
               type="text"
               placeholder="Search name or phone..."
               defaultValue={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
-              className="pl-9 pr-3 py-2 w-56 border border-stone-200 rounded-xl text-sm outline-none focus:border-stone-400 bg-white"
+              className="pl-8 pr-3 py-2 w-full sm:w-48 border border-stone-200 rounded-lg md:rounded-xl text-sm outline-none focus:border-stone-400 bg-white"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => handleStatusChange(e.target.value)}
-            className="px-3 py-2 border border-stone-200 rounded-xl text-sm outline-none focus:border-stone-400 bg-white"
+            className="px-2.5 py-2 border border-stone-200 rounded-lg md:rounded-xl text-xs outline-none focus:border-stone-400 bg-white"
           >
             <option value="">All Status</option>
             {STATUSES.filter(Boolean).map((s) => (
@@ -266,21 +266,21 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
             ))}
           </select>
           <button onClick={exportCSV} disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-2 bg-emerald-600 text-white rounded-lg md:rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all disabled:opacity-50"
           >
-            <Download size={15} />
-            {exporting ? "Exporting..." : "Export CSV"}
+            <Download size={13} />
+            <span className="hidden sm:inline">{exporting ? "Exporting..." : "Export CSV"}</span>
           </button>
         </div>
       </div>
 
       {selectedIds.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-stone-100 rounded-2xl border border-stone-200">
-          <span className="text-sm font-semibold text-stone-700">{selectedIds.size} selected</span>
+        <div className="mb-4 flex flex-wrap items-center gap-2 px-3 py-2.5 md:px-4 md:py-3 bg-stone-100 rounded-xl md:rounded-2xl border border-stone-200">
+          <span className="text-xs md:text-sm font-semibold text-stone-700">{selectedIds.size} selected</span>
           <select
             value={bulkStatus}
             onChange={(e) => setBulkStatus(e.target.value)}
-            className="px-3 py-1.5 border border-stone-200 rounded-xl text-sm outline-none focus:border-stone-400 bg-white"
+            className="px-2 py-1.5 md:px-3 border border-stone-200 rounded-lg md:rounded-xl text-xs outline-none focus:border-stone-400 bg-white"
           >
             <option value="">Set status...</option>
             {BULK_STATUSES.map((s) => (
@@ -290,16 +290,16 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
           <button
             onClick={handleBulkUpdate}
             disabled={!bulkStatus || processingBulk}
-            className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 text-white rounded-xl text-sm font-bold hover:bg-emerald-700 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3 py-1.5 md:px-4 bg-emerald-600 text-white rounded-lg md:rounded-xl text-xs font-bold hover:bg-emerald-700 transition-all disabled:opacity-50"
           >
-            {processingBulk && <RefreshCw size={14} className="animate-spin" />}
-            Update Status
+            {processingBulk && <RefreshCw size={12} className="animate-spin" />}
+            Update
           </button>
           <button
             onClick={() => { setSelectedIds(new Set()); setBulkStatus(""); }}
             className="ml-auto text-stone-400 hover:text-stone-600"
           >
-            <X size={16} />
+            <X size={15} />
           </button>
         </div>
       )}
@@ -311,7 +311,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
           </div>
         ) : orders.length > 0 ? (
           <>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto hidden sm:block">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-stone-100 bg-stone-50">
@@ -325,7 +325,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
                     </th>
                     <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Customer</th>
                     <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden md:table-cell">Items</th>
-                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Subtotal</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden lg:table-cell">Subtotal</th>
                     <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">
                       <div className="flex items-center gap-1">
                         <span>Shipping</span>
@@ -333,9 +333,9 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
                       </div>
                     </th>
                     <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Total</th>
-                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Payment</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden lg:table-cell">Payment</th>
                     <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Status</th>
-                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Date</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden md:table-cell">Date</th>
                     <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -373,7 +373,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
                           ))}
                         </div>
                       </td>
-                      <td className="px-5 py-4 text-stone-600 hidden sm:table-cell">₹{order.totalAmount - order.shippingCost}</td>
+                      <td className="px-5 py-4 text-stone-600 hidden lg:table-cell">₹{order.totalAmount - order.shippingCost}</td>
                       <td className="px-5 py-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5">
@@ -402,7 +402,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
                         </div>
                       </td>
                       <td className="px-5 py-4 font-bold text-stone-800">₹{order.totalAmount}</td>
-                      <td className="px-5 py-4 hidden sm:table-cell text-stone-500 text-xs font-medium uppercase">{order.paymentType}</td>
+                      <td className="px-5 py-4 hidden lg:table-cell text-stone-500 text-xs font-medium uppercase">{order.paymentType}</td>
                       <td className="px-5 py-4">
                         {shippingOrderId === order.id ? (
                           <div className="space-y-2 min-w-[200px]">
@@ -445,7 +445,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
                           </div>
                         )}
                       </td>
-                      <td className="px-5 py-4 text-stone-400 text-xs hidden sm:table-cell">
+                      <td className="px-5 py-4 text-stone-400 text-xs hidden md:table-cell">
                         {new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                       </td>
                       <td className="px-5 py-4">
@@ -481,6 +481,75 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
                 </tbody>
               </table>
             </div>
+
+            {orders.length > 0 && (
+              <div className="sm:hidden divide-y divide-stone-100">
+                {orders.map((order) => {
+                  const actualCost = order.actualShippingCost ?? 0;
+                  const diff = order.shippingCost - actualCost;
+                  const hasRefund = order.refund && order.refund.length > 0;
+                  const canRefund = order.paymentType !== "COD" && order.razorpayPaymentId && (order.status === "DELIVERED" || order.status === "CANCELLED") && !hasRefund;
+                  return (
+                    <div key={order.id} className="p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <input type="checkbox" checked={selectedIds.has(order.id)} onChange={() => toggleSelect(order.id)} className="rounded border-stone-300 shrink-0 mt-0.5" />
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-stone-800 truncate">{order.fullName || "Guest"}</p>
+                            <p className="text-[11px] text-stone-400">{order.phone}</p>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-stone-800">₹{order.totalAmount}</p>
+                          <span className="text-[10px] text-stone-500 uppercase">{order.paymentType}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2">
+                        {shippingOrderId === order.id ? (
+                          <div className="flex-1 space-y-1.5">
+                            <input value={shipCourier} onChange={(e) => setShipCourier(e.target.value)} placeholder="Courier" className="w-full border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs outline-none" />
+                            <input value={shipTracking} onChange={(e) => setShipTracking(e.target.value)} placeholder="Tracking #" className="w-full border border-stone-200 rounded-lg px-2.5 py-1.5 text-xs outline-none" />
+                            <div className="flex gap-1">
+                              <button onClick={() => markAsShipped(order.id)} disabled={!shipTracking.trim()} className="flex-1 px-2 py-1 bg-stone-900 text-white rounded text-[10px] font-bold disabled:opacity-40">Ship</button>
+                              <button onClick={() => setShippingOrderId(null)} className="px-2 py-1 text-stone-400 text-[10px]">Cancel</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-1.5">
+                              {(isOwner || hasPerm("orders", "update_status")) ? (
+                                <select value={order.status} onChange={(e) => updateOrderStatus(order.id, e.target.value)} className={`text-[10px] font-bold px-2 py-1 rounded-full border-0 cursor-pointer outline-none ${statusStyles[order.status] || "bg-stone-100 text-stone-600"}`}>
+                                  <option value="PENDING">Pending</option>
+                                  <option value="CONFIRMED">Confirmed</option>
+                                  <option value="SHIPPED">Shipped</option>
+                                  <option value="DELIVERED">Delivered</option>
+                                  <option value="CANCELLED">Cancelled</option>
+                                </select>
+                              ) : (
+                                <span className={`inline-block px-2 py-1 rounded-full text-[10px] font-bold ${statusStyles[order.status] || "bg-stone-100 text-stone-600"}`}>{order.status}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {canRefund && <button onClick={() => setRefundModal(order)} className="px-2 py-1 text-[10px] font-bold text-white bg-red-500 rounded">Refund</button>}
+                              {hasRefund && <span className="px-2 py-1 text-[10px] text-stone-400 bg-stone-100 rounded">Refunded</span>}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-stone-400">
+                        {order.orderitem.map((item) => (
+                          <span key={item.id}>{item.product.name} x{item.quantity}</span>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-stone-400">
+                        <span>{new Date(order.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span>
+                        <span className="text-stone-500">Shipping: {order.shippingCost > 0 ? `₹${order.shippingCost}` : "Free"} → ₹{actualCost}{diff !== 0 && (diff > 0 ? ` +₹${diff}` : ` -₹${Math.abs(diff)}`)}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-4 border-t border-stone-100">

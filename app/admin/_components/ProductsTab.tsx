@@ -264,16 +264,17 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Products</h1>
-          <p className="text-sm text-stone-500 mt-1">{products.length} product{products.length !== 1 ? "s" : ""} • Manage your catalog</p>
+      <div className="flex items-start justify-between gap-3 mb-6 md:mb-8">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-stone-900 tracking-tight">Products</h1>
+          <p className="text-xs md:text-sm text-stone-500 mt-0.5">{products.length} product{products.length !== 1 ? "s" : ""} • Manage your catalog</p>
         </div>
         {(isOwner || hasPerm("products", "create")) && (
           <button onClick={() => { if (showForm && editingProductId) resetForm(); setShowForm(!showForm); }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all shadow-sm">
-            <Plus size={15} strokeWidth={2.5} />
-            {showForm ? "Cancel" : "Add Product"}
+            className="shrink-0 flex items-center gap-1.5 px-3 md:px-5 py-2 md:py-2.5 bg-stone-900 text-white rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold hover:bg-stone-800 transition-all shadow-sm">
+            <Plus size={14} strokeWidth={2.5} />
+            <span className="hidden sm:inline">{showForm ? "Cancel" : "Add Product"}</span>
+            <span className="sm:hidden">{showForm ? "Cancel" : "Add"}</span>
           </button>
         )}
       </div>
@@ -445,21 +446,21 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
               </div>
               <div className="space-y-2.5">
                 {form.variants.map((v, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-white border border-stone-200 rounded-xl p-3">
+                  <div key={i} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 bg-white border border-stone-200 rounded-xl p-3">
                     <div className="flex-1 min-w-0">
                       <input placeholder="e.g. 200g, 500g, 1kg" value={v.label}
                         onChange={(e) => updateVariant(i, "label", e.target.value)}
-                        className="w-full border-0 bg-transparent px-2 py-1.5 outline-none text-sm text-stone-900 placeholder:text-stone-300 font-medium" />
+                        className="w-full border border-stone-200 sm:border-0 bg-transparent px-3 sm:px-2 py-2 sm:py-1.5 rounded-lg sm:rounded-none outline-none text-sm text-stone-900 placeholder:text-stone-300 font-medium" />
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-stone-400 text-xs font-medium">₹</span>
                       <input type="number" placeholder="Price" value={v.price}
                         onChange={(e) => updateVariant(i, "price", e.target.value)}
-                        className="w-24 border border-stone-200 rounded-lg px-3 py-1.5 outline-none focus:border-stone-400 bg-white text-sm text-stone-900 placeholder:text-stone-300 text-right" />
+                        className="w-full sm:w-24 border border-stone-200 rounded-lg px-3 py-2 sm:py-1.5 outline-none focus:border-stone-400 bg-white text-sm text-stone-900 placeholder:text-stone-300 text-right" />
                     </div>
                     {form.variants.length > 1 && (
                       <button type="button" onClick={() => removeVariant(i)}
-                        className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                        className="self-end sm:self-center p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
                         <Trash2 size={15} />
                       </button>
                     )}
@@ -494,74 +495,120 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
 
       <div className="bg-white rounded-2xl border border-stone-200 shadow-sm overflow-hidden">
         {products.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stone-100 bg-stone-50">
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Product</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden lg:table-cell">मराठी</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden md:table-cell">Variants</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Stock</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Weight</th>
-                  <th className="text-right px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((product) => (
-                  <tr key={product.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50">
-                    <td className="px-5 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-stone-100 rounded-xl overflow-hidden flex-shrink-0 ring-1 ring-stone-200">
-                          {product.image ? (
-                            <Image src={product.image} alt={product.name} width={40} height={40}
-                              className="w-full h-full object-cover" loading="lazy" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <ImageIcon size={16} className="text-stone-300" />
-                            </div>
+          <>
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stone-100 bg-stone-50">
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Product</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden lg:table-cell">मराठी</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden xl:table-cell">Variants</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Stock</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Weight</th>
+                    <th className="text-right px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {products.map((product) => (
+                    <tr key={product.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50">
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-stone-100 rounded-xl overflow-hidden flex-shrink-0 ring-1 ring-stone-200">
+                            {product.image ? (
+                              <Image src={product.image} alt={product.name} width={40} height={40}
+                                className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <ImageIcon size={16} className="text-stone-300" />
+                              </div>
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-stone-800">{product.name}</p>
+                            {product.description && (
+                              <p className="text-xs text-stone-400 mt-0.5 line-clamp-1 max-w-[200px]">{product.description}</p>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 hidden lg:table-cell text-stone-500 text-sm">{(product as any).nameMarathi || "—"}</td>
+                      <td className="px-5 py-4 hidden xl:table-cell">
+                        <div className="flex flex-wrap gap-1.5">
+                          {product.productvariant.map((v) => (
+                            <span key={v.id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-100 text-stone-700 rounded-lg text-[11px] font-medium">
+                              {v.label}<span className="text-stone-400">•</span>₹{v.price}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 hidden sm:table-cell text-stone-600 font-medium">{product.stock ?? "—"}</td>
+                      <td className="px-5 py-4 hidden sm:table-cell text-stone-600 text-sm">
+                        {product.weight > 0 ? `${product.weight}g${product.weight >= 1000 ? ` / ${(product.weight / 1000).toFixed(1).replace(/\.0$/, "")}kg` : ""}` : "—"}
+                      </td>
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
+                        {(isOwner || hasPerm("products", "edit")) && (
+                          <button onClick={() => handleEdit(product)}
+                            className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all mr-1" title="Edit product">
+                            <Pencil size={15} />
+                          </button>
+                        )}
+                        {(isOwner || hasPerm("products", "delete")) && (
+                          <button onClick={() => deleteProduct(product.id)}
+                            className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete product">
+                            <Trash2 size={15} />
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="md:hidden divide-y divide-stone-100">
+              {products.map((product) => (
+                <div key={product.id} className="p-4 hover:bg-stone-50 transition-colors">
+                  <div className="flex items-start gap-3">
+                    <div className="w-12 h-12 bg-stone-100 rounded-xl overflow-hidden shrink-0 ring-1 ring-stone-200">
+                      {product.image ? (
+                        <Image src={product.image} alt={product.name} width={48} height={48} className="w-full h-full object-cover" loading="lazy" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center"><ImageIcon size={18} className="text-stone-300" /></div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-stone-800 text-sm">{product.name}</p>
+                      {(product as any).nameMarathi && <p className="text-[11px] text-stone-400">{(product as any).nameMarathi}</p>}
+                      {product.stock != null && <p className="text-[11px] text-stone-500 mt-1">Stock: {product.stock}</p>}
+                      {product.productvariant.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {product.productvariant.slice(0, 2).map((v) => (
+                            <span key={v.id} className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-stone-100 text-stone-600 rounded text-[10px] font-medium">
+                              {v.label} • ₹{v.price}
+                            </span>
+                          ))}
+                          {product.productvariant.length > 2 && (
+                            <span className="text-[10px] text-stone-400 px-1">+{product.productvariant.length - 2} more</span>
                           )}
                         </div>
-                        <div>
-                          <p className="font-semibold text-stone-800">{product.name}</p>
-                          {product.description && (
-                            <p className="text-xs text-stone-400 mt-0.5 line-clamp-1 max-w-[200px]">{product.description}</p>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 hidden lg:table-cell text-stone-500 text-sm">{(product as any).nameMarathi || "—"}</td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <div className="flex flex-wrap gap-1.5">
-                        {product.productvariant.map((v) => (
-                          <span key={v.id} className="inline-flex items-center gap-1 px-2.5 py-1 bg-stone-100 text-stone-700 rounded-lg text-[11px] font-medium">
-                            {v.label}<span className="text-stone-400">•</span>₹{v.price}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-5 py-4 hidden sm:table-cell text-stone-600 font-medium">{product.stock ?? "—"}</td>
-                    <td className="px-5 py-4 hidden sm:table-cell text-stone-600 text-sm">
-                      {product.weight > 0 ? `${product.weight}g${product.weight >= 1000 ? ` / ${(product.weight / 1000).toFixed(1).replace(/\.0$/, "")}kg` : ""}` : "—"}
-                    </td>
-                    <td className="px-5 py-4 text-right whitespace-nowrap">
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
                       {(isOwner || hasPerm("products", "edit")) && (
-                        <button onClick={() => handleEdit(product)}
-                          className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all mr-1" title="Edit product">
-                          <Pencil size={15} />
+                        <button onClick={() => handleEdit(product)} className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="Edit">
+                          <Pencil size={13} />
                         </button>
                       )}
                       {(isOwner || hasPerm("products", "delete")) && (
-                        <button onClick={() => deleteProduct(product.id)}
-                          className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete product">
-                          <Trash2 size={15} />
+                        <button onClick={() => deleteProduct(product.id)} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                          <Trash2 size={13} />
                         </button>
                       )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            </>
         ) : (
           <div className="text-center py-20">
             <Package size={44} className="mx-auto text-stone-200 mb-4" strokeWidth={1} />

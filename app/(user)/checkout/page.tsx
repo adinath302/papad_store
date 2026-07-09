@@ -396,21 +396,21 @@ document.body.appendChild(script);
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
           <div className="lg:col-span-3">
-            <div className="bg-white rounded-xl border border-stone-200 p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-8">
+            <div className="bg-white rounded-xl border border-stone-200 p-4 md:p-8">
+              <div className="flex items-center gap-3 mb-6 md:mb-8">
                 <MapPin size={20} className="text-emerald-700" />
                 <h2 className="text-lg font-serif text-stone-900">
                   Shipping Address
                 </h2>
                 {savedAddress && (
                   <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    Saved address loaded
+                    Saved
                   </span>
                 )}
               </div>
 
-              <div className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div className="space-y-4 md:space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
                   <div className="md:col-span-2">
                     <label className="text-xs font-bold uppercase tracking-wider text-stone-500 block mb-1.5">
                       Full Name *
@@ -559,7 +559,7 @@ document.body.appendChild(script);
                     Payment Method *
                   </label>
                   <div className="space-y-3">
-                    <label className="flex items-center gap-3 p-4 border border-stone-200 rounded-xl cursor-pointer has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 transition-all">
+                    <label className="flex items-center gap-3 p-3 md:p-4 border border-stone-200 rounded-xl cursor-pointer has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 transition-all">
                       <input
                         type="radio"
                         name="paymentType"
@@ -580,7 +580,7 @@ document.body.appendChild(script);
                       </div>
                     </label>
 
-                    <label className="flex items-center gap-3 p-4 border border-stone-200 rounded-xl cursor-pointer has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 transition-all">
+                    <label className="flex items-center gap-3 p-3 md:p-4 border border-stone-200 rounded-xl cursor-pointer has-[:checked]:border-emerald-600 has-[:checked]:bg-emerald-50 transition-all">
                       <input
                         type="radio"
                         name="paymentType"
@@ -610,7 +610,7 @@ document.body.appendChild(script);
           </div>
 
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border border-stone-200 p-6 md:p-8 sticky top-28">
+            <div className="bg-white rounded-xl border border-stone-200 p-4 md:p-8 sticky top-28">
               <h2 className="text-lg font-serif text-stone-900 mb-6 flex items-center gap-2">
                 <ShoppingBag size={18} className="text-emerald-700" />
                 Order Summary

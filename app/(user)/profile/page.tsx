@@ -204,10 +204,10 @@ export default function ProfilePage() {
     <main className="min-h-screen bg-[#faf8f5] pt-28 pb-20">
       <div className="max-w-5xl mx-auto px-4 md:px-6">
         {/* Profile Header */}
-        <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 mb-8 shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center gap-6">
+        <div className="bg-white rounded-2xl border border-stone-200 p-5 md:p-8 mb-6 md:mb-8 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
             <div className="relative">
-              <div className="w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-emerald-800 flex items-center justify-center text-white text-3xl md:text-4xl font-serif font-bold shadow-sm">
+              <div className="w-16 h-16 md:w-24 md:h-24 rounded-xl md:rounded-2xl bg-emerald-800 flex items-center justify-center text-white text-2xl md:text-4xl font-serif font-bold shadow-sm">
                 {(user?.name?.[0] || user?.email?.[0] || "U").toUpperCase()}
               </div>
               {user?.isAdmin && (

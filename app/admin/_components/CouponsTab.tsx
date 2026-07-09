@@ -87,15 +87,15 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900 tracking-tight">Coupons</h1>
-          <p className="text-sm text-stone-500 mt-1">{coupons.length} coupon{coupons.length !== 1 ? "s" : ""} • Manage discounts</p>
+      <div className="flex items-start justify-between gap-3 mb-6 md:mb-8">
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold text-stone-900 tracking-tight">Coupons</h1>
+          <p className="text-xs md:text-sm text-stone-500 mt-0.5">{coupons.length} coupon{coupons.length !== 1 ? "s" : ""} • Manage discounts</p>
         </div>
         {isOwner && (
           <button onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all shadow-sm">
-            <Plus size={15} strokeWidth={2.5} /> {showForm ? "Cancel" : "Add Coupon"}
+            className="shrink-0 flex items-center gap-1.5 px-3 md:px-5 py-2 md:py-2.5 bg-stone-900 text-white rounded-lg md:rounded-xl text-[11px] md:text-xs font-bold hover:bg-stone-800 transition-all shadow-sm">
+            <Plus size={14} strokeWidth={2.5} /> {showForm ? "Cancel" : "Add Coupon"}
           </button>
         )}
       </div>
@@ -179,60 +179,91 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
             )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-stone-100 bg-stone-50">
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Code</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden md:table-cell">Type</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Value</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Used</th>
-                  <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Status</th>
-                  <th className="text-right px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coupons.map((coupon) => (
-                  <tr key={coupon.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50">
-                    <td className="px-5 py-4">
-                      <span className="font-mono font-bold text-stone-800">{coupon.code}</span>
-                    </td>
-                    <td className="px-5 py-4 hidden md:table-cell">
-                      <span className="text-xs text-stone-500">{coupon.type === "PERCENTAGE" ? "Percentage" : coupon.type === "FIXED" ? "Fixed" : "Free Shipping"}</span>
-                    </td>
-                    <td className="px-5 py-4 hidden sm:table-cell text-stone-600">
-                      {coupon.type === "PERCENTAGE" ? `${coupon.value}%` : coupon.type === "FIXED" ? `₹${coupon.value}` : "—"}
-                    </td>
-                    <td className="px-5 py-4 hidden sm:table-cell text-stone-500 text-xs">
-                      {coupon.usedCount}{coupon.usageLimit ? ` / ${coupon.usageLimit}` : ""}
-                    </td>
-                    <td className="px-5 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${coupon.isActive ? "bg-emerald-50 text-emerald-700" : "bg-stone-100 text-stone-500"}`}>
-                        {coupon.isActive ? <Check size={11} /> : <X size={11} />}
-                        {coupon.isActive ? "Active" : "Inactive"}
-                      </span>
-                    </td>
-                    <td className="px-5 py-4 text-right whitespace-nowrap">
-                      {isOwner && (
-                        <>
-                          <button onClick={() => toggleActive(coupon)}
-                            className="p-2 text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all mr-1"
-                            title={coupon.isActive ? "Deactivate" : "Activate"}>
-                            {coupon.isActive ? <X size={15} /> : <Check size={15} />}
-                          </button>
-                          <button onClick={() => deleteCoupon(coupon.id)}
-                            className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                            title="Delete coupon">
-                            <Trash2 size={15} />
-                          </button>
-                        </>
-                      )}
-                    </td>
+          <>
+            <div className="overflow-x-auto hidden sm:block">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-stone-100 bg-stone-50">
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Code</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden md:table-cell">Type</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Value</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider hidden sm:table-cell">Used</th>
+                    <th className="text-left px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Status</th>
+                    <th className="text-right px-5 py-3.5 font-semibold text-stone-500 text-xs uppercase tracking-wider">Actions</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {coupons.map((coupon) => (
+                    <tr key={coupon.id} className="border-b border-stone-100 last:border-0 hover:bg-stone-50">
+                      <td className="px-5 py-4">
+                        <span className="font-mono font-bold text-stone-800">{coupon.code}</span>
+                      </td>
+                      <td className="px-5 py-4 hidden md:table-cell">
+                        <span className="text-xs text-stone-500">{coupon.type === "PERCENTAGE" ? "Percentage" : coupon.type === "FIXED" ? "Fixed" : "Free Shipping"}</span>
+                      </td>
+                      <td className="px-5 py-4 hidden sm:table-cell text-stone-600">
+                        {coupon.type === "PERCENTAGE" ? `${coupon.value}%` : coupon.type === "FIXED" ? `₹${coupon.value}` : "—"}
+                      </td>
+                      <td className="px-5 py-4 hidden sm:table-cell text-stone-500 text-xs">
+                        {coupon.usedCount}{coupon.usageLimit ? ` / ${coupon.usageLimit}` : ""}
+                      </td>
+                      <td className="px-5 py-4">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${coupon.isActive ? "bg-emerald-50 text-emerald-700" : "bg-stone-100 text-stone-500"}`}>
+                          {coupon.isActive ? <Check size={11} /> : <X size={11} />}
+                          {coupon.isActive ? "Active" : "Inactive"}
+                        </span>
+                      </td>
+                      <td className="px-5 py-4 text-right whitespace-nowrap">
+                        {isOwner && (
+                          <>
+                            <button onClick={() => toggleActive(coupon)}
+                              className="p-2 text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-all mr-1"
+                              title={coupon.isActive ? "Deactivate" : "Activate"}>
+                              {coupon.isActive ? <X size={15} /> : <Check size={15} />}
+                            </button>
+                            <button onClick={() => deleteCoupon(coupon.id)}
+                              className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                              title="Delete coupon">
+                              <Trash2 size={15} />
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="sm:hidden divide-y divide-stone-100">
+              {coupons.map((coupon) => (
+                <div key={coupon.id} className="p-4 flex items-center justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-mono font-bold text-stone-800 text-sm">{coupon.code}</p>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-stone-500">
+                      <span>{coupon.type === "PERCENTAGE" ? `${coupon.value}%` : coupon.type === "FIXED" ? `₹${coupon.value}` : "Free Shipping"}</span>
+                      <span>•</span>
+                      <span>Used: {coupon.usedCount}{coupon.usageLimit ? `/${coupon.usageLimit}` : ""}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold ${coupon.isActive ? "bg-emerald-50 text-emerald-700" : "bg-stone-100 text-stone-500"}`}>
+                      {coupon.isActive ? "Active" : "Inactive"}
+                    </span>
+                    {isOwner && (
+                      <>
+                        <button onClick={() => toggleActive(coupon)} className="p-1.5 text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" title={coupon.isActive ? "Deactivate" : "Activate"}>
+                          {coupon.isActive ? <X size={13} /> : <Check size={13} />}
+                        </button>
+                        <button onClick={() => deleteCoupon(coupon.id)} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Delete coupon">
+                          <Trash2 size={13} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+            </div>
+        ))}
+            </div>
+            </>
         )}
       </div>
     </div>

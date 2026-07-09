@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useCartCount } from "@/lib/cart-context";
 
 function getCookie(name: string): string | null {
@@ -51,7 +52,10 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
           const isAdminUser = data.user?.isAdmin === true;
           setIsAdmin(isAdminUser);
           setIsLoggedIn(true);
-          sessionStorage.setItem("nav_auth", JSON.stringify({ isAdmin: isAdminUser }));
+          sessionStorage.setItem(
+            "nav_auth",
+            JSON.stringify({ isAdmin: isAdminUser }),
+          );
         })
         .catch(() => {});
       return () => controller.abort();
@@ -76,7 +80,7 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
       }`}
     >
       <nav className="mx-auto max-w-7xl px-4 md:px-8">
-        <div className="flex items-center justify-between h-[72px]">
+        <div className="flex items-center justify-between h-[120px]">
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -84,21 +88,28 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
             aria-label="Toggle menu"
           >
             <div className="w-5 h-4 relative flex flex-col justify-between">
-              <span className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "rotate-45 translate-y-[7px]" : ""}`} />
-              <span className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "opacity-0" : ""}`} />
-              <span className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "-rotate-45 -translate-y-[7px]" : ""}`} />
+              <span
+                className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "rotate-45 translate-y-[7px]" : ""}`}
+              />
+              <span
+                className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "opacity-0" : ""}`}
+              />
+              <span
+                className={`block h-0.5 bg-stone-700 rounded-full transition-all ${isOpen ? "-rotate-45 -translate-y-[7px]" : ""}`}
+              />
             </div>
           </button>
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-8 h-8 bg-emerald-800 rounded-lg flex items-center justify-center group-hover:bg-emerald-700 transition-colors">
-              <span className="text-white font-bold text-xs">S</span>
-            </div>
-            <div className="hidden sm:block">
-              <p className="font-semibold text-stone-800 text-sm leading-tight">Shivshambho</p>
-              <p className="text-[9px] text-stone-400 tracking-[0.2em] uppercase leading-tight">Crafted with tradition</p>
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Shivshambho"
+              width={96}
+              height={96}
+              className="w-24 h-24 object-contain rounded-lg"
+              priority
+            />
           </Link>
 
           {/* Desktop Links */}
@@ -129,8 +140,18 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
               className="relative p-2.5 rounded-xl hover:bg-stone-100 transition-colors"
               aria-label="Open cart"
             >
-              <svg className="w-5 h-5 text-stone-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+              <svg
+                className="w-5 h-5 text-stone-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={1.5}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"
+                />
               </svg>
               {cartCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 w-4.5 h-4.5 bg-emerald-700 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
@@ -143,8 +164,18 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
                 href="/profile"
                 className="hidden sm:inline-flex items-center gap-1.5 px-4 py-2 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all"
               >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                  />
                 </svg>
                 My Account
               </Link>
@@ -191,8 +222,18 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-2 px-4 py-3 text-sm font-semibold text-stone-900 bg-stone-100 rounded-xl"
                 >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"
+                    />
                   </svg>
                   My Account
                 </Link>

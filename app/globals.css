@@ -106,3 +106,25 @@ main {
 .mobile-drawer-overlay {
   background-color: rgba(0, 0, 0, 0.65) !important;
 }
+
+/* Better touch targets for mobile */
+@media (max-width: 640px) {
+  input, select, textarea, button {
+    font-size: 16px !important;
+  }
+}
+
+/* Admin mobile tab bar scroll */
+.admin-mobile-tabs {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.admin-mobile-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Prevent table cell wrapping on mobile */
+.table-cell-nowrap {
+  white-space: nowrap;
+}
