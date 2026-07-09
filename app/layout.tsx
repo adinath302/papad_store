@@ -27,8 +27,14 @@ export const metadata: Metadata = {
   description:
     "Shivshambho — crafted with tradition. Handcrafted papads, kurdai, and traditional Indian snacks. Authentic recipes since 1984. Free shipping across India.",
   keywords: [
-    "papad", "kurdai", "Indian snacks", "traditional papad",
-    "moong papad", "masala papad", "homemade snacks", "Shivshambho",
+    "papad",
+    "kurdai",
+    "Indian snacks",
+    "traditional papad",
+    "moong papad",
+    "masala papad",
+    "homemade snacks",
+    "Shivshambho",
   ],
   metadataBase: new URL(baseUrl),
   alternates: {
@@ -68,10 +74,12 @@ export default function RootLayout({
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#065f46" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Papad Store" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="manifest" href="/manifest.json"></link>
         <link rel="preconnect" href="https://res.cloudinary.com" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="dns-prefetch" href="https://res.cloudinary.com" />
@@ -100,9 +108,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <ServiceWorkerRegistration />
         <Analytics />
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );
