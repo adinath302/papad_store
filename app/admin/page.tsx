@@ -3,15 +3,16 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   LayoutDashboard, Package, ShoppingBag,
-  LogOut, Shield, Tag, History,
+  LogOut, Shield, Tag, History, Image as ImageIcon,
 } from "lucide-react";
 import Image from "next/image";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useToast } from "@/components/Toast/ToastProvider";
+import { useSiteImages } from "@/lib/useSiteImages";
 import type { Product, Order, AdminUser, PermissionMap } from "./_components/types";
 
-type Tab = "dashboard" | "products" | "orders" | "users" | "coupons" | "activity";
+type Tab = "dashboard" | "products" | "orders" | "users" | "coupons" | "activity" | "site-images";
 
 const DashboardTab = dynamic(() => import("./_components/DashboardTab"), {
   loading: () => <div className="h-64 flex items-center justify-center"><div className="w-6 h-6 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" /></div>,
@@ -37,8 +38,13 @@ const ActivityLogTab = dynamic(() => import("./_components/ActivityLogTab"), {
   loading: () => <div className="h-64 flex items-center justify-center"><div className="w-6 h-6 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" /></div>,
 });
 
+const SiteImagesTab = dynamic(() => import("./_components/SiteImagesTab"), {
+  loading: () => <div className="h-64 flex items-center justify-center"><div className="w-6 h-6 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" /></div>,
+});
+
 export default function AdminPage() {
   const { toast } = useToast();
+  const { getImage } = useSiteImages();
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -55,7 +61,10 @@ export default function AdminPage() {
 
   const fetchOrders = useCallback(async () => {
     const res = await fetch("/api/orders");
-    if (res.ok) setOrders(await res.json());
+    if (res.ok) {
+      const data = await res.json();
+      setOrders(data.orders ?? data);
+    }
   }, []);
 
   const fetchAdmins = useCallback(async () => {
@@ -92,13 +101,14 @@ export default function AdminPage() {
   if (isOwner || hasPerm("orders", "view")) baseTabs.push({ id: "orders", label: "Orders", icon: ShoppingBag });
 
   if (isOwner) baseTabs.push({ id: "activity", label: "Activity", icon: History });
+  baseTabs.push({ id: "site-images" as Tab, label: "Site Images", icon: ImageIcon });
   const tabs = isOwner ? [...baseTabs, { id: "users" as Tab, label: "Users", icon: Shield }, { id: "coupons" as Tab, label: "Coupons", icon: Tag }] : baseTabs;
 
   return (
     <div className="flex min-h-screen bg-stone-50">
       <aside className="hidden lg:flex w-64 flex-col bg-white border-r border-stone-200 p-6 sticky top-0 h-screen">
         <Link href="/" className="flex items-center gap-3 mb-10 group">
-          <Image src="/logo.png" alt="Shivshambho" width={96} height={96} className="w-24 h-24 object-contain rounded-lg" />
+          <Image src={getImage("logo")} alt="Shivshambho" width={100} height={100} className="w-[100px] h-[100px] object-contain rounded-lg" />
           <div>
             <p className="font-semibold text-stone-800 text-sm">Admin Panel</p>
             <p className="text-[10px] text-stone-400">Shivshambho</p>
@@ -154,6 +164,7 @@ export default function AdminPage() {
             {activeTab === "orders" && <OrdersTab orders={orders} isOwner={isOwner} hasPerm={hasPerm} onOrderChange={fetchOrders} />}
             {activeTab === "users" && isOwner && <UsersTab admins={admins} isOwner={isOwner} ownerEmail={ownerEmail} toast={toast} onAdminChange={fetchAdmins} />}
             {activeTab === "coupons" && isOwner && <CouponsTab isOwner={isOwner} toast={toast} />}
+            {activeTab === "site-images" && <SiteImagesTab toast={toast} />}
             {activeTab === "activity" && isOwner && <ActivityLogTab />}
           </>
         )}

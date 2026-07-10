@@ -4,7 +4,7 @@ const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.razorpay.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://res.cloudinary.com https://images.unsplash.com",
+  "img-src 'self' data: https://res.cloudinary.com",
   "font-src 'self'",
   "connect-src 'self' https://res.cloudinary.com https://api.razorpay.com https://kjiqyjmnmmqjrkrkwimf.supabase.co",
   "frame-src https://api.razorpay.com",
@@ -15,7 +15,6 @@ const nextConfig: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
       { protocol: "https", hostname: "res.cloudinary.com" },
     ],
   },

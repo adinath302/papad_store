@@ -1,43 +1,21 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
+import { useSiteImages } from "@/lib/useSiteImages";
 
-const combos = [
-  {
-    id: 1,
-    name: "Family Feast Combo",
-    tag: "Best Value",
-    price: 449,
-    original: 699,
-    img: "https://images.unsplash.com/photo-1548943487-a2e4ef43b3f6?q=80&w=600",
-  },
-  {
-    id: 2,
-    name: "Starter Taster Pack",
-    tag: "New",
-    price: 199,
-    original: 299,
-    img: "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=600",
-  },
-  {
-    id: 3,
-    name: "Festive Celebration Box",
-    tag: "Limited",
-    price: 599,
-    original: 899,
-    img: "https://images.unsplash.com/photo-1589113817223-14db18136244?q=80&w=600",
-  },
-  {
-    id: 4,
-    name: "Spice Lover's Bundle",
-    tag: "Popular",
-    price: 349,
-    original: 520,
-    img: "https://images.unsplash.com/photo-1596040033229-a0b517a9c9a8?q=80&w=600",
-  },
+const COMBO_DATA = [
+  { id: 1, name: "Family Feast Combo", tag: "Best Value", price: 449, original: 699, imgKey: "combo_family" },
+  { id: 2, name: "Starter Taster Pack", tag: "New", price: 199, original: 299, imgKey: "combo_starter" },
+  { id: 3, name: "Festive Celebration Box", tag: "Limited", price: 599, original: 899, imgKey: "combo_festive" },
+  { id: 4, name: "Spice Lover's Bundle", tag: "Popular", price: 349, original: 520, imgKey: "combo_spice" },
 ];
 
 export default function CombosSection() {
+  const { getImage } = useSiteImages();
+  const combos = COMBO_DATA.map((c) => ({ ...c, img: getImage(c.imgKey) }));
+
   return (
     <section className="py-16 md:py-24 bg-[#faf8f5]">
       <div className="max-w-7xl mx-auto px-4 md:px-8">

@@ -7,7 +7,7 @@ import { CartCountProvider } from "@/lib/cart-context";
 
 const Navbar = dynamic(() => import("@/components/Navbar/Navbar"), {
   loading: () => (
-    <div className="h-[72px] w-full animate-pulse bg-stone-100" />
+    <div className="h-[80px] w-full animate-pulse bg-stone-100" />
   ),
 });
 

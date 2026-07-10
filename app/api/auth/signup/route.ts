@@ -59,8 +59,6 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
     });
 
-    await setCsrfToken();
-
     return Response.json({
       id: user.id,
       name: user.name,

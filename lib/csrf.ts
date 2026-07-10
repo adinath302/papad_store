@@ -22,9 +22,25 @@ export async function setCsrfToken() {
 }
 
 export async function validateCsrfToken(headerToken?: string | null): Promise<boolean> {
-  if (!headerToken) return false;
   const cookieStore = await cookies();
   const cookieToken = cookieStore.get(CSRF_COOKIE)?.value;
-  if (!cookieToken) return false;
+  if (!cookieToken) return true;
+  if (!headerToken) return false;
   return headerToken === cookieToken;
+}
+
+function getCsrfTokenFromCookie(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${CSRF_COOKIE}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+export async function fetchCsrf(
+  url: string,
+  options: RequestInit = {},
+): Promise<Response> {
+  const token = getCsrfTokenFromCookie();
+  const headers = new Headers(options.headers);
+  if (token) headers.set("x-csrf-token", token);
+  return fetch(url, { ...options, headers });
 }

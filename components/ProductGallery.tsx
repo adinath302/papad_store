@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useSiteImages } from "@/lib/useSiteImages";
 
 type GalleryImage = {
   id: string;
@@ -17,12 +18,13 @@ export default function ProductGallery({
   title: string;
 }) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const { getImage } = useSiteImages();
 
   if (images.length === 0) {
     return (
       <div className="relative aspect-square bg-stone-100 rounded-2xl border border-stone-200 overflow-hidden">
         <Image
-          src="https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
+          src={getImage("product_fallback")}
           alt={title}
           fill
           priority

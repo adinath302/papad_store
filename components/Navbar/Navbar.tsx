@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCartCount } from "@/lib/cart-context";
+import { useSiteImages } from "@/lib/useSiteImages";
 
 function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
@@ -17,6 +18,7 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const cartCount = useCartCount();
+  const { getImage } = useSiteImages();
 
   useEffect(() => {
     let ticking = false;
@@ -80,7 +82,7 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
       }`}
     >
       <nav className="mx-auto max-w-7xl px-4 md:px-8">
-        <div className="flex items-center justify-between h-[120px]">
+        <div className="flex items-center justify-between h-[80px]">
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -103,11 +105,11 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
             <Image
-              src="/logo.png"
+              src={getImage("logo")}
               alt="Shivshambho"
-              width={96}
-              height={96}
-              className="w-24 h-24 object-contain rounded-lg"
+              width={100}
+              height={100}
+              className="w-[100px] h-[100px] object-contain rounded-lg"
               priority
             />
           </Link>

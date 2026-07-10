@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Truck, Award, Leaf, ShieldCheck, Sun, HandHeart, Package } from "lucide-react";
 import Image from "next/image";
+import { useSiteImages } from "@/lib/useSiteImages";
 
 const pillars = [
   {
@@ -49,6 +50,7 @@ const processSteps = [
 ];
 
 export default function HeritageSection() {
+  const { getImage } = useSiteImages();
   return (
     <section className="py-10 md:py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
@@ -136,7 +138,7 @@ export default function HeritageSection() {
             className="relative aspect-[4/3] rounded-3xl overflow-hidden shadow-lg"
           >
             <Image
-              src="https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?q=80&w=1000"
+              src={getImage("heritage")}
               alt="Traditional papad making"
               fill
               loading="lazy"

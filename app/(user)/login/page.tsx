@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useSiteImages } from "@/lib/useSiteImages";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -19,6 +20,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+  const { getImage } = useSiteImages();
 
   const mergeGuestCart = async () => {
     const guestItems = getGuestCart();
@@ -237,7 +239,7 @@ export default function LoginPage() {
           className="absolute inset-0"
         >
           <Image
-            src="https://images.unsplash.com/photo-1614707267537-b85acc00c4b7?q=80&w=1200"
+            src={getImage("login_bg")}
             alt="Handcrafted Spices"
             fill
             className="object-cover"

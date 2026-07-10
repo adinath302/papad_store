@@ -4,14 +4,15 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
+import { useSiteImages } from "@/lib/useSiteImages";
 
-const slides = [
+const SLIDE_DATA = [
   {
     id: 1,
     title: "Authentic Taste",
     subtitle: "Handcrafted Papads",
     desc: "Traditional sun-dried papads with premium spices — straight from our kitchen to yours.",
-    img: "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=1200",
+    imgKey: "hero_slide_1",
     cta: "Shop Papads",
     href: "/products",
   },
@@ -20,7 +21,7 @@ const slides = [
     title: "Pure Ingredients",
     subtitle: "No Shortcuts",
     desc: "No preservatives. Just the goodness of organic lentils and time-honored recipes.",
-    img: "https://images.unsplash.com/photo-1589113817223-14db18136244?q=80&w=1200",
+    imgKey: "hero_slide_2",
     cta: "Explore Range",
     href: "/products",
   },
@@ -29,7 +30,7 @@ const slides = [
     title: "Festive Combos",
     subtitle: "Gift-Ready Boxes",
     desc: "Curated assortments perfect for celebrations, gifting, and family gatherings.",
-    img: "https://images.unsplash.com/photo-1548943487-a2e4ef43b3f6?q=80&w=1200",
+    imgKey: "hero_slide_3",
     cta: "View Combos",
     href: "/products",
   },
@@ -37,6 +38,9 @@ const slides = [
 
 export default function HeroCarousel() {
   const [index, setIndex] = useState(0);
+  const { getImage } = useSiteImages();
+
+  const slides = SLIDE_DATA.map((s) => ({ ...s, img: getImage(s.imgKey) }));
 
   useEffect(() => {
     const timer = setInterval(() => {

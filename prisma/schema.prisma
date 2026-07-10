@@ -247,3 +247,9 @@ model passwordresettoken {
 
   @@index([token])
 }
+
+model siteimage {
+  key       String   @id
+  url       String
+  updatedAt DateTime @updatedAt
+}

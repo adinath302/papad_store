@@ -1,50 +1,24 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useSiteImages } from "@/lib/useSiteImages";
 
-const categories = [
-  {
-    title: "Moong Special",
-    slug: "moong",
-    img: "https://images.unsplash.com/photo-1589113817223-14db18136244?q=80&w=600",
-  },
-  {
-    title: "Masala Punch",
-    slug: "masala",
-    img: "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=600",
-  },
-  {
-    title: "Garlic Infusion",
-    slug: "garlic",
-    img: "https://images.unsplash.com/photo-1614707267537-b85acc00c4b7?q=80&w=600",
-  },
-  {
-    title: "Urad Traditional",
-    slug: "urad",
-    img: "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?q=80&w=600",
-  },
-  {
-    title: "Pickles & Chutney",
-    slug: "pickles",
-    img: "https://images.unsplash.com/photo-1604908177525-4512a0f82278?q=80&w=600",
-  },
-  {
-    title: "Spice Blends",
-    slug: "spices",
-    img: "https://images.unsplash.com/photo-1596040033229-a0b517a9c9a8?q=80&w=600",
-  },
-  {
-    title: "Festival Combos",
-    slug: "combos",
-    img: "https://images.unsplash.com/photo-1548943487-a2e4ef43b3f6?q=80&w=600",
-  },
-  {
-    title: "Snack Crunchies",
-    slug: "snacks",
-    img: "https://images.unsplash.com/photo-1566478989037-eec170784d0b?q=80&w=600",
-  },
+const CATEGORY_DATA = [
+  { title: "Moong Special", slug: "moong", imgKey: "category_moong" },
+  { title: "Masala Punch", slug: "masala", imgKey: "category_masala" },
+  { title: "Garlic Infusion", slug: "garlic", imgKey: "category_garlic" },
+  { title: "Urad Traditional", slug: "urad", imgKey: "category_urad" },
+  { title: "Pickles & Chutney", slug: "pickles", imgKey: "category_pickles" },
+  { title: "Spice Blends", slug: "spices", imgKey: "category_spices" },
+  { title: "Festival Combos", slug: "combos", imgKey: "category_combos" },
+  { title: "Snack Crunchies", slug: "snacks", imgKey: "category_snacks" },
 ];
 
 export default function CategoryGrid() {
+  const { getImage } = useSiteImages();
+  const categories = CATEGORY_DATA.map((c) => ({ ...c, img: getImage(c.imgKey) }));
+
   return (
     <section className="py-10 md:py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4 md:px-8">

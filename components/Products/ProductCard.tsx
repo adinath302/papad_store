@@ -7,6 +7,7 @@ import { Star, Loader2, Plus, Minus, Heart } from "lucide-react";
 import { addToGuestCart, isLoggedIn, notifyCartUpdate } from "@/lib/guest-cart";
 import { toggleGuestWishlist } from "@/lib/guest-wishlist";
 import { useToast } from "@/components/Toast/ToastProvider";
+import { useSiteImages } from "@/lib/useSiteImages";
 
 const ProductCard = memo(function ProductCard({ product, wishlisted: initialWishlisted }: any) {
   const [loading, setLoading] = useState(false);
@@ -16,6 +17,7 @@ const ProductCard = memo(function ProductCard({ product, wishlisted: initialWish
   );
   const [wishlisted, setWishlisted] = useState(initialWishlisted ?? false);
   const { toast } = useToast();
+  const { getImage } = useSiteImages();
 
   const price = selectedVariant?.price ?? 0;
 
@@ -69,7 +71,7 @@ const ProductCard = memo(function ProductCard({ product, wishlisted: initialWish
             <Image
               src={
                 product.image ||
-                "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
+                getImage("product_fallback")
               }
               alt={product.name}
               fill

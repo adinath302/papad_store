@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSiteImages } from "@/lib/useSiteImages";
 
 type RecentlyViewedItem = {
   id: string;
@@ -15,6 +16,7 @@ const STORAGE_KEY = "papad_recently_viewed";
 
 export default function RecentlyViewed() {
   const [items, setItems] = useState<RecentlyViewedItem[]>([]);
+  const { getImage } = useSiteImages();
 
   useEffect(() => {
     const isLoggedIn = document.cookie.includes("isLoggedIn=true");
@@ -72,7 +74,7 @@ export default function RecentlyViewed() {
               <Image
                 src={
                   item.image ||
-                  "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
+                  getImage("product_fallback")
                 }
                 alt={item.name}
                 fill

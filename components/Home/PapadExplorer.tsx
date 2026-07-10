@@ -1,15 +1,17 @@
 "use client";
 import PixelCard from "./PixelCard";
+import { useSiteImages } from "@/lib/useSiteImages";
 
-const categories = [
-  { id: 1, title: "Moong Special", img: "https://images.unsplash.com/photo-1589113817223-14db18136244?q=80&w=800" },
-  { id: 2, title: "Masala Punch", img: "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800" },
-  { id: 3, title: "Garlic Infusion", img: "https://images.unsplash.com/photo-1614707267537-b85acc00c4b7?q=80&w=800" },
-  { id: 4, title: "Udad Traditional", img: "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?q=80&w=800" },
+const CATEGORY_DATA = [
+  { id: 1, title: "Moong Special", imgKey: "explorer_moong" },
+  { id: 2, title: "Masala Punch", imgKey: "explorer_masala" },
+  { id: 3, title: "Garlic Infusion", imgKey: "explorer_garlic" },
+  { id: 4, title: "Udad Traditional", imgKey: "explorer_urad" },
 ];
 
 export default function PapadExplorer() {
-  // We double the categories to create a seamless infinite loop
+  const { getImage } = useSiteImages();
+  const categories = CATEGORY_DATA.map((c) => ({ ...c, img: getImage(c.imgKey) }));
   const displayCategories = [...categories, ...categories];
 
   return (

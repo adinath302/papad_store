@@ -22,6 +22,7 @@ import ProductReviews from "./ProductReviews";
 import ProductGallery from "@/components/ProductGallery";
 import RecentlyViewed from "@/components/RecentlyViewed";
 import StockNotificationForm from "@/components/StockNotificationForm";
+import { useSiteImages } from "@/lib/useSiteImages";
 
 export default function ProductDetails({
   product,
@@ -46,6 +47,7 @@ export default function ProductDetails({
   const [loading, setLoading] = useState(false);
   const [added, setAdded] = useState(false);
   const { toast } = useToast();
+  const { getImage } = useSiteImages();
 
   const hasVariants = product.productvariant?.length > 0;
 
@@ -152,7 +154,7 @@ export default function ProductDetails({
                   <Image
                     src={
                       product.image ||
-                      "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
+                      getImage("product_fallback")
                     }
                     alt={product.name}
                     fill
@@ -375,6 +377,7 @@ function RelatedProductCard({ product }: { product: any }) {
   const price = product.productvariant?.length
     ? Math.min(...product.productvariant.map((v: any) => v.price))
     : 0;
+  const { getImage } = useSiteImages();
 
   return (
     <Link
@@ -385,7 +388,7 @@ function RelatedProductCard({ product }: { product: any }) {
         <Image
           src={
             product.image ||
-            "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"
+            getImage("product_fallback")
           }
           alt={product.name}
           fill

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Heart, ShoppingBag, Trash2, ArrowLeft, Loader2 } from "lucide-react";
+import { useSiteImages } from "@/lib/useSiteImages";
 import Image from "next/image";
 import { getGuestWishlist } from "@/lib/guest-wishlist";
 import { isLoggedIn } from "@/lib/guest-cart";
@@ -17,6 +18,7 @@ type WishlistProduct = {
 
 export default function WishlistPage() {
   const { toast } = useToast();
+  const { getImage } = useSiteImages();
   const [items, setItems] = useState<WishlistProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -97,7 +99,7 @@ export default function WishlistPage() {
               <div key={product.id} className="group bg-white rounded-2xl border border-stone-200/80 overflow-hidden shadow-sm hover:shadow-md transition-all">
                 <Link href={`/products/${product.id}`} className="relative aspect-square bg-stone-100 block overflow-hidden">
                   <Image
-                    src={product.image || "https://images.unsplash.com/photo-1599481238640-4c1288750d7a?q=80&w=800"}
+                    src={product.image || getImage("product_fallback")}
                     alt={product.name}
                     fill
                     loading="lazy"

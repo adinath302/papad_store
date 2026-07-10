@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useSiteImages } from "@/lib/useSiteImages";
 import { Mail, Lock, User, Eye, EyeOff, UserPlus, Check } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -22,6 +23,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [agreeTerms, setAgreeTerms] = useState(false);
   const { toast } = useToast();
+  const { getImage } = useSiteImages();
 
   const handleSignup = async () => {
     setError("");
@@ -85,7 +87,7 @@ export default function SignupPage() {
           className="absolute inset-0"
         >
           <Image
-            src="https://images.unsplash.com/photo-1589113817223-14db18136244?q=80&w=1200"
+            src={getImage("signup_bg")}
             alt="Handmade Tradition"
             fill
             className="object-cover"
