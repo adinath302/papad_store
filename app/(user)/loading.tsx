@@ -1,5 +1,5 @@
-import { SkeletonPage } from "@/components/Skeleton/Skeleton";
+import VideoLoader from "@/components/VideoLoader/VideoLoader";
 
 export default function Loading() {
-  return <SkeletonPage />;
+  return <VideoLoader />;
 }

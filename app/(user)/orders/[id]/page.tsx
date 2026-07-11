@@ -13,6 +13,7 @@ import {
   Loader2,
   FileText,
 } from "lucide-react";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { useToast } from "@/components/Toast/ToastProvider";
 
 type Product = { id: string; name: string; nameMarathi?: string | null };
@@ -90,7 +91,7 @@ export default function OrderDetailPage() {
   const handleCancel = async () => {
     setCancelling(true);
     try {
-      const res = await fetch("/api/orders/user/cancel", {
+      const res = await fetchCsrf("/api/orders/user/cancel", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: id }),

@@ -19,6 +19,10 @@ export async function POST(req: Request) {
       return Response.json({ error: "Not logged in" }, { status: 401 });
     }
 
+    if (!quantity || !Number.isInteger(quantity) || quantity < 1) {
+      return Response.json({ error: "Invalid quantity" }, { status: 400 });
+    }
+
     const existingItem = await prisma.cartitem.findFirst({
       where: {
         userId,
@@ -90,7 +94,18 @@ export async function DELETE(req: Request) {
       return Response.json({ error: "Missing ID" }, { status: 400 });
     }
 
-    await prisma.cartitem.deleteMany({ where: { id } });
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
+
+    const item = await prisma.cartitem.findUnique({ where: { id } });
+    if (!item) {
+      return Response.json({ error: "Item not found" }, { status: 404 });
+    }
+    if (item.userId !== userId) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    await prisma.cartitem.delete({ where: { id } });
     return Response.json({ message: "Deleted successfully" });
   } catch (error: any) {
     console.error("DELETE ERROR:", error.message);
@@ -108,10 +123,16 @@ export async function PATCH(req: Request) {
     const body = await req.json();
     const { id, action } = body;
 
+    const cookieStore = await cookies();
+    const userId = cookieStore.get("userId")?.value;
+
     const item = await prisma.cartitem.findUnique({ where: { id } });
 
     if (!item) {
       return Response.json({ error: "Item not found" }, { status: 404 });
+    }
+    if (item.userId !== userId) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 
     let newQuantity = item.quantity;

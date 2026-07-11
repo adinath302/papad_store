@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import type { Product, ProductImage } from "./types";
+import { fetchCsrf } from "@/lib/csrf-client";
 
 type FormState = {
   name: string;
@@ -75,7 +76,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64 = event.target?.result as string;
-        const res = await fetch("/api/upload", {
+        const res = await fetchCsrf("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: base64 }),
@@ -135,7 +136,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
       for (const file of Array.from(files)) {
         formData.append("files", file);
       }
-      const res = await fetch("/api/products/images", {
+      const res = await fetchCsrf("/api/products/images", {
         method: "POST",
         body: formData,
       });
@@ -156,7 +157,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
 
   const handleDeleteImage = async (id: string) => {
     if (!confirm("Delete this image?")) return;
-    const res = await fetch(`/api/products/images?id=${id}`, { method: "DELETE" });
+    const res = await fetchCsrf(`/api/products/images?id=${id}`, { method: "DELETE" });
     if (res.ok) {
       toast("Image deleted", "success");
       if (editingProductId) fetchProductImages(editingProductId);
@@ -185,7 +186,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
     setProductImages(updated);
     setDraggedIndex(null);
 
-    const res = await fetch("/api/products/images", {
+    const res = await fetchCsrf("/api/products/images", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -233,7 +234,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
         variants: form.variants.filter((v) => v.label.trim() && v.price).map((v) => ({ label: v.label.trim(), price: Number(v.price) })),
       };
       const isEditing = !!editingProductId;
-      const res = await fetch(isEditing ? `/api/products/${editingProductId}` : "/api/products", {
+      const res = await fetchCsrf(isEditing ? `/api/products/${editingProductId}` : "/api/products", {
         method: isEditing ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -254,7 +255,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
 
   const deleteProduct = async (id: string) => {
     if (!confirm("Delete this product permanently?")) return;
-    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    const res = await fetchCsrf(`/api/products/${id}`, { method: "DELETE" });
     if (res.ok) {
       onProductChange();
     } else {

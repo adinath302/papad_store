@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { Image, Upload, Save, RotateCcw, Check } from "lucide-react";
+import { fetchCsrf } from "@/lib/csrf-client";
 
 type SiteImagesTabProps = {
   toast: (msg: string, type: "success" | "error") => void;
@@ -96,7 +97,7 @@ export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
       const reader = new FileReader();
       reader.onload = async (event) => {
         const base64 = event.target?.result as string;
-        const res = await fetch("/api/upload", {
+        const res = await fetchCsrf("/api/upload", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: base64 }),
@@ -131,7 +132,7 @@ export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
         setSaving(false);
         return;
       }
-      const res = await fetch("/api/site-images", {
+      const res = await fetchCsrf("/api/site-images", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ images: changed }),

@@ -30,12 +30,12 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const fetching = fetch(event.request).then((response) => {
-        if (response.ok && url.origin === self.location.origin) {
+        if (response.ok && response.status === 200 && url.origin === self.location.origin) {
           const clone = response.clone();
           caches.open(CACHE).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      });
+      }).catch(() => cached || new Response("Offline", { status: 503 }));
       return cached || fetching;
     }),
   );

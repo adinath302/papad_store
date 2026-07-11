@@ -25,11 +25,15 @@ export function CartCountProvider({ children }: { children: ReactNode }) {
       setCount(items.reduce((sum, i) => sum + i.quantity, 0));
     } else {
       fetch("/api/cart")
-        .then((r) => r.json())
-        .then((data: Array<{ quantity: number }>) => {
-          setCount(data.reduce((sum, i) => sum + i.quantity, 0));
+        .then((r) => {
+          if (!r.ok) return null;
+          return r.json();
         })
-        .catch(() => setCount(0));
+        .then((data) => {
+          if (data === null) return;
+          setCount(data.reduce((sum: number, item: any) => sum + item.quantity, 0));
+        })
+        .catch(() => {});
     }
   }, []);
 

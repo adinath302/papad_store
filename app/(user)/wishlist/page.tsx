@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Heart, ShoppingBag, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import { useSiteImages } from "@/lib/useSiteImages";
 import Image from "next/image";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { getGuestWishlist } from "@/lib/guest-wishlist";
 import { isLoggedIn } from "@/lib/guest-cart";
 import { useToast } from "@/components/Toast/ToastProvider";
@@ -53,7 +54,7 @@ export default function WishlistPage() {
 
   const removeItem = async (productId: string) => {
     if (isLoggedIn()) {
-      await fetch("/api/wishlist", {
+      await fetchCsrf("/api/wishlist", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId }),

@@ -68,9 +68,7 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
     { href: "/", label: "Home" },
     { href: "/products", label: "Products" },
     { href: "/about", label: "About Us" },
-    { href: "/faq", label: "FAQ" },
     { href: "/contact", label: "Contact Us" },
-    { href: "/track", label: "Track Order" },
   ];
 
   return (

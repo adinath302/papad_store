@@ -3,6 +3,15 @@ import nodemailer from "nodemailer";
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
 const SUPPORT_PHONE = process.env.SUPPORT_PHONE || "+91 98765 43210";
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 type OrderEmailData = {
   orderId: string;
   fullName: string;
@@ -52,7 +61,7 @@ export async function sendAdminOrderNotification(data: OrderEmailData) {
     .map(
       (item) =>
         `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;">${item.name}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;">${escapeHtml(item.name)}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;text-align:center;">${item.quantity}</td>
         </tr>`,
     )
@@ -69,27 +78,27 @@ export async function sendAdminOrderNotification(data: OrderEmailData) {
         <table style="width:100%;border-collapse:collapse;margin:16px 0;">
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Order ID</td>
-            <td style="padding:8px 0;font-weight:600;font-size:13px;">#${data.orderId.slice(0, 12).toUpperCase()}</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;">#${escapeHtml(data.orderId.slice(0, 12).toUpperCase())}</td>
           </tr>
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Customer</td>
-            <td style="padding:8px 0;font-weight:600;font-size:13px;">${data.fullName}</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;">${escapeHtml(data.fullName)}</td>
           </tr>
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Phone</td>
-            <td style="padding:8px 0;font-weight:600;font-size:13px;">${data.phone}</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;">${escapeHtml(data.phone)}</td>
           </tr>
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Address</td>
-            <td style="padding:8px 0;font-weight:600;font-size:13px;">${data.address}, ${data.city}, ${data.state} - ${data.pincode}</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;">${escapeHtml(data.address)}, ${escapeHtml(data.city)}, ${escapeHtml(data.state)} - ${escapeHtml(data.pincode)}</td>
           </tr>
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Payment</td>
-            <td style="padding:8px 0;font-weight:600;font-size:13px;">${data.paymentType}</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;">${escapeHtml(data.paymentType)}</td>
           </tr>
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Status</td>
-            <td style="padding:8px 0;font-weight:600;font-size:13px;color:#065f46;">${data.status}</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;color:#065f46;">${escapeHtml(data.status)}</td>
           </tr>
         </table>
 
@@ -140,7 +149,7 @@ export async function sendCustomerOrderConfirmation(
     .map(
       (item) =>
         `<tr>
-          <td style="padding:10px 0;border-bottom:1px solid #e5e5e5;color:#333;"><strong>${item.name}</strong></td>
+          <td style="padding:10px 0;border-bottom:1px solid #e5e5e5;color:#333;"><strong>${escapeHtml(item.name)}</strong></td>
           <td style="padding:10px 0;border-bottom:1px solid #e5e5e5;color:#888;text-align:center;">× ${item.quantity}</td>
         </tr>`,
     )
@@ -150,12 +159,12 @@ export async function sendCustomerOrderConfirmation(
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
       <div style="background:#065f46;padding:32px 24px;border-radius:16px 16px 0 0;text-align:center;">
         <div style="font-size:48px;margin-bottom:12px;">🎉</div>
-        <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">Thank You, ${data.fullName.split(" ")[0]}!</h1>
+        <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">Thank You, ${escapeHtml(data.fullName.split(" ")[0])}!</h1>
         <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">Your order is confirmed and we're making it fresh.</p>
       </div>
       <div style="background:#fff;border:1px solid #e5e5e5;border-top:0;padding:32px;border-radius:0 0 16px 16px;">
         <p style="color:#333;font-size:15px;line-height:1.6;">
-          Namaste <strong style="color:#065f46;">${data.fullName}</strong>,
+          Namaste <strong style="color:#065f46;">${escapeHtml(data.fullName)}</strong>,
         </p>
         <p style="color:#666;font-size:14px;line-height:1.6;">
           We're so glad you chose Shivshambho! Your order is now in our kitchen — we'll prepare it with the same love and care that's been our tradition since 1984.
@@ -183,13 +192,13 @@ export async function sendCustomerOrderConfirmation(
         <div style="display:flex;gap:16px;background:#faf8f5;border-radius:12px;padding:16px;font-size:13px;margin:20px 0;">
           <div style="flex:1;">
             <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Delivering to</p>
-            <p style="color:#333;margin:0;font-weight:600;">${data.fullName}</p>
-            <p style="color:#666;margin:2px 0 0;">${data.phone}</p>
-            <p style="color:#666;margin:2px 0 0;">${data.address}, ${data.city}, ${data.state} - ${data.pincode}</p>
+            <p style="color:#333;margin:0;font-weight:600;">${escapeHtml(data.fullName)}</p>
+            <p style="color:#666;margin:2px 0 0;">${escapeHtml(data.phone)}</p>
+            <p style="color:#666;margin:2px 0 0;">${escapeHtml(data.address)}, ${escapeHtml(data.city)}, ${escapeHtml(data.state)} - ${escapeHtml(data.pincode)}</p>
           </div>
           <div>
             <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Payment</p>
-            <p style="color:#333;margin:0;font-weight:600;">${data.paymentType === "COD" ? "Cash on Delivery" : data.paymentType}</p>
+            <p style="color:#333;margin:0;font-weight:600;">${data.paymentType === "COD" ? "Cash on Delivery" : escapeHtml(data.paymentType)}</p>
           </div>
         </div>
 
@@ -251,7 +260,7 @@ export async function sendCustomerShippingNotification(
     .map(
       (item) =>
         `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;"><strong>${item.name}</strong></td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;"><strong>${escapeHtml(item.name)}</strong></td>
           <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#888;text-align:right;">× ${item.quantity}</td>
         </tr>`,
     )
@@ -262,25 +271,25 @@ export async function sendCustomerShippingNotification(
       <div style="background:#065f46;padding:32px 24px;border-radius:16px 16px 0 0;text-align:center;">
         <div style="font-size:48px;margin-bottom:12px;">🚚</div>
         <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">Your Order is On Its Way!</h1>
-        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">Packed fresh and handed over to ${data.courierName}.</p>
+        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">Packed fresh and handed over to ${escapeHtml(data.courierName)}.</p>
       </div>
       <div style="background:#fff;border:1px solid #e5e5e5;border-top:0;padding:32px;border-radius:0 0 16px 16px;">
         <p style="color:#333;font-size:15px;line-height:1.6;">
-          Namaste <strong style="color:#065f46;">${data.fullName}</strong>,
+          Namaste <strong style="color:#065f46;">${escapeHtml(data.fullName)}</strong>,
         </p>
         <p style="color:#666;font-size:14px;line-height:1.6;">
-          Great news! Your order has been carefully packed and handed over to ${data.courierName}. It's now on its way to your doorstep.
+          Great news! Your order has been carefully packed and handed over to ${escapeHtml(data.courierName)}. It's now on its way to your doorstep.
         </p>
 
         <div style="background:#065f46;border-radius:12px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;font-size:13px;">
             <tr>
               <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.2);color:#a7f3d0;width:100px;">Courier</td>
-              <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.2);color:#fff;font-weight:600;">${data.courierName}</td>
+              <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.2);color:#fff;font-weight:600;">${escapeHtml(data.courierName)}</td>
             </tr>
             <tr>
               <td style="padding:8px 0;color:#a7f3d0;">Tracking ID</td>
-              <td style="padding:8px 0;color:#fff;font-weight:600;font-family:monospace;letter-spacing:1px;">${data.trackingId}</td>
+              <td style="padding:8px 0;color:#fff;font-weight:600;font-family:monospace;letter-spacing:1px;">${escapeHtml(data.trackingId)}</td>
             </tr>
           </table>
         </div>
@@ -300,7 +309,7 @@ export async function sendCustomerShippingNotification(
 
         ${data.trackingUrl ? `
         <div style="text-align:center;margin-top:24px;">
-          <a href="${data.trackingUrl}" style="display:inline-block;background:#065f46;color:#fff;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
+          <a href="${escapeHtml(data.trackingUrl)}" style="display:inline-block;background:#065f46;color:#fff;padding:14px 32px;border-radius:12px;font-size:14px;font-weight:700;text-decoration:none;">
             🚚 Track Your Order
           </a>
         </div>
@@ -371,7 +380,7 @@ export async function sendCustomerOrderStatusUpdate(
     .map(
       (item) =>
         `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;">${item.name}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;">${escapeHtml(item.name)}</td>
           <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#888;text-align:center;">× ${item.quantity}</td>
         </tr>`,
     )
@@ -381,14 +390,14 @@ export async function sendCustomerOrderStatusUpdate(
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
       <div style="background:#065f46;padding:32px 24px;border-radius:16px 16px 0 0;text-align:center;">
         <div style="font-size:48px;margin-bottom:12px;">${statusInfo.icon}</div>
-        <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">${statusInfo.title}</h1>
-        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">${statusInfo.message}</p>
+        <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">${escapeHtml(statusInfo.title)}</h1>
+        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">${escapeHtml(statusInfo.message)}</p>
       </div>
       <div style="background:#fff;border:1px solid #e5e5e5;border-top:0;padding:32px;border-radius:0 0 16px 16px;">
         <p style="color:#333;font-size:15px;line-height:1.6;">
-          Namaste <strong style="color:#065f46;">${data.fullName}</strong>,
+          Namaste <strong style="color:#065f46;">${escapeHtml(data.fullName)}</strong>,
         </p>
-        <p style="color:#666;font-size:14px;line-height:1.6;">${statusInfo.message}</p>
+        <p style="color:#666;font-size:14px;line-height:1.6;">${escapeHtml(statusInfo.message)}</p>
 
         <div style="background:#faf8f5;border-radius:12px;padding:20px;margin:20px 0;">
           <table style="width:100%;border-collapse:collapse;font-size:14px;">

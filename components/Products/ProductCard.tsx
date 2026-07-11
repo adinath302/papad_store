@@ -3,8 +3,9 @@
 import { useState, memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, Loader2, Plus, Minus, Heart } from "lucide-react";
+import { Star, Loader2, Plus, Minus, Heart, Clock } from "lucide-react";
 import { addToGuestCart, isLoggedIn, notifyCartUpdate } from "@/lib/guest-cart";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { toggleGuestWishlist } from "@/lib/guest-wishlist";
 import { useToast } from "@/components/Toast/ToastProvider";
 import { useSiteImages } from "@/lib/useSiteImages";
@@ -38,7 +39,7 @@ const ProductCard = memo(function ProductCard({ product, wishlisted: initialWish
         return;
       }
 
-      const res = await fetch("/api/cart", {
+      const res = await fetchCsrf("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -91,7 +92,7 @@ const ProductCard = memo(function ProductCard({ product, wishlisted: initialWish
             onClick={async (e) => {
               e.preventDefault();
               if (isLoggedIn()) {
-                const res = await fetch("/api/wishlist", {
+                const res = await fetchCsrf("/api/wishlist", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ productId: product.id }),
@@ -151,6 +152,11 @@ const ProductCard = memo(function ProductCard({ product, wishlisted: initialWish
             </span>
           )}
         </p>
+
+        <div className="flex items-center gap-1.5 text-amber-700">
+          <Clock size={10} />
+          <span className="text-[10px] font-semibold">Made Fresh — Ships in 3-7 days</span>
+        </div>
 
         {product.productvariant?.length > 1 && (
           <div className="flex flex-wrap gap-1">

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Star, Loader2 } from "lucide-react";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { useToast } from "@/components/Toast/ToastProvider";
 
 export default function ProductReviews({ productId }: { productId: string }) {
@@ -30,7 +31,7 @@ export default function ProductReviews({ productId }: { productId: string }) {
     e.preventDefault();
     setSubmitting(true);
     try {
-      const res = await fetch("/api/reviews", {
+      const res = await fetchCsrf("/api/reviews", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...form, productId }),

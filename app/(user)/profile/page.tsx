@@ -20,8 +20,13 @@ import {
   Clock,
   CreditCard,
   ShoppingBag,
+  Search,
+  Truck,
+  Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { SkeletonProfile, SkeletonAddresses, SkeletonOrders } from "@/components/Skeleton/Skeleton";
+import { fetchCsrf } from "@/lib/csrf-client";
 
 type UserDetails = {
   id: string;
@@ -59,7 +64,29 @@ type Order = {
   orderitem: OrderItem[];
 };
 
-const tabs = ["Account", "Addresses", "Orders"] as const;
+type TrackedOrder = {
+  id: string;
+  status: string;
+  courierName: string | null;
+  trackingId: string | null;
+  totalAmount: number;
+  shippingCost: number;
+  paymentType: string;
+  fullName: string;
+  createdAt: string;
+  items: { name: string; quantity: number }[];
+  trackingUrl: string | null;
+};
+
+const trackStatusDisplay: Record<string, { label: string; color: string }> = {
+  PENDING: { label: "Pending", color: "bg-amber-50 text-amber-700 ring-1 ring-amber-200" },
+  CONFIRMED: { label: "Confirmed", color: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" },
+  SHIPPED: { label: "Shipped", color: "bg-blue-50 text-blue-700 ring-1 ring-blue-200" },
+  DELIVERED: { label: "Delivered", color: "bg-stone-100 text-stone-600 ring-1 ring-stone-200" },
+  CANCELLED: { label: "Cancelled", color: "bg-red-50 text-red-600 ring-1 ring-red-200" },
+};
+
+const tabs = ["Account", "Addresses", "Orders", "Track Order"] as const;
 type Tab = (typeof tabs)[number];
 
 const statusColors: Record<string, string> = {
@@ -105,6 +132,11 @@ export default function ProfilePage() {
     pincode: "",
   });
   const [savingAddress, setSavingAddress] = useState(false);
+
+  const [trackQuery, setTrackQuery] = useState("");
+  const [trackedOrders, setTrackedOrders] = useState<TrackedOrder[] | null>(null);
+  const [trackLoading, setTrackLoading] = useState(false);
+  const [trackError, setTrackError] = useState("");
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -155,14 +187,15 @@ export default function ProfilePage() {
   }, [activeTab, checking, user]);
 
   const handleLogout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
+    await fetchCsrf("/api/auth/logout", { method: "POST" });
+    sessionStorage.removeItem("nav_auth");
     router.push("/");
   };
 
   const handleSaveName = async () => {
     setSavingName(true);
     try {
-      await fetch("/api/auth/user", {
+      await fetchCsrf("/api/auth/user", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newName }),
@@ -176,7 +209,7 @@ export default function ProfilePage() {
   const handleAddAddress = async () => {
     setSavingAddress(true);
     try {
-      await fetch("/api/address", {
+      await fetchCsrf("/api/address", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...addressForm, saveAddress: true }),
@@ -194,6 +227,28 @@ export default function ProfilePage() {
       loadAddresses();
     } catch {}
     setSavingAddress(false);
+  };
+
+  const handleTrackSearch = async () => {
+    if (!trackQuery.trim()) return;
+    setTrackLoading(true);
+    setTrackError("");
+    setTrackedOrders(null);
+    try {
+      const isOrderId = trackQuery.includes("-") || trackQuery.length > 12;
+      const param = isOrderId ? `order=${trackQuery.trim()}` : `phone=${trackQuery.trim()}`;
+      const res = await fetch(`/api/track?${param}`);
+      const data = await res.json();
+      if (data.error) {
+        setTrackError(data.error);
+      } else {
+        setTrackedOrders(data);
+      }
+    } catch {
+      setTrackError("Something went wrong. Please try again.");
+    } finally {
+      setTrackLoading(false);
+    }
   };
 
   if (checking) {
@@ -284,6 +339,7 @@ export default function ProfilePage() {
               {tab === "Account" && <User size={15} />}
               {tab === "Addresses" && <MapPin size={15} />}
               {tab === "Orders" && <Package size={15} />}
+              {tab === "Track Order" && <Truck size={15} />}
               {tab}
             </button>
           ))}
@@ -649,6 +705,119 @@ export default function ProfilePage() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {activeTab === "Track Order" && (
+          <div className="bg-white rounded-2xl border border-stone-200 p-6 md:p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-stone-100 flex items-center justify-center">
+                <Truck size={20} className="text-stone-600" />
+              </div>
+              <h2 className="text-lg font-serif text-stone-900">
+                Track Your Order
+              </h2>
+            </div>
+
+            <div className="mb-6">
+              <div className="flex gap-3">
+                <input
+                  value={trackQuery}
+                  onChange={(e) => setTrackQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleTrackSearch()}
+                  placeholder="Order ID or Phone number"
+                  className="flex-1 border border-stone-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-600 text-sm"
+                />
+                <button
+                  onClick={handleTrackSearch}
+                  disabled={trackLoading || !trackQuery.trim()}
+                  className="px-6 py-3 bg-stone-900 text-white rounded-xl text-sm font-bold hover:bg-stone-800 transition-all disabled:opacity-40 flex items-center gap-2"
+                >
+                  {trackLoading ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                  Search
+                </button>
+              </div>
+              <p className="text-xs text-stone-400 mt-3">
+                Enter your Order ID or the phone number used at checkout.
+              </p>
+            </div>
+
+            {trackError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 text-sm font-medium px-5 py-4 rounded-xl mb-6">
+                {trackError}
+              </div>
+            )}
+
+            {trackedOrders && trackedOrders.length === 0 && !trackError && (
+              <div className="text-center py-12">
+                <Package size={44} className="mx-auto text-stone-200 mb-4" strokeWidth={1} />
+                <p className="text-stone-500 text-sm">No orders found matching your search.</p>
+              </div>
+            )}
+
+            {trackedOrders && trackedOrders.map((order) => {
+              const statusInfo = trackStatusDisplay[order.status] || trackStatusDisplay.PENDING;
+              return (
+                <div key={order.id} className="border border-stone-200 rounded-xl overflow-hidden mb-4">
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <p className="text-xs text-stone-400 font-mono">#{order.id.slice(0, 12).toUpperCase()}</p>
+                        <p className="text-sm text-stone-600 mt-0.5">{order.fullName}</p>
+                      </div>
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-bold ${statusInfo.color}`}>{statusInfo.label}</span>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      {order.items.map((item, i) => (
+                        <div key={i} className="flex items-center justify-between text-sm py-2 border-b border-stone-100 last:border-0">
+                          <span className="text-stone-700">{item.name}</span>
+                          <span className="text-stone-400 text-xs">x{item.quantity}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 text-sm bg-stone-50 rounded-xl p-4 mb-4">
+                      <div>
+                        <p className="text-[10px] text-stone-400 uppercase tracking-wider font-bold">Payment</p>
+                        <p className="text-stone-800 font-medium mt-0.5">{order.paymentType === "COD" ? "Cash on Delivery" : order.paymentType}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-[10px] text-stone-400 uppercase tracking-wider font-bold">Total</p>
+                        <p className="text-stone-800 font-bold mt-0.5">₹{order.totalAmount}</p>
+                      </div>
+                    </div>
+
+                    {order.trackingId && order.trackingId !== "PENDING" && (
+                      <div className="border border-stone-200 rounded-xl p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-[10px] text-stone-400 uppercase tracking-wider font-bold">Courier</p>
+                            <p className="text-sm font-medium text-stone-800 mt-0.5">{order.courierName || "—"}</p>
+                            <p className="text-xs text-stone-500 font-mono mt-1">{order.trackingId}</p>
+                          </div>
+                          {order.trackingUrl ? (
+                            <a href={order.trackingUrl} target="_blank" rel="noopener noreferrer"
+                              className="flex items-center gap-1.5 px-4 py-2.5 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all">
+                              Track Now <ExternalLink size={13} />
+                            </a>
+                          ) : (
+                            <span className="text-xs text-stone-400">No tracking URL available</span>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {(!order.trackingId || order.trackingId === "PENDING") && order.status !== "DELIVERED" && order.status !== "CANCELLED" && (
+                      <div className="flex items-center gap-2 text-xs text-amber-600 bg-amber-50 rounded-xl px-4 py-3">
+                        <Package size={14} />
+                        Order is being processed. Tracking will appear here once shipped.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>

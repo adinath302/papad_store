@@ -109,6 +109,11 @@ export async function PATCH(req: Request) {
       );
     }
 
+    const VALID_STATUSES = ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"];
+    if (status && !VALID_STATUSES.includes(status)) {
+      return NextResponse.json({ error: "Invalid status" }, { status: 400 });
+    }
+
     if (status && !isOwner(currentUser.email) && !can(currentUser.permissions, "orders", "update_status")) {
       return NextResponse.json({ error: "Forbidden: cannot update order status" }, { status: 403 });
     }

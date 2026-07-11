@@ -50,8 +50,10 @@ export default function CartPage() {
       }
 
       const res = await fetch("/api/cart");
-      const data = (await res.json()) as CartItemData[];
-      setItems(data);
+      if (res.ok) {
+        const data = (await res.json()) as CartItemData[];
+        setItems(data);
+      }
     } catch (error) {
       console.error("Fetch cart error:", error);
     } finally {

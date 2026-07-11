@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Bell, Loader2, Check } from "lucide-react";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { useToast } from "@/components/Toast/ToastProvider";
 
 export default function StockNotificationForm({
@@ -23,7 +24,7 @@ export default function StockNotificationForm({
     if (!email) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/stock-notifications", {
+      const res = await fetchCsrf("/api/stock-notifications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, productId }),

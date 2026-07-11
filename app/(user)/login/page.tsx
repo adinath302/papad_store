@@ -8,6 +8,7 @@ import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { getGuestCart, clearGuestCart } from "@/lib/guest-cart";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { useToast } from "@/components/Toast/ToastProvider";
 
 export const dynamic = "force-dynamic";
@@ -26,9 +27,9 @@ export default function LoginPage() {
     const guestItems = getGuestCart();
     if (guestItems.length === 0) return;
 
-    await Promise.all(
+    const results = await Promise.allSettled(
       guestItems.map((item) =>
-        fetch("/api/cart", {
+        fetchCsrf("/api/cart", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -39,7 +40,8 @@ export default function LoginPage() {
         }),
       ),
     );
-    clearGuestCart();
+    const allSucceeded = results.every((r) => r.status === "fulfilled" && r.value.ok);
+    if (allSucceeded) clearGuestCart();
   };
 
   const handleLogin = async () => {

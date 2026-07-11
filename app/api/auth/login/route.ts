@@ -70,6 +70,8 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
     });
 
+    await setCsrfToken();
+
     return res;
   } catch (error: any) {
     return NextResponse.json(

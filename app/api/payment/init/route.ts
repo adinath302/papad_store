@@ -30,18 +30,22 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const { state, items: clientItems, shippingCost: clientShippingCost, couponCode } = body;
+    const { state, items: clientItems, couponCode } = body;
 
     if (!clientItems || !Array.isArray(clientItems) || clientItems.length === 0) {
       return NextResponse.json({ error: "Cart is empty" }, { status: 400 });
     }
 
+    const productIds = clientItems.map((ci: any) => ci.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      include: { productvariant: true },
+    });
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
     let subtotal = 0;
     for (const ci of clientItems) {
-      const product = await prisma.product.findUnique({
-        where: { id: ci.productId },
-        include: { productvariant: true },
-      });
+      const product = productMap.get(ci.productId);
       if (!product) {
         return NextResponse.json(
           { error: `Product not found: ${ci.productId}` },
@@ -68,7 +72,7 @@ export async function POST(req: Request) {
       subtotal += price * ci.quantity;
     }
 
-    const shippingCost = clientShippingCost ?? calculateShippingFee(subtotal, state);
+    const shippingCost = calculateShippingFee(subtotal, state);
     let totalAmount = subtotal + shippingCost;
 
     if (couponCode) {

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/Toast/ToastProvider";
 import { SkeletonCheckout } from "@/components/Skeleton/Skeleton";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { getGuestCart, isLoggedIn, clearGuestCart } from "@/lib/guest-cart";
 import { calculateShippingFee, FREE_SHIPPING_MIN } from "@/lib/shipping";
 
@@ -24,6 +25,7 @@ interface CartItemType {
     id: string;
     name: string;
     image?: string | null;
+    stock?: number | null;
     productvariant: Array<{ id: string; label: string; price: number }>;
   };
   quantity: number;
@@ -57,6 +59,8 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [savedAddress, setSavedAddress] = useState<SavedAddress | null>(null);
   const [isGuest, setIsGuest] = useState(true);
+  const [outOfStockItems, setOutOfStockItems] = useState<string[]>([]);
+  const [fetchError, setFetchError] = useState("");
 
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
@@ -119,6 +123,12 @@ export default function CheckoutPage() {
       if (cartRes.ok) {
         const data = await cartRes.json();
         setItems(data);
+        const oos: string[] = data
+          .filter((item: CartItemType) => item.product.stock === 0 || (item.product.stock != null && item.product.stock < item.quantity))
+          .map((item: CartItemType) => item.product.id);
+        setOutOfStockItems([...new Set(oos)]);
+      } else {
+        setFetchError("Failed to load your cart. Please try again.");
       }
 
       if (addrRes.ok) {
@@ -164,7 +174,7 @@ export default function CheckoutPage() {
     setCouponLoading(true);
     setCouponError("");
     try {
-      const res = await fetch("/api/coupons/validate", {
+      const res = await fetchCsrf("/api/coupons/validate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: couponCode, cartTotal: subtotal + shippingCost }),
@@ -205,7 +215,7 @@ export default function CheckoutPage() {
     })) };
     if (appliedCoupon) body.couponCode = appliedCoupon.code;
 
-    const initRes = await fetch("/api/payment/init", {
+    const initRes = await fetchCsrf("/api/payment/init", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -244,7 +254,7 @@ export default function CheckoutPage() {
         quantity: item.quantity,
       }));
 
-      const checkoutRes = await fetch("/api/checkout", {
+      const checkoutRes = await fetchCsrf("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(checkoutBody),
@@ -259,7 +269,7 @@ export default function CheckoutPage() {
       }
 
       if (form.saveAddress && !isGuest) {
-        await fetch("/api/address", {
+        await fetchCsrf("/api/address", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
@@ -292,7 +302,7 @@ export default function CheckoutPage() {
   rzp.open();
 };
 document.body.appendChild(script);
-}, [form, router, items]);
+}, [form, router, items, appliedCoupon, isGuest]);
 
   const handleSubmit = async () => {
     const errors = new Set<string>();
@@ -304,6 +314,17 @@ document.body.appendChild(script);
       return;
     }
     setFieldErrors(new Set());
+
+    if (!/^\d{6}$/.test(form.pincode)) {
+      toast("Invalid pincode format", "error");
+      setPlacing(false);
+      return;
+    }
+    if (!/^(\+91|0)?[6-9]\d{9}$/.test(form.phone.replace(/\s/g, ""))) {
+      toast("Invalid phone number", "error");
+      setPlacing(false);
+      return;
+    }
 
     setPlacing(true);
 
@@ -323,7 +344,7 @@ document.body.appendChild(script);
         quantity: item.quantity,
       }));
 
-      const res = await fetch("/api/checkout", {
+      const res = await fetchCsrf("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -338,7 +359,7 @@ document.body.appendChild(script);
       }
 
       if (form.saveAddress && !isGuest) {
-        await fetch("/api/address", {
+        await fetchCsrf("/api/address", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(form),
@@ -355,6 +376,25 @@ document.body.appendChild(script);
 
   if (loading) {
     return <SkeletonCheckout />;
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen bg-[#faf8f5] pt-32 pb-16 px-6">
+        <div className="max-w-2xl mx-auto text-center">
+          <ShoppingBag size={48} className="mx-auto text-stone-200 mb-4" />
+          <h1 className="text-2xl font-serif text-stone-900 mb-2">
+            {fetchError}
+          </h1>
+          <Link
+            href="/cart"
+            className="inline-block px-8 py-3 bg-emerald-800 text-white rounded-lg text-sm font-bold uppercase tracking-wider hover:bg-emerald-700 transition-all"
+          >
+            Back to Cart
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   if (items.length === 0) {
@@ -731,9 +771,23 @@ document.body.appendChild(script);
                   </p>
                 )}
 
+                {outOfStockItems.length > 0 && (
+                  <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-xl">
+                    <p className="text-xs font-bold text-red-700 mb-1">Some items are out of stock:</p>
+                    {items
+                      .filter((item) => outOfStockItems.includes(item.product.id))
+                      .map((item) => (
+                        <p key={item.id} className="text-xs text-red-600 ml-2">
+                          • {item.product.name}
+                        </p>
+                      ))}
+                    <p className="text-[11px] text-red-500 mt-2">Please go back and remove these items from your cart to proceed.</p>
+                  </div>
+                )}
+
           <button
             onClick={handleSubmit}
-            disabled={placing}
+            disabled={placing || outOfStockItems.length > 0}
             className="w-full mt-6 bg-emerald-800 text-white py-4 rounded-xl font-bold text-sm tracking-wide hover:bg-emerald-700 transition-all disabled:bg-stone-300 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {placing ? (

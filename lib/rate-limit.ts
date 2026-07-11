@@ -1,27 +1,38 @@
 const rateMap = new Map<string, { count: number; resetAt: number }>();
 const isUpstashConfigured = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
-let upstashRatelimit: any = null;
+let upstashClient: any = null;
+const ratelimitInstances = new Map<string, any>();
 
-async function getUpstashRatelimit() {
+async function getUpstashClient() {
   if (!isUpstashConfigured) return null;
-  if (upstashRatelimit) return upstashRatelimit;
+  if (upstashClient) return upstashClient;
   try {
     const { Redis } = await import("@upstash/redis");
-    const { Ratelimit } = await import("@upstash/ratelimit");
-    const redis = new Redis({
+    upstashClient = new Redis({
       url: process.env.UPSTASH_REDIS_REST_URL!,
       token: process.env.UPSTASH_REDIS_REST_TOKEN!,
     });
-    upstashRatelimit = new Ratelimit({
-      redis,
-      limiter: Ratelimit.slidingWindow(10, "10 s"),
-      prefix: "papad_store",
-    });
-    return upstashRatelimit;
+    return upstashClient;
   } catch {
     return null;
   }
+}
+
+async function getRatelimit(maxRequests: number, windowMs: number) {
+  const key = `${maxRequests}:${windowMs}`;
+  if (ratelimitInstances.has(key)) return ratelimitInstances.get(key);
+
+  const { Ratelimit } = await import("@upstash/ratelimit");
+  const redis = await getUpstashClient();
+  const windowSec = Math.max(1, Math.ceil(windowMs / 1000));
+  const instance = new Ratelimit({
+    redis: redis!,
+    limiter: Ratelimit.slidingWindow(maxRequests, `${windowSec} s`),
+    prefix: "papad_rl",
+  });
+  ratelimitInstances.set(key, instance);
+  return instance;
 }
 
 export async function checkRateLimit(
@@ -29,9 +40,10 @@ export async function checkRateLimit(
   maxRequests = 5,
   windowMs = 60_000,
 ): Promise<{ allowed: boolean; remaining: number }> {
-  const ratelimit = await getUpstashRatelimit();
-  if (ratelimit) {
+  const redis = await getUpstashClient();
+  if (redis) {
     try {
+      const ratelimit = await getRatelimit(maxRequests, windowMs);
       const { success, remaining } = await ratelimit.limit(key);
       return { allowed: success, remaining };
     } catch {

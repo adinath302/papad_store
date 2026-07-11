@@ -33,9 +33,12 @@ export async function POST(req: Request) {
       razorpaySignature,
       items: clientItems,
       shippingMethod,
-      shippingCost: clientShippingCost,
       couponCode,
     } = body;
+
+    if (paymentType && !["COD", "Razorpay"].includes(paymentType)) {
+      return Response.json({ error: "Invalid payment method" }, { status: 400 });
+    }
 
     if (
       !fullName ||
@@ -88,15 +91,20 @@ export async function POST(req: Request) {
       return Response.json({ error: "Invalid phone number format" }, { status: 400 });
     }
 
+    // Batch fetch all products at once instead of N+1 queries
+    const productIds = clientItems.map((ci: any) => ci.productId);
+    const products = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      include: { productvariant: true },
+    });
+    const productMap = new Map(products.map((p) => [p.id, p]));
+
     const cartItems: any[] = [];
     for (const ci of clientItems) {
-      const product = await prisma.product.findUnique({
-        where: { id: ci.productId },
-        include: { productvariant: true },
-      });
+      const product = productMap.get(ci.productId);
       if (!product) {
         return Response.json(
-          { error: "Product not found" },
+          { error: `Product not found: ${ci.productId}` },
           { status: 400 },
         );
       }
@@ -115,24 +123,22 @@ export async function POST(req: Request) {
         productId: ci.productId,
         variantId: ci.variantId || null,
         quantity: ci.quantity,
+        unitPrice: (() => {
+          if (ci.variantId) {
+            const v = product.productvariant.find((vv: any) => vv.id === ci.variantId);
+            return v ? v.price : 0;
+          }
+          return product.productvariant.length > 0 ? product.productvariant[0].price : 0;
+        })(),
         product,
       });
     }
 
-    const subtotal = cartItems.reduce((sum, item: any) => {
-      let price = 0;
-      if (item.variantId) {
-        const variant = item.product.productvariant.find(
-          (v: any) => v.id === item.variantId,
-        );
-        if (variant) price = variant.price;
-      } else if (item.product.productvariant.length > 0) {
-        price = item.product.productvariant[0].price;
-      }
-      return sum + price * item.quantity;
+    const subtotal = cartItems.reduce((sum: number, item: any) => {
+      return sum + item.unitPrice * item.quantity;
     }, 0);
 
-    const shippingCost = clientShippingCost ?? calculateShippingFee(subtotal, state);
+    const shippingCost = calculateShippingFee(subtotal, state);
     let totalAmount = subtotal + shippingCost;
     let discount = 0;
 
@@ -199,7 +205,9 @@ export async function POST(req: Request) {
         data: cartItems.map((item: any) => ({
           orderId: created.id,
           productId: item.productId,
+          variantId: item.variantId,
           quantity: item.quantity,
+          price: item.unitPrice,
         })),
       });
 
@@ -272,7 +280,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("CHECKOUT ERROR:", error);
     return Response.json(
-      { error: error?.message?.includes("Insufficient stock") ? error.message : "Checkout failed" },
+      { error: error?.message?.includes("Insufficient stock") ? error.message : (error?.message || "Checkout failed") },
       { status: 500 },
     );
   }

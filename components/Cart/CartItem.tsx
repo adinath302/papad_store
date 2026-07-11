@@ -1,8 +1,9 @@
 "use client";
 
 import Image from "next/image";
-import { Trash2, Plus, Minus, Loader2 } from "lucide-react";
+import { Trash2, Plus, Minus, Loader2, Clock } from "lucide-react";
 import { memo, useMemo, useState } from "react";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { useToast } from "@/components/Toast/ToastProvider";
 import {
   removeFromGuestCart,
@@ -68,21 +69,18 @@ const CartItem = memo(function CartItem({
     const prevQty = item.quantity;
     const newQty = action === "increase" ? prevQty + 1 : prevQty - 1;
     if (newQty < 1) { setPendingQty(false); return; }
-    item.quantity = newQty;
-    onUpdate?.();
 
     try {
-      const res = await fetch("/api/cart", {
+      const res = await fetchCsrf("/api/cart", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: item.id, action }),
       });
       const data = await res.json();
       if (data.error) {
-        item.quantity = prevQty;
-        onUpdate?.();
         toast(data.error, "error");
       } else {
+        onUpdate?.();
         notifyCartUpdate();
       }
     } finally {
@@ -102,7 +100,7 @@ const CartItem = memo(function CartItem({
     onUpdate?.();
 
     try {
-      const res = await fetch(`/api/cart?id=${item.id}`, {
+      const res = await fetchCsrf(`/api/cart?id=${item.id}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -137,6 +135,11 @@ const CartItem = memo(function CartItem({
         {variant?.label && (
           <p className="text-xs text-zinc-400 mt-0.5">{variant.label}</p>
         )}
+
+        <div className="flex items-center gap-1 mt-1 text-amber-700">
+          <Clock size={9} />
+          <span className="text-[10px] font-semibold">Made Fresh — Ships in 3-7 days</span>
+        </div>
 
         <div className="flex items-center gap-2 mt-2">
           <button

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Tag, Plus, Trash2, Check, X } from "lucide-react";
+import { fetchCsrf } from "@/lib/csrf-client";
 
 type Coupon = {
   id: string;
@@ -50,7 +51,7 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
       usageLimit: form.usageLimit ? Number(form.usageLimit) : null,
       expiresAt: form.expiresAt || null,
     };
-    const res = await fetch("/api/admin/coupons", {
+    const res = await fetchCsrf("/api/admin/coupons", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
@@ -67,7 +68,7 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
   };
 
   const toggleActive = async (coupon: Coupon) => {
-    await fetch("/api/admin/coupons", {
+    await fetchCsrf("/api/admin/coupons", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: coupon.id, isActive: !coupon.isActive }),
@@ -77,7 +78,7 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
 
   const deleteCoupon = async (id: string) => {
     if (!confirm("Delete this coupon?")) return;
-    await fetch("/api/admin/coupons", {
+    await fetchCsrf("/api/admin/coupons", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),

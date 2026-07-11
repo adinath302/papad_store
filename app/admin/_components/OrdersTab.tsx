@@ -5,6 +5,7 @@ import { ShoppingBag, Calculator, TrendingDown, TrendingUp, Search, Download, Re
 import type { Order } from "./types";
 import { statusStyles } from "./types";
 import { useToast } from "@/components/Toast/ToastProvider";
+import { fetchCsrf } from "@/lib/csrf-client";
 
 type OrdersTabProps = {
   orders: Order[];
@@ -75,7 +76,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
   };
 
   const updateOrderStatus = async (id: string, status: string) => {
-    await fetch("/api/orders", {
+    await fetchCsrf("/api/orders", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
@@ -86,7 +87,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
 
   const markAsShipped = async (id: string) => {
     if (!shipTracking.trim()) return;
-    await fetch("/api/orders", {
+    await fetchCsrf("/api/orders", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status: "SHIPPED", courierName: shipCourier, trackingId: shipTracking.trim() }),
@@ -154,7 +155,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
     if (!bulkStatus || selectedIds.size === 0) return;
     setProcessingBulk(true);
     try {
-      const res = await fetch("/api/orders/bulk-status", {
+      const res = await fetchCsrf("/api/orders/bulk-status", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderIds: Array.from(selectedIds), status: bulkStatus }),
@@ -180,7 +181,7 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
     if (!order.razorpayPaymentId) return;
     setProcessingRefund(order.id);
     try {
-      const res = await fetch("/api/refunds", {
+      const res = await fetchCsrf("/api/refunds", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderId: order.id, amount: order.totalAmount, reason: refundReason }),

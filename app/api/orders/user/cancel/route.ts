@@ -47,21 +47,25 @@ export async function POST(req: Request) {
       );
     }
 
+    // For online payments, attempt refund FIRST — if it fails, don't cancel the order
     let razorpayRefundId: string | null = null;
 
-    // Initiate Razorpay refund if paid online
     if (order.razorpayPaymentId && order.paymentType !== "COD") {
       try {
         const refund = await razorpay.payments.refund(order.razorpayPaymentId, {
           amount: order.totalAmount,
         });
         razorpayRefundId = refund.id;
-      } catch (refundError) {
-        console.error("Razorpay refund failed:", refundError);
+      } catch (refundError: any) {
+        console.error("Refund failed:", refundError);
+        return NextResponse.json(
+          { error: "Refund failed. Please contact support." },
+          { status: 500 },
+        );
       }
     }
 
-    // Transaction: update order status + restore stock + create refund record
+    // DB transaction: update order status + restore stock + create refund record
     const updatedOrder = await prisma.$transaction(async (tx) => {
       const updated = await tx.order.update({
         where: { id: orderId },

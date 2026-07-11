@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2, Shield, Check, X as XIcon } from "lucide-react";
 import type { AdminUser, PermissionMap } from "./types";
 import { RESOURCE_ACTIONS, RESOURCE_LABELS } from "./types";
+import { fetchCsrf } from "@/lib/csrf-client";
 
 type UsersTabProps = {
   admins: AdminUser[];
@@ -66,7 +67,7 @@ export default function UsersTab({ admins, isOwner, ownerEmail, toast, onAdminCh
 
   const addAdmin = async () => {
     if (!addAdminEmail.trim()) return;
-    const res = await fetch("/api/admin/users", {
+    const res = await fetchCsrf("/api/admin/users", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: addAdminEmail.trim(), permissions: addAdminPermissions }),
@@ -84,7 +85,7 @@ export default function UsersTab({ admins, isOwner, ownerEmail, toast, onAdminCh
   };
 
   const updateAdminPermissions = async (id: string) => {
-    const res = await fetch(`/api/admin/users/${id}`, {
+    const res = await fetchCsrf(`/api/admin/users/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ permissions: editingPerms }),
@@ -102,7 +103,7 @@ export default function UsersTab({ admins, isOwner, ownerEmail, toast, onAdminCh
 
   const removeAdmin = async (id: string, email: string) => {
     if (!confirm(`Remove admin access for ${email}?`)) return;
-    const res = await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
+    const res = await fetchCsrf(`/api/admin/users/${id}`, { method: "DELETE" });
     if (res.ok) {
       toast("Admin removed", "success");
       onAdminChange();

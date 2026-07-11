@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { useSiteImages } from "@/lib/useSiteImages";
 
 type RecentlyViewedItem = {
@@ -22,7 +23,7 @@ export default function RecentlyViewed() {
     const isLoggedIn = document.cookie.includes("isLoggedIn=true");
 
     if (isLoggedIn) {
-      fetch("/api/recently-viewed")
+      fetchCsrf("/api/recently-viewed")
         .then((res) => res.json())
         .then((data) => {
           const mapped = data.map((item: any) => {

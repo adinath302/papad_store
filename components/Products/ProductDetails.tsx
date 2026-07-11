@@ -15,8 +15,10 @@ import {
   ShieldCheck,
   Truck,
   RefreshCw,
+  Clock,
 } from "lucide-react";
 import { addToGuestCart, isLoggedIn, notifyCartUpdate } from "@/lib/guest-cart";
+import { fetchCsrf } from "@/lib/csrf-client";
 import { useToast } from "@/components/Toast/ToastProvider";
 import ProductReviews from "./ProductReviews";
 import ProductGallery from "@/components/ProductGallery";
@@ -70,7 +72,7 @@ export default function ProductDetails({
         return;
       }
 
-      const res = await fetch("/api/cart", {
+      const res = await fetchCsrf("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -99,7 +101,7 @@ export default function ProductDetails({
   useEffect(() => {
     const loggedIn = document.cookie.includes("isLoggedIn=true");
     if (loggedIn) {
-      fetch("/api/recently-viewed", {
+      fetchCsrf("/api/recently-viewed", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ productId: product.id }),
@@ -233,6 +235,12 @@ export default function ProductDetails({
                   <span className="whitespace-nowrap">{item.text}</span>
                 </div>
               ))}
+            </div>
+
+            {/* Fresh made notice */}
+            <div className="mt-4 flex items-center gap-2 px-4 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
+              <Clock size={14} className="text-amber-700 shrink-0" />
+              <span className="text-xs font-semibold text-amber-800">Made Fresh — Ships in 3-7 days</span>
             </div>
 
             {/* Variant Selector */}
