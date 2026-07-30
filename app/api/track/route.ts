@@ -15,7 +15,7 @@ export async function GET(req: Request) {
       );
     }
 
-    let where: any = {};
+    const where: any = {};
     if (orderId) where.id = orderId;
     if (phone) where.phone = phone;
 

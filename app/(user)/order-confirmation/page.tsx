@@ -43,16 +43,15 @@ export default function OrderConfirmationPage() {
 
   useEffect(() => {
     if (!orderId) {
-      setLoading(false);
       return;
     }
     fetch(`/api/orders/${orderId}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         setOrder(data);
-        setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, [orderId]);
 
   if (loading) {

@@ -199,7 +199,7 @@ export default async function InvoicePage({
               </tr>
             </thead>
             <tbody>
-              {order.orderitem.map((item) => (
+              {order.orderitem.map((item: { id: string; quantity: number; price: number | null; product: { name: string } }) => (
                 <tr
                   key={item.id}
                   className="border-b border-stone-100 last:border-0"

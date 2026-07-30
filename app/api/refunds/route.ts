@@ -50,6 +50,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order already has a refund" }, { status: 400 });
     }
 
+    if (!razorpay) {
+      return NextResponse.json({ error: "Payment gateway not configured" }, { status: 501 });
+    }
+
     const razorpayRefund = await razorpay.payments.refund(order.razorpayPaymentId, { amount });
 
     const refund = await prisma.refund.create({

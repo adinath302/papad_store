@@ -181,8 +181,14 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!checking && user) {
-      if (activeTab === "Addresses") loadAddresses();
-      if (activeTab === "Orders") loadOrders();
+      if (activeTab === "Addresses") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadAddresses();
+      }
+      if (activeTab === "Orders") {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadOrders();
+      }
     }
   }, [activeTab, checking, user]);
 

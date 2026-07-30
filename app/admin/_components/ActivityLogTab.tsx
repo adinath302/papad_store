@@ -31,25 +31,23 @@ export default function ActivityLogTab() {
   const [loading, setLoading] = useState(true);
   const [resourceFilter, setResourceFilter] = useState("");
 
-  const fetchLogs = async (p: number, resource: string) => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    params.set("page", String(p));
-    params.set("limit", "50");
-    if (resource) params.set("resource", resource);
-    const res = await fetch(`/api/activity-logs?${params.toString()}`);
-    if (res.ok) {
-      const data = await res.json();
-      setLogs(data.logs);
-      setTotalCount(data.totalCount);
-      setPage(data.page);
-      setTotalPages(data.totalPages);
-    }
-    setLoading(false);
-  };
-
   useEffect(() => {
-    fetchLogs(page, resourceFilter);
+    const load = async () => {
+      setLoading(true);
+      const params = new URLSearchParams();
+      params.set("page", String(page));
+      params.set("limit", "50");
+      if (resourceFilter) params.set("resource", resourceFilter);
+      const res = await fetch(`/api/activity-logs?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogs(data.logs);
+        setTotalCount(data.totalCount);
+        setTotalPages(data.totalPages);
+      }
+      setLoading(false);
+    };
+    load();
   }, [page, resourceFilter]);
 
   const resources = [...new Set(logs.map((l) => l.resource))];

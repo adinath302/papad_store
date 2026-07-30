@@ -78,7 +78,7 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json(saved || { success: true });
+    return NextResponse.json(saved || null);
   } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Failed to save address" },

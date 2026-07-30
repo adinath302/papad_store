@@ -25,5 +25,5 @@ export function getTrackingUrl(courierName: string | null, trackingId: string | 
 }
 
 export function getOrderTrackingUrl(baseUrl: string, orderId: string): string {
-  return `${baseUrl}/track?order=${orderId}`;
+  return `${baseUrl}/track?order=${encodeURIComponent(orderId)}`;
 }

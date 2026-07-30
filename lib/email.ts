@@ -43,7 +43,14 @@ function getTransporter() {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 15000,
   });
+}
+
+function getFromAddress(): string {
+  return process.env.SMTP_FROM || process.env.SMTP_USER || "noreply@shivshambho.com";
 }
 
 export async function sendAdminOrderNotification(data: OrderEmailData) {
@@ -126,7 +133,7 @@ export async function sendAdminOrderNotification(data: OrderEmailData) {
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: getFromAddress(),
       to: adminEmails.join(", "),
       subject: `🛒 New Order #${data.orderId.slice(0, 8).toUpperCase()} - ₹${data.totalAmount}`,
       html,
@@ -230,7 +237,7 @@ export async function sendCustomerOrderConfirmation(
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: getFromAddress(),
       to: email,
       subject: `✅ Order Confirmed #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
       html,
@@ -333,7 +340,7 @@ export async function sendCustomerShippingNotification(
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: getFromAddress(),
       to: email,
       subject: `🚚 Order Shipped #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
       html,
@@ -442,7 +449,7 @@ export async function sendCustomerOrderStatusUpdate(
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: getFromAddress(),
       to: email,
       subject: `${statusInfo.icon} ${statusInfo.title} #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
       html,

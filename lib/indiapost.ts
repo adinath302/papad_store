@@ -70,14 +70,9 @@ export function estimateZone(state: string): Zone {
 }
 
 function determineZone(deliveryState: string, deliveryCity: string): Zone {
-  const localMatch = PICKUP_PINCODE.startsWith(deliveryCity
-    ? PICKUP_PINCODE.slice(0, 4)
-    : "");
-
   if (deliveryState === PICKUP_STATE) {
     const isDeliveryMetro = METRO_CITIES.has(deliveryCity);
-    const isPickupMetro = METRO_CITIES.size > 0;
-    if (isDeliveryMetro && isPickupMetro) return "metro";
+    if (isDeliveryMetro) return "metro";
     return "same_state";
   }
 
@@ -86,6 +81,10 @@ function determineZone(deliveryState: string, deliveryCity: string): Zone {
 }
 
 export function calculateSpeedPostRate(weightGrams: number, zone: Zone): number {
+  if (typeof weightGrams !== "number" || !isFinite(weightGrams) || weightGrams < 0) {
+    weightGrams = 500;
+  }
+
   const zoneKey = zone === "same_state" ? "sameState" : zone === "rest_of_india" ? "restOfIndia" : zone;
   const slab = RATE_SLABS.find((s) => weightGrams <= s.maxWeight);
 
@@ -95,12 +94,10 @@ export function calculateSpeedPostRate(weightGrams: number, zone: Zone): number 
 
   const lastSlab = RATE_SLABS[RATE_SLABS.length - 1];
   let cost = lastSlab[zoneKey as keyof typeof lastSlab] as number;
-  let remaining = weightGrams - lastSlab.maxWeight;
+  const remaining = weightGrams - lastSlab.maxWeight;
   const addlKey = zoneKey as keyof typeof ADDITIONAL_PER_500;
-  while (remaining > 0) {
-    cost += ADDITIONAL_PER_500[addlKey];
-    remaining -= 500;
-  }
+  const extraUnits = Math.ceil(remaining / 500);
+  cost += ADDITIONAL_PER_500[addlKey] * extraUnits;
   return cost;
 }
 

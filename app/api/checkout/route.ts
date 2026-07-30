@@ -1,7 +1,6 @@
 import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
-import { isRazorpayConfigured } from "@/lib/razorpay";
 import crypto from "crypto";
 import { sendAdminOrderNotification, sendCustomerOrderConfirmation } from "@/lib/email";
 import { calculateShippingFee } from "@/lib/shipping";
@@ -55,16 +54,22 @@ export async function POST(req: Request) {
     }
 
     // Verify Razorpay signature if payment was made
-    if (paymentType === "Razorpay") {
-      if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
-        return Response.json(
-          { error: "Missing payment verification details" },
-          { status: 400 },
-        );
-      }
+      if (paymentType === "Razorpay") {
+        if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+          return Response.json(
+            { error: "Missing payment verification details" },
+            { status: 400 },
+          );
+        }
 
-      if (isRazorpayConfigured()) {
         const secret = process.env.RAZORPAY_KEY_SECRET || "";
+        if (!secret) {
+          return Response.json(
+            { error: "Payment gateway not configured" },
+            { status: 500 },
+          );
+        }
+
         const generatedSignature = crypto
           .createHmac("sha256", secret)
           .update(`${razorpayOrderId}|${razorpayPaymentId}`)
@@ -77,7 +82,6 @@ export async function POST(req: Request) {
           );
         }
       }
-    }
 
     if (!clientItems || !Array.isArray(clientItems) || clientItems.length === 0) {
       return Response.json({ error: "Cart is empty" }, { status: 400 });

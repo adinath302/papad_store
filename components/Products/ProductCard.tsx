@@ -67,50 +67,51 @@ const ProductCard = memo(function ProductCard({ product, wishlisted: initialWish
 
   return (
     <div className="group flex flex-col bg-white rounded-2xl border border-stone-200/80 overflow-hidden shadow-sm hover:shadow-md transition-shadow h-full">
-        <div className="relative aspect-square bg-stone-100 block overflow-hidden">
-          <Link href={`/products/${product.id}`} className="absolute inset-0">
-            <Image
-              src={
-                product.image ||
-                getImage("product_fallback")
-              }
-              alt={product.name}
-              fill
-              loading="lazy"
-              sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
-              className="object-cover transition-transform duration-500 group-hover:scale-105"
-            />
-            {outOfStock && (
-              <span className="absolute inset-0 bg-stone-900/50 flex items-center justify-center">
-                <span className="bg-white text-stone-900 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
-                  Out of Stock
-                </span>
+      <div className="relative aspect-square bg-stone-100 overflow-hidden">
+        <Link href={`/products/${product.id}`} className="absolute inset-0">
+          <Image
+            src={
+              product.image ||
+              getImage("product_fallback")
+            }
+            alt={product.name}
+            fill
+            loading="lazy"
+            sizes="(max-width: 768px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+          {outOfStock && (
+            <span className="absolute inset-0 bg-stone-900/50 flex items-center justify-center">
+              <span className="bg-white text-stone-900 text-[10px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full">
+                Out of Stock
               </span>
-            )}
-          </Link>
-          <button
-            onClick={async (e) => {
-              e.preventDefault();
-              if (isLoggedIn()) {
-                const res = await fetchCsrf("/api/wishlist", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ productId: product.id }),
-                });
-                const data = await res.json();
-                setWishlisted(data.added);
-                toast(data.added ? "Added to wishlist" : "Removed from wishlist", "success");
-              } else {
-                const added = toggleGuestWishlist(product.id);
-                setWishlisted(added);
-                toast(added ? "Added to wishlist" : "Removed from wishlist", "success");
-              }
-            }}
-            className="absolute top-2.5 right-2.5 z-10 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm"
-          >
-            <Heart size={15} className={wishlisted ? "fill-red-500 text-red-500" : "text-stone-500"} />
-          </button>
-        </div>
+            </span>
+          )}
+        </Link>
+        <button
+          onClick={async (e) => {
+            e.stopPropagation();
+            if (isLoggedIn()) {
+              const res = await fetchCsrf("/api/wishlist", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ productId: product.id }),
+              });
+              const data = await res.json();
+              setWishlisted(data.added);
+              toast(data.added ? "Added to wishlist" : "Removed from wishlist", "success");
+            } else {
+              const added = toggleGuestWishlist(product.id);
+              setWishlisted(added);
+              toast(added ? "Added to wishlist" : "Removed from wishlist", "success");
+            }
+          }}
+          className="absolute top-2.5 right-2.5 z-10 w-8 h-8 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all shadow-sm"
+          aria-label={wishlisted ? "Remove from wishlist" : "Add to wishlist"}
+        >
+          <Heart size={15} className={wishlisted ? "fill-red-500 text-red-500" : "text-stone-500"} />
+        </button>
+      </div>
 
       <div className="flex flex-col flex-1 p-4 space-y-3">
         <div>

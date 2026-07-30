@@ -127,12 +127,16 @@ export async function PATCH(req: Request) {
     if (courierName !== undefined) data.courierName = courierName;
     if (trackingId !== undefined) data.trackingId = trackingId;
 
-    const prevOrder = await prisma.order.findUnique({
-      where: { id },
-      include: { orderitem: true },
-    });
-
     const order = await prisma.$transaction(async (tx) => {
+      const prev = await tx.order.findUnique({
+        where: { id },
+        include: { orderitem: true },
+      });
+
+      if (!prev) {
+        throw new Error("Order not found");
+      }
+
       const updated = await tx.order.update({
         where: { id },
         data,
@@ -143,8 +147,8 @@ export async function PATCH(req: Request) {
       });
 
       // Restore stock when cancelling
-      if (status === "CANCELLED" && prevOrder && prevOrder.status !== "CANCELLED") {
-        for (const item of prevOrder.orderitem) {
+      if (status === "CANCELLED" && prev.status !== "CANCELLED") {
+        for (const item of prev.orderitem) {
           await tx.product.update({
             where: { id: item.productId },
             data: { stock: { increment: item.quantity } },
@@ -157,7 +161,8 @@ export async function PATCH(req: Request) {
 
     if (order.user?.email) {
       // Send status update email for any status change
-      if (status && prevOrder && prevOrder.status !== status) {
+      if (status && order.status !== status) {
+        // use order.status which now has the updated value
         const emailData = {
           orderId: order.id,
           fullName: order.fullName,

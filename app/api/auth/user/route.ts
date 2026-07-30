@@ -5,12 +5,22 @@ import { validateCsrfToken } from "@/lib/csrf";
 
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("userId");
+    const cookieStore = await cookies();
+    const currentUserId = cookieStore.get("userId")?.value;
 
-    if (!userId) {
-      return NextResponse.json({ error: "Missing userId" }, { status: 400 });
+    if (!currentUserId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const { searchParams } = new URL(req.url);
+    const targetUserId = searchParams.get("userId");
+
+    // Only allow viewing your own user info
+    if (targetUserId && targetUserId !== currentUserId) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const userId = targetUserId || currentUserId;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

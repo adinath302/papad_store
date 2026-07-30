@@ -86,6 +86,7 @@ export default function OrderDetailPage() {
       .then((data) => setOrder(data))
       .catch(() => toast("Failed to load order", "error"))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const handleCancel = async () => {

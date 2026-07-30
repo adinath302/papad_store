@@ -43,16 +43,16 @@ export default async function Home() {
     });
     ordersDelivered = deliveredOrders.length;
 
-    const uniqueUserIds = new Set(deliveredOrders.map((o) => o.userId).filter(Boolean));
+    const uniqueUserIds = new Set(deliveredOrders.map((o: { id: string; userId: string | null }) => o.userId).filter(Boolean));
     happyCustomers = uniqueUserIds.size;
 
-    const deliveredOrderIds = deliveredOrders.map((o) => o.id);
+    const deliveredOrderIds = deliveredOrders.map((o: { id: string; userId: string | null }) => o.id);
     if (deliveredOrderIds.length > 0) {
       const items = await prisma.orderitem.findMany({
         where: { orderId: { in: deliveredOrderIds } },
         select: { quantity: true },
       });
-      productsMade = items.reduce((sum, item) => sum + item.quantity, 0);
+      productsMade = items.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0);
     }
   } catch {
     // Database unavailable during build

@@ -1,14 +1,16 @@
 import Razorpay from "razorpay";
 
-export const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || "",
-  key_secret: process.env.RAZORPAY_KEY_SECRET || "",
-});
+const keyId = process.env.RAZORPAY_KEY_ID || "";
+const keySecret = process.env.RAZORPAY_KEY_SECRET || "";
+
+export const razorpay = keyId && keySecret
+  ? new Razorpay({ key_id: keyId, key_secret: keySecret })
+  : null;
 
 export function getRazorpayKeyId(): string {
-  return process.env.RAZORPAY_KEY_ID || "";
+  return keyId;
 }
 
 export function isRazorpayConfigured(): boolean {
-  return !!(process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET);
+  return !!(keyId && keySecret);
 }

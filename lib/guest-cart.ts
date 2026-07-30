@@ -45,10 +45,11 @@ export function addToGuestCart(item: GuestCartItem) {
 
 export function removeFromGuestCart(productId: string, variantId?: string) {
   setGuestCart(
-    getGuestCart().filter(
-      (i) =>
-        !(i.productId === productId && i.variantId === (variantId ?? i.variantId)),
-    ),
+    getGuestCart().filter((i) => {
+      if (i.productId !== productId) return true;
+      if (variantId === undefined) return i.variantId !== undefined;
+      return i.variantId !== variantId;
+    }),
   );
 }
 
@@ -58,9 +59,11 @@ export function updateGuestCartQuantity(
   variantId?: string,
 ) {
   const cart = getGuestCart();
-  const item = cart.find(
-    (i) => i.productId === productId && i.variantId === (variantId ?? i.variantId),
-  );
+  const item = cart.find((i) => {
+    if (i.productId !== productId) return false;
+    if (variantId === undefined) return i.variantId === undefined;
+    return i.variantId === variantId;
+  });
   if (item) {
     if (quantity <= 0) {
       removeFromGuestCart(productId, variantId);
@@ -79,5 +82,6 @@ export function clearGuestCart() {
 
 export function isLoggedIn(): boolean {
   if (typeof window === "undefined") return false;
-  return document.cookie.includes("isLoggedIn=true");
+  const match = document.cookie.match(/(?:^|;\s*)isLoggedIn=([^;]*)/);
+  return match !== null && match[1] === "true";
 }

@@ -37,6 +37,8 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: `Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}` }, { status: 400 });
     }
 
+    let updatedCount = 0;
+
     await prisma.$transaction(async (tx) => {
       for (const orderId of orderIds) {
         const prevOrder = await tx.order.findUnique({
@@ -44,6 +46,7 @@ export async function PATCH(req: Request) {
           include: { orderitem: true },
         });
         if (!prevOrder) continue;
+        updatedCount++;
 
         await tx.order.update({
           where: { id: orderId },
@@ -76,7 +79,7 @@ export async function PATCH(req: Request) {
       await checkLowStock(productId);
     }
 
-    return NextResponse.json({ count: orderIds.length });
+    return NextResponse.json({ count: updatedCount });
   } catch (error: any) {
     return NextResponse.json(
       { error: error?.message || "Failed to update orders" },

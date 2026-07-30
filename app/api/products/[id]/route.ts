@@ -36,29 +36,31 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
 
-    await prisma.productvariant.deleteMany({ where: { productId: id } });
+    const product = await prisma.$transaction(async (tx) => {
+      await tx.productvariant.deleteMany({ where: { productId: id } });
 
-    const product = await prisma.product.update({
-      where: { id },
-      data: {
-        name: body.name,
-        nameMarathi: body.nameMarathi || null,
-        description: body.description || null,
-        stock: body.stock !== undefined && body.stock !== null ? Number(body.stock) : null,
-        weight: body.weight ? Number(body.weight) : 200,
-        image: body.image || null,
-        thumbnail: body.thumbnail || body.image || null,
-        productType: body.productType || "weight",
-        metaTitle: body.metaTitle || null,
-        metaDescription: body.metaDescription || null,
-        productvariant: {
-          create: (body.variants || []).map((v: any) => ({
-            label: v.label,
-            price: Number(v.price),
-          })),
+      return tx.product.update({
+        where: { id },
+        data: {
+          name: body.name,
+          nameMarathi: body.nameMarathi || null,
+          description: body.description || null,
+          stock: body.stock !== undefined ? Number(body.stock) : undefined,
+          weight: body.weight ? Number(body.weight) : 200,
+          image: body.image || null,
+          thumbnail: body.thumbnail || body.image || null,
+          productType: body.productType || "weight",
+          metaTitle: body.metaTitle || null,
+          metaDescription: body.metaDescription || null,
+          productvariant: {
+            create: (body.variants || []).map((v: any) => ({
+              label: v.label,
+              price: Number(v.price),
+            })),
+          },
         },
-      },
-      include: { productvariant: true },
+        include: { productvariant: true },
+      });
     });
 
     return NextResponse.json(product);
@@ -91,15 +93,16 @@ export async function DELETE(
 
     const { id } = await params;
 
-    await prisma.wishlistitem.deleteMany({ where: { productId: id } });
-    await prisma.review.deleteMany({ where: { productId: id } });
-    await prisma.recentlyviewed.deleteMany({ where: { productId: id } });
-    await prisma.stocknotification.deleteMany({ where: { productId: id } });
-    await prisma.productimage.deleteMany({ where: { productId: id } });
-    await prisma.productvariant.deleteMany({ where: { productId: id } });
-    await prisma.cartitem.deleteMany({ where: { productId: id } });
-    await prisma.orderitem.deleteMany({ where: { productId: id } });
-    await prisma.product.delete({ where: { id } });
+    await prisma.$transaction(async (tx) => {
+      await tx.wishlistitem.deleteMany({ where: { productId: id } });
+      await tx.review.deleteMany({ where: { productId: id } });
+      await tx.recentlyviewed.deleteMany({ where: { productId: id } });
+      await tx.stocknotification.deleteMany({ where: { productId: id } });
+      await tx.productimage.deleteMany({ where: { productId: id } });
+      await tx.productvariant.deleteMany({ where: { productId: id } });
+      await tx.cartitem.deleteMany({ where: { productId: id } });
+      await tx.product.delete({ where: { id } });
+    });
 
     return NextResponse.json({ success: true });
   } catch (error: any) {

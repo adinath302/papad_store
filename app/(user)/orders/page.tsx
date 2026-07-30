@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Package, ArrowLeft, Truck } from "lucide-react";
 import { SkeletonOrders } from "@/components/Skeleton/Skeleton";
 
@@ -24,7 +23,6 @@ type Order = {
 };
 
 export default function OrdersPage() {
-  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -137,15 +135,13 @@ export default function OrdersPage() {
                   <span>{order.paymentType}</span>
                   <div className="flex items-center gap-3">
                     {order.trackingId && order.trackingId !== "PENDING" && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/track?order=${order.id}`);
-                        }}
+                      <Link
+                        href={`/track?order=${order.id}`}
+                        onClick={(e) => e.stopPropagation()}
                         className="inline-flex items-center gap-1.5 text-emerald-700 hover:text-emerald-600 font-bold transition-colors"
                       >
                         <Truck size={14} /> Track
-                      </button>
+                      </Link>
                     )}
                     <span>{order.fullName}</span>
                   </div>

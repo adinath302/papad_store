@@ -100,7 +100,7 @@ export async function POST(req: Request) {
 
     const receipt = `rcpt_${Date.now()}`;
 
-    const razorpayOrder = await razorpay.orders.create({
+    const razorpayOrder = await razorpay!.orders.create({
       amount: totalAmount * 100,
       currency: "INR",
       receipt,

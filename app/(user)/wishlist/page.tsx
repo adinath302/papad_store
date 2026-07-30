@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Heart, ShoppingBag, Trash2, ArrowLeft, Loader2 } from "lucide-react";
 import { useSiteImages } from "@/lib/useSiteImages";
@@ -23,11 +23,7 @@ export default function WishlistPage() {
   const [items, setItems] = useState<WishlistProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchWishlist();
-  }, []);
-
-  const fetchWishlist = async () => {
+  const fetchWishlist = useCallback(async () => {
     setLoading(true);
     try {
       if (isLoggedIn()) {
@@ -50,7 +46,11 @@ export default function WishlistPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchWishlist();
+  }, [fetchWishlist]);
 
   const removeItem = async (productId: string) => {
     if (isLoggedIn()) {

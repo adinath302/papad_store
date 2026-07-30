@@ -2,9 +2,15 @@ import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { validateCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return Response.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";

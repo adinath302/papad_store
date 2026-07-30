@@ -47,26 +47,25 @@ export async function POST(req: Request) {
       );
     }
 
-    // For online payments, attempt refund FIRST — if it fails, don't cancel the order
-    let razorpayRefundId: string | null = null;
-
-    if (order.razorpayPaymentId && order.paymentType !== "COD") {
-      try {
-        const refund = await razorpay.payments.refund(order.razorpayPaymentId, {
-          amount: order.totalAmount,
-        });
-        razorpayRefundId = refund.id;
-      } catch (refundError: any) {
-        console.error("Refund failed:", refundError);
-        return NextResponse.json(
-          { error: "Refund failed. Please contact support." },
-          { status: 500 },
-        );
-      }
-    }
-
-    // DB transaction: update order status + restore stock + create refund record
+    // DB transaction: initiate refund + update order status + restore stock + create refund record
     const updatedOrder = await prisma.$transaction(async (tx) => {
+      // For online payments, attempt refund inside transaction
+      let refundId: string | null = null;
+      if (order.razorpayPaymentId && order.paymentType !== "COD") {
+        if (!razorpay) {
+          throw new Error("Payment gateway not configured. Cannot process refund.");
+        }
+        try {
+          const refund = await razorpay.payments.refund(order.razorpayPaymentId, {
+            amount: order.totalAmount,
+          });
+          refundId = refund.id;
+        } catch (refundError: any) {
+          console.error("Refund failed:", refundError);
+          throw new Error("Refund failed. Please contact support.");
+        }
+      }
+
       const updated = await tx.order.update({
         where: { id: orderId },
         data: { status: "CANCELLED" },
@@ -84,12 +83,12 @@ export async function POST(req: Request) {
         });
       }
 
-      if (razorpayRefundId) {
+      if (refundId) {
         await tx.refund.create({
           data: {
             orderId: order.id,
             amount: order.totalAmount,
-            razorpayRefundId,
+            razorpayRefundId: refundId,
             status: "PROCESSED",
           },
         });

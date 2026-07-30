@@ -85,7 +85,11 @@ export default function CheckoutPage() {
   const [fieldErrors, setFieldErrors] = useState<Set<string>>(new Set());
 
   const updateField = (field: string, value: string | boolean) => {
-    setFieldErrors((prev) => { prev.delete(field); return new Set(prev); });
+    setFieldErrors((prev) => {
+      const next = new Set(prev);
+      next.delete(field);
+      return next;
+    });
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -208,12 +212,17 @@ export default function CheckoutPage() {
   };
 
   const handleRazorpayPayment = useCallback(async () => {
-    const body: any = { state: form.state, items: items.map((item) => ({
+    const currentForm = form;
+    const currentItems = items;
+    const currentCoupon = appliedCoupon;
+    const currentIsGuest = isGuest;
+
+    const body: any = { state: currentForm.state, items: currentItems.map((item) => ({
       productId: item.product.id,
       variantId: item.variantId || null,
       quantity: item.quantity,
     })) };
-    if (appliedCoupon) body.couponCode = appliedCoupon.code;
+    if (currentCoupon) body.couponCode = currentCoupon.code;
 
     const initRes = await fetchCsrf("/api/payment/init", {
       method: "POST",
@@ -228,81 +237,76 @@ export default function CheckoutPage() {
       return;
     }
 
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => {
-      const options = {
-        key: initData.key,
-        amount: initData.amount,
-        currency: initData.currency,
-        name: "The Papad Co.",
-        description: `Order for ${form.fullName}`,
-        order_id: initData.razorpayOrderId,
-          handler: async function (response: any) {
-            const checkoutBody: any = {
-              ...form,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            };
-            if (appliedCoupon) {
-              checkoutBody.couponCode = appliedCoupon.code;
-            }
-      checkoutBody.items = items.map((item) => ({
-        productId: item.product.id,
-        variantId: item.variantId || null,
-        quantity: item.quantity,
-      }));
+    const options = {
+      key: initData.key,
+      amount: initData.amount,
+      currency: initData.currency,
+      name: "The Papad Co.",
+      description: `Order for ${currentForm.fullName}`,
+      order_id: initData.razorpayOrderId,
+      handler: async function (response: any) {
+        const checkoutBody: any = {
+          ...currentForm,
+          razorpayOrderId: response.razorpay_order_id,
+          razorpayPaymentId: response.razorpay_payment_id,
+          razorpaySignature: response.razorpay_signature,
+        };
+        if (currentCoupon) {
+          checkoutBody.couponCode = currentCoupon.code;
+        }
+        checkoutBody.items = currentItems.map((item) => ({
+          productId: item.product.id,
+          variantId: item.variantId || null,
+          quantity: item.quantity,
+        }));
 
-      const checkoutRes = await fetchCsrf("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(checkoutBody),
-      });
-
-      const checkoutData = await checkoutRes.json();
-
-      if (checkoutData.error) {
-        toast(checkoutData.error, "error");
-        setPlacing(false);
-        return;
-      }
-
-      if (form.saveAddress && !isGuest) {
-        await fetchCsrf("/api/address", {
+        const checkoutRes = await fetchCsrf("/api/checkout", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(form),
+          body: JSON.stringify(checkoutBody),
         });
-      }
 
-      clearGuestCart();
-      router.push(`/order-confirmation?id=${checkoutData.id}`);
-    },
-    modal: {
-      ondismiss: function () {
-        setPlacing(false);
+        const checkoutData = await checkoutRes.json();
+
+        if (checkoutData.error) {
+          toast(checkoutData.error, "error");
+          setPlacing(false);
+          return;
+        }
+
+        if (currentForm.saveAddress && !currentIsGuest) {
+          await fetchCsrf("/api/address", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(currentForm),
+          });
+        }
+
+        clearGuestCart();
+        router.push(`/order-confirmation?id=${checkoutData.id}`);
       },
-    },
-    prefill: {
-      name: form.fullName,
-      email: "",
-      contact: form.phone,
-    },
-    theme: {
-      color: "#065f46",
-    },
-  };
+      modal: {
+        ondismiss: function () {
+          setPlacing(false);
+        },
+      },
+      prefill: {
+        name: currentForm.fullName,
+        email: "",
+        contact: currentForm.phone,
+      },
+      theme: {
+        color: "#065f46",
+      },
+    };
 
-  const rzp = new (window as any).Razorpay(options);
-  rzp.on("payment.failed", function () {
-    toast("Payment failed. Please try again.", "error");
-    setPlacing(false);
-  });
-  rzp.open();
-};
-document.body.appendChild(script);
-}, [form, router, items, appliedCoupon, isGuest]);
+    const rzp = new (window as any).Razorpay(options);
+    rzp.on("payment.failed", function () {
+      toast("Payment failed. Please try again.", "error");
+      setPlacing(false);
+    });
+    rzp.open();
+  }, [form, items, appliedCoupon, isGuest, router, toast]);
 
   const handleSubmit = async () => {
     const errors = new Set<string>();

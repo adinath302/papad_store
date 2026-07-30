@@ -78,7 +78,15 @@ export default function AdminPage() {
   useEffect(() => {
     const init = async () => {
       const meRes = await fetch("/api/auth/me");
+      if (!meRes.ok) {
+        window.location.href = "/login?redirect=/admin";
+        return;
+      }
       const meData = await meRes.json();
+      if (!meData.user?.isAdmin) {
+        window.location.href = "/";
+        return;
+      }
       const isOwnerUser = meData.user?.isOwner;
       setIsOwner(isOwnerUser);
       setOwnerEmail(meData.user?.ownerEmail || "");
@@ -101,7 +109,7 @@ export default function AdminPage() {
   if (isOwner || hasPerm("orders", "view")) baseTabs.push({ id: "orders", label: "Orders", icon: ShoppingBag });
 
   if (isOwner) baseTabs.push({ id: "activity", label: "Activity", icon: History });
-  baseTabs.push({ id: "site-images" as Tab, label: "Site Images", icon: ImageIcon });
+  if (isOwner) baseTabs.push({ id: "site-images" as Tab, label: "Site Images", icon: ImageIcon });
   const tabs = isOwner ? [...baseTabs, { id: "users" as Tab, label: "Users", icon: Shield }, { id: "coupons" as Tab, label: "Coupons", icon: Tag }] : baseTabs;
 
   return (
@@ -164,7 +172,7 @@ export default function AdminPage() {
             {activeTab === "orders" && <OrdersTab orders={orders} isOwner={isOwner} hasPerm={hasPerm} onOrderChange={fetchOrders} />}
             {activeTab === "users" && isOwner && <UsersTab admins={admins} isOwner={isOwner} ownerEmail={ownerEmail} toast={toast} onAdminChange={fetchAdmins} />}
             {activeTab === "coupons" && isOwner && <CouponsTab isOwner={isOwner} toast={toast} />}
-            {activeTab === "site-images" && <SiteImagesTab toast={toast} />}
+            {activeTab === "site-images" && isOwner && <SiteImagesTab toast={toast} />}
             {activeTab === "activity" && isOwner && <ActivityLogTab />}
           </>
         )}

@@ -1,6 +1,19 @@
 const rateMap = new Map<string, { count: number; resetAt: number }>();
 const isUpstashConfigured = !!(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 
+// Periodic cleanup of expired entries to prevent memory leak
+const CLEANUP_INTERVAL = 5 * 60 * 1000; // every 5 minutes
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of rateMap) {
+      if (now > entry.resetAt) {
+        rateMap.delete(key);
+      }
+    }
+  }, CLEANUP_INTERVAL);
+}
+
 let upstashClient: any = null;
 const ratelimitInstances = new Map<string, any>();
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Package, Truck, MapPin, ExternalLink, Loader2, CreditCard, ArrowLeft } from "lucide-react";
+import { Search, Package, Truck, ExternalLink, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 type TrackedOrder = {

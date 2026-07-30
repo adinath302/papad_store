@@ -2,10 +2,15 @@ import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { setCsrfToken } from "@/lib/csrf";
+import { setCsrfToken, validateCsrfToken } from "@/lib/csrf";
 
 export async function POST(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return Response.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const ip =
       req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
       "unknown";
@@ -19,6 +24,34 @@ export async function POST(req: Request) {
     }
 
     const { name, email, password } = await req.json();
+
+    if (!name || !email || !password) {
+      return Response.json(
+        { error: "Name, email, and password are required" },
+        { status: 400 },
+      );
+    }
+
+    if (typeof name !== "string" || name.trim().length < 1 || name.length > 100) {
+      return Response.json(
+        { error: "Name must be between 1 and 100 characters" },
+        { status: 400 },
+      );
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return Response.json(
+        { error: "Invalid email format" },
+        { status: 400 },
+      );
+    }
+
+    if (password.length < 6) {
+      return Response.json(
+        { error: "Password must be at least 6 characters" },
+        { status: 400 },
+      );
+    }
 
     const existing = await prisma.user.findUnique({
       where: { email },

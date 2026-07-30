@@ -24,7 +24,7 @@ export function CartCountProvider({ children }: { children: ReactNode }) {
       const items = getGuestCart();
       setCount(items.reduce((sum, i) => sum + i.quantity, 0));
     } else {
-      fetch("/api/cart")
+      fetch("/api/cart", { credentials: "include" })
         .then((r) => {
           if (!r.ok) return null;
           return r.json();

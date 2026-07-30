@@ -119,7 +119,7 @@ const CartItem = memo(function CartItem({
       <div className="w-24 h-28 sm:w-28 sm:h-32 bg-zinc-100 rounded-2xl overflow-hidden shrink-0">
         <Image
           src={item.product?.image || "/papad-placeholder.jpg"}
-          alt={item.product?.name ?? "Cart item"}
+          alt={item.product?.name || "Cart item"}
           width={112}
           height={128}
           className="w-full h-full object-cover"
