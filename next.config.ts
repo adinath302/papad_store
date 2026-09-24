@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
   experimental: {
     optimizePackageImports: ["lucide-react", "motion"],
   },
+  allowedDevOrigins: [".monkeycode-ai.live"],
   async headers() {
     return [
       {

@@ -2,54 +2,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Star, Quote } from "lucide-react";
+import type { FeaturedReview } from "@/lib/featured-reviews";
 
-type Review = {
-  id: string;
-  name: string;
-  rating: number;
-  comment: string;
-  createdAt: string | null;
-  product: { name: string };
-};
-
-const fallbackReviews: Review[] = [
-  {
-    id: "fallback-0",
-    name: "Priya Sharma",
-    rating: 5,
-    comment:
-      "The moong papads are exactly like my grandmother used to make. Crispy, fresh, and perfectly spiced. Will definitely order again!",
-    createdAt: null,
-    product: { name: "" },
-  },
-  {
-    id: "fallback-1",
-    name: "Rajesh Kumar",
-    rating: 5,
-    comment:
-      "Excellent packaging — not a single papad was broken. Delivery was quick and the masala variant is our new family favorite.",
-    createdAt: null,
-    product: { name: "" },
-  },
-  {
-    id: "fallback-2",
-    name: "Ananya Patel",
-    rating: 5,
-    comment:
-      "Authentic taste that takes me back to Rajasthan. The garlic papads are incredible with evening chai. Highly recommended!",
-    createdAt: null,
-    product: { name: "" },
-  },
-  {
-    id: "fallback-3",
-    name: "Suresh Menon",
-    rating: 4,
-    comment:
-      "Ordered the festive combo for Diwali — guests loved it. Quality is consistent and prices are very fair for handmade products.",
-    createdAt: null,
-    product: { name: "" },
-  },
-];
+type Review = FeaturedReview;
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "";
@@ -60,35 +15,30 @@ function formatDate(dateStr: string | null) {
   });
 }
 
-export default function ReviewsSection() {
-  const [reviews, setReviews] = useState<Review[]>(fallbackReviews);
+export default function ReviewsSection({
+  reviews = [],
+}: {
+  reviews?: Review[];
+}) {
   const [index, setIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const count = reviews.length;
 
   useEffect(() => {
-    fetch("/api/reviews/featured")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.reviews && data.reviews.length > 0) {
-          setReviews(data.reviews);
-        }
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (isPaused) {
+    if (!count || isPaused) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       return;
     }
     intervalRef.current = setInterval(() => {
-      setIndex((i) => (i + 1) % reviews.length);
+      setIndex((i) => (i + 1) % count);
     }, 5000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [isPaused, reviews.length]);
+  }, [isPaused, count]);
+
+  if (!count) return null;
 
   const prev = () =>
     setIndex((i) => (i === 0 ? reviews.length - 1 : i - 1));

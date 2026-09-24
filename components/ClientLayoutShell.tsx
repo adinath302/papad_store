@@ -2,20 +2,10 @@
 
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import dynamic from "next/dynamic";
 import { CartCountProvider } from "@/lib/cart-context";
-
-const Navbar = dynamic(() => import("@/components/Navbar/Navbar"), {
-  loading: () => (
-    <div className="h-[80px] w-full animate-pulse bg-stone-100" />
-  ),
-});
-
-const Footer = dynamic(() => import("@/components/Footer/Footer"));
-
-const CartSidebar = dynamic(
-  () => import("@/components/Cart/CartSidebar"),
-);
+import Navbar from "@/components/Navbar/Navbar";
+import Footer from "@/components/Footer/Footer";
+import CartSidebar from "@/components/Cart/CartSidebar";
 
 export default function ClientLayoutShell({
   children,

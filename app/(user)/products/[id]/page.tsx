@@ -3,6 +3,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import ProductDetails from "@/components/Products/ProductDetails";
 
+export const revalidate = 60;
+
 export async function generateMetadata({
   params,
 }: {
