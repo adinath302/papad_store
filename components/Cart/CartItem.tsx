@@ -1,4 +1,4 @@
-"use client";
+"use client"; // This is a client component
 
 import Image from "next/image";
 import { Trash2, Plus, Minus, Loader2, Clock } from "lucide-react";
@@ -39,9 +39,7 @@ const CartItem = memo(function CartItem({
 
   const variant = useMemo(() => {
     if (item.variantId) {
-      return item.product?.productvariant?.find(
-        (v) => v.id === item.variantId,
-      );
+      return item.product?.productvariant?.find((v) => v.id === item.variantId);
     }
     return item.product?.productvariant?.[0];
   }, [item.variantId, item.product?.productvariant]);
@@ -53,14 +51,21 @@ const CartItem = memo(function CartItem({
     if (isGuest) {
       const guestCart = getGuestCart();
       const guestItem = guestCart.find(
-        (i) => i.productId === item.product.id && i.variantId === (item.variantId ?? i.variantId),
+        (i) =>
+          i.productId === item.product.id &&
+          i.variantId === (item.variantId ?? i.variantId),
       );
-      if (!guestItem) { setPendingQty(false); return; }
+      if (!guestItem) {
+        setPendingQty(false);
+        return;
+      }
       const newQty =
-        action === "increase"
-          ? guestItem.quantity + 1
-          : guestItem.quantity - 1;
-      updateGuestCartQuantity(item.product.id, newQty, item.variantId ?? undefined);
+        action === "increase" ? guestItem.quantity + 1 : guestItem.quantity - 1;
+      updateGuestCartQuantity(
+        item.product.id,
+        newQty,
+        item.variantId ?? undefined,
+      );
       onUpdate?.();
       setPendingQty(false);
       return;
@@ -68,7 +73,10 @@ const CartItem = memo(function CartItem({
 
     const prevQty = item.quantity;
     const newQty = action === "increase" ? prevQty + 1 : prevQty - 1;
-    if (newQty < 1) { setPendingQty(false); return; }
+    if (newQty < 1) {
+      setPendingQty(false);
+      return;
+    }
 
     try {
       const res = await fetchCsrf("/api/cart", {
@@ -138,7 +146,9 @@ const CartItem = memo(function CartItem({
 
         <div className="flex items-center gap-1 mt-1 text-amber-700">
           <Clock size={9} />
-          <span className="text-[10px] font-semibold">Made Fresh — Ships in 3-7 days</span>
+          <span className="text-[10px] font-semibold">
+            Made Fresh — Ships in 3-7 days
+          </span>
         </div>
 
         <div className="flex items-center gap-2 mt-2">
@@ -148,9 +158,12 @@ const CartItem = memo(function CartItem({
             aria-label="Decrease quantity"
             className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-40"
           >
-            {pendingQty ? <Loader2 size={16} className="animate-spin" /> : <Minus size={16} />}
+            {pendingQty ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Minus size={16} />
+            )}
           </button>
-
           <span className="text-sm sm:text-base font-bold text-zinc-900 w-8 text-center">
             {item.quantity}
           </span>
@@ -161,7 +174,11 @@ const CartItem = memo(function CartItem({
             aria-label="Increase quantity"
             className="p-2 hover:bg-zinc-100 rounded-lg transition-colors disabled:opacity-40"
           >
-            {pendingQty ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+            {pendingQty ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Plus size={16} />
+            )}
           </button>
         </div>
 
@@ -176,7 +193,11 @@ const CartItem = memo(function CartItem({
         aria-label="Remove item"
         className="p-2 text-zinc-400 hover:text-red-500 transition-colors rounded-lg disabled:opacity-40"
       >
-        {pendingDelete ? <Loader2 size={18} className="animate-spin" /> : <Trash2 size={18} />}
+        {pendingDelete ? (
+          <Loader2 size={18} className="animate-spin" />
+        ) : (
+          <Trash2 size={18} />
+        )}
       </button>
     </div>
   );

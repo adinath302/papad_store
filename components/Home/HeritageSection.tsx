@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { Truck, Award, Leaf, ShieldCheck, Sun, HandHeart, Package } from "lucide-react";
 import Image from "next/image";
 import { useSiteImages } from "@/lib/useSiteImages";

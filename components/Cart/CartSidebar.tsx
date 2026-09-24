@@ -24,7 +24,7 @@ export default function CartSidebar({
 }: {
   isOpen: boolean;
   onClose: () => void;
-}) {
+}) { 
   const router = useRouter();
   const [items, setItems] = useState<CartItemData[]>([]);
   const [loading, setLoading] = useState(true);
