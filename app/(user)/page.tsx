@@ -9,19 +9,22 @@ import TrustMetrics from "@/components/Home/TrustMetrics";
 import BestsellerReviews from "@/components/Home/BestsellerReviews";
 import ProductCard from "@/components/Products/ProductCard";
 import Link from "next/link";
+import { getFeaturedReviews } from "@/lib/featured-reviews";
+
+export const revalidate = 60;
 
 const HeritageSection = dynamic(
   () => import("@/components/Home/HeritageSection"),
-  { loading: () => <div className="h-[600px] bg-white" /> },
+  { loading: () => <div className="h-[200px] bg-white" /> },
 );
 
 const ReviewsSection = dynamic(
   () => import("@/components/Home/ReviewsSection"),
-  { loading: () => <div className="h-[400px] bg-white" /> },
+  { loading: () => <div className="h-[280px] bg-white" /> },
 );
 
 const FAQSection = dynamic(() => import("@/components/Home/FAQSection"), {
-  loading: () => <div className="h-[500px] bg-[#faf8f5]" />,
+  loading: () => <div className="h-[320px] bg-[#faf8f5]" />,
 });
 
 export default async function Home() {
@@ -29,57 +32,53 @@ export default async function Home() {
   let ordersDelivered = 0;
   let happyCustomers = 0;
   let productsMade = 0;
+  let featuredReviews: Awaited<ReturnType<typeof getFeaturedReviews>> = [];
 
   try {
-    products = await prisma.product.findMany({ include: { productvariant: true } });
-  } catch {
-    // Database unavailable during build
-  }
+    const [productRows, deliveredAgg, uniqueCustomers, unitsSold, reviews] =
+      await Promise.all([
+        prisma.product.findMany({
+          include: { productvariant: true },
+          take: 8,
+        }),
+        prisma.order.count({ where: { status: "DELIVERED" } }),
+        prisma.order.groupBy({
+          by: ["userId"],
+          where: { status: "DELIVERED", userId: { not: null } },
+          _count: { _all: true },
+        }),
+        prisma.orderitem.aggregate({
+          _sum: { quantity: true },
+          where: { order: { status: "DELIVERED" } },
+        }),
+        getFeaturedReviews(),
+      ]);
 
-  try {
-    const deliveredOrders = await prisma.order.findMany({
-      where: { status: "DELIVERED" },
-      select: { id: true, userId: true },
-    });
-    ordersDelivered = deliveredOrders.length;
-
-    const uniqueUserIds = new Set(deliveredOrders.map((o) => o.userId).filter(Boolean));
-    happyCustomers = uniqueUserIds.size;
-
-    const deliveredOrderIds = deliveredOrders.map((o) => o.id);
-    if (deliveredOrderIds.length > 0) {
-      const items = await prisma.orderitem.findMany({
-        where: { orderId: { in: deliveredOrderIds } },
-        select: { quantity: true },
-      });
-      productsMade = items.reduce((sum, item) => sum + item.quantity, 0);
-    }
+    products = productRows;
+    ordersDelivered = deliveredAgg;
+    happyCustomers = uniqueCustomers.length;
+    productsMade = unitsSold._sum.quantity ?? 0;
+    featuredReviews = reviews;
   } catch {
     // Database unavailable during build
   }
 
   return (
     <main className="relative w-full bg-[#faf8f5] overflow-x-hidden">
-      {/* Promo announcement strip */}
       <div className="pt-[72px] md:pt-[80px]">
         <PromoBar />
       </div>
 
-      {/* Hero (fullscreen) */}
       <section className="w-full">
         <HeroCarousel />
       </section>
 
-      {/* Scrolling trust badges */}
       <TrustMarquee customerCount={happyCustomers > 0 ? happyCustomers : undefined} />
 
-      {/* Category shortcuts */}
       <CategoryGrid />
 
-      {/* Heritage & story */}
       <HeritageSection />
 
-      {/* Bestsellers from DB */}
       <section className="relative z-10 bg-white py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4 md:px-8">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 md:mb-14 gap-4">
@@ -116,24 +115,20 @@ export default async function Home() {
             </div>
           )}
 
-          <BestsellerReviews productIds={products.map((p) => p.id)} />
+          <BestsellerReviews reviews={featuredReviews.slice(0, 3)} />
         </div>
       </section>
 
-      {/* Trust Metrics */}
       <TrustMetrics
         ordersDelivered={ordersDelivered}
         happyCustomers={happyCustomers}
         productsMade={productsMade}
       />
 
-      {/* Combos */}
       <CombosSection />
 
-      {/* Reviews */}
-      <ReviewsSection />
+      <ReviewsSection reviews={featuredReviews} />
 
-      {/* FAQ */}
       <FAQSection />
     </main>
   );

@@ -1,48 +1,12 @@
-"use client";
-
-import { useState, useEffect } from "react";
 import { Star } from "lucide-react";
-
-interface Review {
-  id: string;
-  name: string;
-  rating: number;
-  comment: string;
-  createdAt: string;
-  product: { name: string };
-}
-
-interface BestsellerReviewsProps {
-  productIds: string[];
-}
+import type { FeaturedReview } from "@/lib/featured-reviews";
 
 export default function BestsellerReviews({
-  productIds,
-}: BestsellerReviewsProps) {
-  const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (productIds.length === 0) {
-      setLoading(false);
-      return;
-    }
-    const query = productIds.length > 0 ? `?productIds=${productIds.join(",")}` : "";
-    fetch(`/api/reviews/featured${query}`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.reviews) {
-          setReviews(data.reviews.slice(0, 3));
-        }
-      })
-      .catch(() => {
-        setReviews([]);
-      })
-      .finally(() => setLoading(false));
-  }, [productIds]);
-
-  if (loading) return null;
-  if (reviews.length === 0) return null;
+  reviews,
+}: {
+  reviews: FeaturedReview[];
+}) {
+  if (!reviews || reviews.length === 0) return null;
 
   return (
     <div className="mt-10 md:mt-14">

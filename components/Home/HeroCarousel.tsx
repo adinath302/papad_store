@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useSiteImages } from "@/lib/useSiteImages";
@@ -44,95 +44,65 @@ export default function HeroCarousel() {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
+      setIndex((prev) => (prev === SLIDE_DATA.length - 1 ? 0 : prev + 1));
     }, 5500);
 
     return () => clearInterval(timer);
   }, []);
 
+  const current = slides[index];
+
   return (
     <div className="relative h-[100vh] w-screen overflow-hidden">
-      <style>{`
-        .hero-char {
-          display: inline-block;
-          animation: heroFadeUp 0.7s ease-out both;
-          animation-delay: calc(var(--char-index) * 0.04s);
-        }
-        @keyframes heroFadeUp {
-          from { opacity: 0; transform: translateY(24px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={index}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.8 }}
-          className="relative h-full w-full"
+      {slides.map((slide, i) => (
+        <div
+          key={slide.id}
+          className={`absolute inset-0 transition-opacity duration-700 ${
+            i === index ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
         >
           <Image
-            src={slides[index].img}
-            alt={slides[index].title}
+            src={slide.img}
+            alt={slide.title}
             fill
-            priority
+            priority={i === 0}
             sizes="100vw"
             className="object-cover brightness-[0.55]"
           />
+        </div>
+      ))}
 
-          <div className="absolute inset-0 bg-gradient-to-r from-stone-950/80 via-stone-900/50 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-r from-stone-950/80 via-stone-900/50 to-transparent" />
 
-          <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 lg:px-20 max-w-2xl">
-            <p className="text-amber-400 text-[10px] md:text-xs font-bold tracking-[0.35em] uppercase mb-3">
-              {slides[index].subtitle}
-            </p>
+      <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-16 lg:px-20 max-w-2xl">
+        <p className="text-amber-400 text-[10px] md:text-xs font-bold tracking-[0.35em] uppercase mb-3">
+          {current.subtitle}
+        </p>
 
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif text-white tracking-tight leading-[1.05] mb-4">
-              {(() => {
-                let charIdx = 0;
-                return slides[index].title.split(" ").map((word, wi) => (
-                  <span key={wi} className="block overflow-hidden">
-                    {word.split("").map((char, i) => {
-                      const delay = charIdx++;
-                      return (
-                        <span
-                          key={i}
-                          className="hero-char inline-block"
-                          style={{ "--char-index": delay } as React.CSSProperties}
-                        >
-                          {char}
-                        </span>
-                      );
-                    })}
-                  </span>
-                ));
-              })()}
-            </h1>
+        <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-serif text-white tracking-tight leading-[1.05] mb-4">
+          {current.title}
+        </h1>
 
-            <p className="text-stone-200 text-sm md:text-base font-light leading-relaxed max-w-md mb-8">
-              {slides[index].desc}
-            </p>
+        <p className="text-stone-200 text-sm md:text-base font-light leading-relaxed max-w-md mb-8">
+          {current.desc}
+        </p>
 
-            <div className="flex flex-wrap items-center gap-4">
-              <Link
-                href={slides[index].href}
-                className="px-8 py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-xs tracking-[0.2em] uppercase rounded-full transition-colors"
-              >
-                {slides[index].cta}
-              </Link>
-              <Link
-                href="/products"
-                className="px-8 py-3.5 border border-white/40 text-white font-bold text-xs tracking-[0.2em] uppercase rounded-full hover:bg-white/10 transition-colors"
-              >
-                Learn More
-              </Link>
-            </div>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link
+            href={current.href}
+            className="px-8 py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-900 font-bold text-xs tracking-[0.2em] uppercase rounded-full transition-colors"
+          >
+            {current.cta}
+          </Link>
+          <Link
+            href="/products"
+            className="px-8 py-3.5 border border-white/40 text-white font-bold text-xs tracking-[0.2em] uppercase rounded-full hover:bg-white/10 transition-colors"
+          >
+            Learn More
+          </Link>
+        </div>
+      </div>
 
-      {/* Slide indicators */}
       <div className="absolute bottom-6 left-8 md:left-16 flex gap-2">
         {slides.map((_, i) => (
           <button

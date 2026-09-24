@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
+import PrintButton from "@/components/Invoice/PrintButton";
 
 export const dynamic = "force-dynamic";
 
@@ -80,26 +81,7 @@ export default async function InvoicePage({
               This page is optimized for printing. Click the button below to
               save or print your invoice.
             </p>
-            <button
-              onClick={() => window.print()}
-              className="inline-flex items-center gap-2 px-8 py-3 bg-stone-900 text-white rounded-xl text-sm font-bold hover:bg-stone-800 transition-all"
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M4 5V2h8v3" />
-                <rect x="2.5" y="7.5" width="11" height="6" rx="1" />
-                <path d="M11.5 10h1" />
-              </svg>
-              Print / Save PDF
-            </button>
+            <PrintButton />
           </div>
         </div>
       </div>
@@ -199,7 +181,7 @@ export default async function InvoicePage({
               </tr>
             </thead>
             <tbody>
-              {order.orderitem.map((item) => (
+              {order.orderitem.map((item: { id: string; quantity: number; product: { name: string } }) => (
                 <tr
                   key={item.id}
                   className="border-b border-stone-100 last:border-0"

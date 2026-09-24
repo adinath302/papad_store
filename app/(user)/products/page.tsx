@@ -4,6 +4,8 @@ import FilterSidebar from "@/components/Products/FilterSidebar";
 import SearchBar from "@/components/Products/SearchBar";
 import SortSelect from "@/components/Products/SortSelect";
 
+export const revalidate = 60;
+
 const PER_PAGE = 12;
 
 export default async function ProductPage({
