@@ -29,7 +29,7 @@ export async function GET(req: Request) {
     const where: any = {};
     if (search) {
       where.OR = [
-        { fullName: { contains: search, mode: "insensitive" } },
+        { fullName: { contains: search } },
         { phone: { contains: search } },
       ];
     }

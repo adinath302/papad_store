@@ -98,6 +98,15 @@ main {
   animation: heritage-scroll 25s linear infinite;
 }
 
+@keyframes about-shuffle {
+  from { opacity: 0.55; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-about-shuffle {
+  animation: about-shuffle 0.55s ease-out both;
+}
+
 /* Mobile drawer / sidebar background fix */
 .mobile-drawer-panel {
   background-color: #ffffff !important;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import AboutGallery from "@/components/About/AboutGallery";
 
 export const metadata: Metadata = {
   title: "About Us | Shivshambho",
@@ -55,14 +56,16 @@ export default function AboutPage() {
   return (
     <main className="min-h-screen bg-[#faf8f5]">
       {/* Hero */}
-      <section className="pt-32 pb-16 px-6 text-center max-w-3xl mx-auto">
-        <h1 className="text-5xl md:text-6xl font-serif text-stone-900 mb-4 leading-tight">
+      <section className="pt-28 md:pt-32 pb-10 md:pb-12 px-4 md:px-6 text-center max-w-3xl mx-auto">
+        <h1 className="text-4xl md:text-6xl font-serif text-stone-900 mb-4 leading-tight">
           Our Story
         </h1>
-        <p className="text-lg text-stone-500 max-w-2xl mx-auto">
+        <p className="text-base md:text-lg text-stone-500 max-w-2xl mx-auto">
           Crafting authentic Maharashtrian papads with tradition and love since 1984.
         </p>
       </section>
+
+      <AboutGallery />
 
       {/* Heritage */}
       <section className="pb-20 px-6">

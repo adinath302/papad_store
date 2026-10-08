@@ -121,7 +121,10 @@ export default async function ProductDetailsPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdString }}
       />
-      <ProductDetails product={product} relatedProducts={allProducts} />
+      <ProductDetails
+        product={JSON.parse(JSON.stringify(product))}
+        relatedProducts={JSON.parse(JSON.stringify(allProducts))}
+      />
     </>
   );
 }

@@ -9,6 +9,7 @@ import {
 import Image from "next/image";
 import type { Product, ProductImage } from "./types";
 import { fetchCsrf } from "@/lib/csrf-client";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type FormState = {
   name: string;
@@ -41,6 +42,8 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
   const [saving, setSaving] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [pendingImageDelete, setPendingImageDelete] = useState<string | null>(null);
+  const [pendingProductDelete, setPendingProductDelete] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({
     name: "", nameMarathi: "", description: "", metaTitle: "", metaDescription: "", stock: "", weight: "", image: "",
     variants: [{ label: "", price: "" }],
@@ -156,7 +159,6 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
   };
 
   const handleDeleteImage = async (id: string) => {
-    if (!confirm("Delete this image?")) return;
     const res = await fetchCsrf(`/api/products/images?id=${id}`, { method: "DELETE" });
     if (res.ok) {
       toast("Image deleted", "success");
@@ -254,7 +256,6 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
   };
 
   const deleteProduct = async (id: string) => {
-    if (!confirm("Delete this product permanently?")) return;
     const res = await fetchCsrf(`/api/products/${id}`, { method: "DELETE" });
     if (res.ok) {
       onProductChange();
@@ -379,7 +380,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
                         <div className="absolute top-1 right-1 z-10">
                           <button
                             type="button"
-                            onClick={(e) => { e.stopPropagation(); handleDeleteImage(img.id); }}
+                            onClick={(e) => { e.stopPropagation(); setPendingImageDelete(img.id); }}
                             className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors shadow-sm"
                             title="Delete image"
                           >
@@ -554,7 +555,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
                           </button>
                         )}
                         {(isOwner || hasPerm("products", "delete")) && (
-                          <button onClick={() => deleteProduct(product.id)}
+                          <button onClick={() => setPendingProductDelete(product.id)}
                             className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete product">
                             <Trash2 size={15} />
                           </button>
@@ -600,7 +601,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
                         </button>
                       )}
                       {(isOwner || hasPerm("products", "delete")) && (
-                        <button onClick={() => deleteProduct(product.id)} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete">
+                        <button onClick={() => setPendingProductDelete(product.id)} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Delete">
                           <Trash2 size={13} />
                         </button>
                       )}
@@ -623,6 +624,30 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
           </div>
         )}
       </div>
+      <ConfirmDialog
+        open={!!pendingImageDelete}
+        title="Delete image"
+        message="Delete this image?"
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setPendingImageDelete(null)}
+        onConfirm={() => {
+          if (pendingImageDelete) handleDeleteImage(pendingImageDelete);
+          setPendingImageDelete(null);
+        }}
+      />
+      <ConfirmDialog
+        open={!!pendingProductDelete}
+        title="Delete product"
+        message="Delete this product permanently? This cannot be undone."
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setPendingProductDelete(null)}
+        onConfirm={() => {
+          if (pendingProductDelete) deleteProduct(pendingProductDelete);
+          setPendingProductDelete(null);
+        }}
+      />
     </div>
   );
 }

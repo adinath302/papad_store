@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "motion/react";
 import { X, ShoppingBag, ArrowRight, Loader2, Truck } from "lucide-react";
 import { FREE_SHIPPING_MIN } from "@/lib/shipping";
 import { useRouter } from "next/navigation";

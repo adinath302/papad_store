@@ -32,7 +32,7 @@ export default function FilterSidebar({
   );
 
   return (
-    <div className="bg-white p-5 md:p-6 rounded-xl border border-stone-200 shadow-sm space-y-8 sticky top-28">
+    <div className="bg-white p-5 md:p-6 rounded-xl border border-stone-200 shadow-sm space-y-8 lg:sticky lg:top-28">
       <div>
         <h3 className="text-sm font-bold uppercase tracking-wider mb-4 text-zinc-900">
           Availability

@@ -5,6 +5,7 @@ import { Plus, Pencil, Trash2, Shield, Check, X as XIcon } from "lucide-react";
 import type { AdminUser, PermissionMap } from "./types";
 import { RESOURCE_ACTIONS, RESOURCE_LABELS } from "./types";
 import { fetchCsrf } from "@/lib/csrf-client";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type UsersTabProps = {
   admins: AdminUser[];
@@ -64,6 +65,7 @@ export default function UsersTab({ admins, isOwner, ownerEmail, toast, onAdminCh
   const [addAdminPermissions, setAddAdminPermissions] = useState<PermissionMap>({});
   const [editingAdminId, setEditingAdminId] = useState<string | null>(null);
   const [editingPerms, setEditingPerms] = useState<PermissionMap>({});
+  const [pendingRemove, setPendingRemove] = useState<{ id: string; email: string } | null>(null);
 
   const addAdmin = async () => {
     if (!addAdminEmail.trim()) return;
@@ -101,8 +103,7 @@ export default function UsersTab({ admins, isOwner, ownerEmail, toast, onAdminCh
     }
   };
 
-  const removeAdmin = async (id: string, email: string) => {
-    if (!confirm(`Remove admin access for ${email}?`)) return;
+  const removeAdmin = async (id: string) => {
     const res = await fetchCsrf(`/api/admin/users/${id}`, { method: "DELETE" });
     if (res.ok) {
       toast("Admin removed", "success");
@@ -229,7 +230,7 @@ export default function UsersTab({ admins, isOwner, ownerEmail, toast, onAdminCh
                               className="p-2 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all mr-1" title="Edit permissions">
                               <Pencil size={15} />
                             </button>
-                            <button onClick={() => removeAdmin(admin.id, admin.email)}
+                            <button onClick={() => setPendingRemove({ id: admin.id, email: admin.email })}
                               className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Remove admin">
                               <Trash2 size={15} />
                             </button>
@@ -273,7 +274,7 @@ export default function UsersTab({ admins, isOwner, ownerEmail, toast, onAdminCh
                       ) : (
                         <>
                           <button onClick={() => { setEditingAdminId(admin.id); setEditingPerms(permMap); }} className="p-1.5 text-stone-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg" title="Edit permissions"><Pencil size={14} /></button>
-                          <button onClick={() => removeAdmin(admin.id, admin.email)} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Remove admin"><Trash2 size={14} /></button>
+                          <button onClick={() => setPendingRemove({ id: admin.id, email: admin.email })} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Remove admin"><Trash2 size={14} /></button>
                         </>
                       )}
                     </div>
@@ -308,6 +309,18 @@ export default function UsersTab({ admins, isOwner, ownerEmail, toast, onAdminCh
           )}
         </div>
       </div>
+      <ConfirmDialog
+        open={!!pendingRemove}
+        title="Remove admin"
+        message={pendingRemove ? `Remove admin access for ${pendingRemove.email}?` : ""}
+        confirmLabel="Remove"
+        danger
+        onCancel={() => setPendingRemove(null)}
+        onConfirm={() => {
+          if (pendingRemove) removeAdmin(pendingRemove.id);
+          setPendingRemove(null);
+        }}
+      />
     </div>
   );
 }

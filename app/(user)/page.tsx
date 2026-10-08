@@ -54,7 +54,7 @@ export default async function Home() {
         getFeaturedReviews(),
       ]);
 
-    products = productRows;
+    products = JSON.parse(JSON.stringify(productRows));
     ordersDelivered = deliveredAgg;
     happyCustomers = uniqueCustomers.length;
     productsMade = unitsSold._sum.quantity ?? 0;

@@ -30,6 +30,12 @@ const DEFAULTS: Record<string, string> = {
   login_bg: "/use_everywhere.jpg",
   signup_bg: "/use_everywhere.jpg",
   product_fallback: "/use_everywhere.jpg",
+  about_gallery_1: "/use_everywhere.jpg",
+  about_gallery_2: "/use_everywhere.jpg",
+  about_gallery_3: "/use_everywhere.jpg",
+  about_gallery_4: "/use_everywhere.jpg",
+  about_gallery_5: "/use_everywhere.jpg",
+  about_gallery_6: "/use_everywhere.jpg",
 };
 
 async function fetchSiteImages(): Promise<Record<string, string>> {
