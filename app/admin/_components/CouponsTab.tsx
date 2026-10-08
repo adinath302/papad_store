@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Tag, Plus, Trash2, Check, X } from "lucide-react";
 import { fetchCsrf } from "@/lib/csrf-client";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 type Coupon = {
   id: string;
@@ -31,6 +32,7 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
     code: "", type: "PERCENTAGE", value: "", minCartValue: "",
     maxDiscount: "", usageLimit: "", expiresAt: "",
   });
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const fetchCoupons = async () => {
     const res = await fetch("/api/admin/coupons");
@@ -77,7 +79,6 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
   };
 
   const deleteCoupon = async (id: string) => {
-    if (!confirm("Delete this coupon?")) return;
     await fetchCsrf("/api/admin/coupons", {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
@@ -222,11 +223,11 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
                               title={coupon.isActive ? "Deactivate" : "Activate"}>
                               {coupon.isActive ? <X size={15} /> : <Check size={15} />}
                             </button>
-                            <button onClick={() => deleteCoupon(coupon.id)}
-                              className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                              title="Delete coupon">
-                              <Trash2 size={15} />
-                            </button>
+                             <button onClick={() => setPendingDeleteId(coupon.id)}
+                               className="p-2 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                               title="Delete coupon">
+                               <Trash2 size={15} />
+                             </button>
                           </>
                         )}
                       </td>
@@ -255,9 +256,9 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
                         <button onClick={() => toggleActive(coupon)} className="p-1.5 text-stone-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg" title={coupon.isActive ? "Deactivate" : "Activate"}>
                           {coupon.isActive ? <X size={13} /> : <Check size={13} />}
                         </button>
-                        <button onClick={() => deleteCoupon(coupon.id)} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Delete coupon">
-                          <Trash2 size={13} />
-                        </button>
+                        <button onClick={() => setPendingDeleteId(coupon.id)} className="p-1.5 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded-lg" title="Delete coupon">
+                           <Trash2 size={13} />
+                         </button>
                       </>
                     )}
                   </div>
@@ -267,6 +268,18 @@ export default function CouponsTab({ isOwner, toast }: CouponsTabProps) {
             </>
         )}
       </div>
+      <ConfirmDialog
+        open={!!pendingDeleteId}
+        title="Delete coupon"
+        message="Delete this coupon? This cannot be undone."
+        confirmLabel="Delete"
+        danger
+        onCancel={() => setPendingDeleteId(null)}
+        onConfirm={() => {
+          if (pendingDeleteId) deleteCoupon(pendingDeleteId);
+          setPendingDeleteId(null);
+        }}
+      />
     </div>
   );
 }

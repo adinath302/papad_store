@@ -105,9 +105,9 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
             <Image
               src={getImage("logo")}
               alt="Shivshambho"
-              width={100}
-              height={100}
-              className="w-[100px] h-[100px] object-contain rounded-lg"
+              width={80}
+              height={80}
+              className="w-14 h-14 md:w-20 md:h-20 object-contain rounded-lg"
               priority
             />
           </Link>

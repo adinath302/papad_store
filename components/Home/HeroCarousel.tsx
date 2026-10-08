@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { useSiteImages } from "@/lib/useSiteImages";
@@ -53,7 +52,7 @@ export default function HeroCarousel() {
   const current = slides[index];
 
   return (
-    <div className="relative h-[100vh] w-screen overflow-hidden">
+    <div className="relative h-[70vh] md:h-[100vh] w-full overflow-hidden">
       {slides.map((slide, i) => (
         <div
           key={slide.id}

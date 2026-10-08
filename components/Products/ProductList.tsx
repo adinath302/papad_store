@@ -43,13 +43,19 @@ export default function ProductList({
 
   return (
     <div>
-      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-16">
+      {products.length === 0 ? (
+        <div className="text-center py-16 bg-white rounded-2xl border border-dashed border-stone-200">
+          <p className="text-stone-500 text-sm">No products found.</p>
+        </div>
+      ) : (
+      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-16">
         {products.map((item: any) => (
           <li key={item.id}>
             <ProductCard product={item} wishlisted={wishlistedIds.has(item.id)} />
           </li>
         ))}
       </ul>
+      )}
 
       {totalPages > 1 && (
         <div className="flex items-center justify-center gap-2 mt-16">

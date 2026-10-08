@@ -53,6 +53,17 @@ const SECTIONS = [
     ],
   },
   {
+    title: "About Us Gallery",
+    keys: [
+      { key: "about_gallery_1", label: "Gallery 1" },
+      { key: "about_gallery_2", label: "Gallery 2" },
+      { key: "about_gallery_3", label: "Gallery 3" },
+      { key: "about_gallery_4", label: "Gallery 4" },
+      { key: "about_gallery_5", label: "Gallery 5" },
+      { key: "about_gallery_6", label: "Gallery 6" },
+    ],
+  },
+  {
     title: "Other Sections",
     keys: [
       { key: "heritage", label: "Heritage Section" },

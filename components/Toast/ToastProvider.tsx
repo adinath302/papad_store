@@ -84,7 +84,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={ctxValue}>
       {children}
 
-      <div className="fixed bottom-6 right-6 z-[999] flex flex-col-reverse gap-3 pointer-events-none">
+      <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[999] flex flex-col-reverse gap-3 pointer-events-none">
         <AnimatePresence>
           {toasts.map((t) => {
             const c = config[t.type];
@@ -101,7 +101,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   stiffness: 260,
                   mass: 0.8,
                 }}
-                className="pointer-events-auto relative flex items-center gap-3 pl-3 pr-4 py-3 bg-white rounded-xl border-2 border-zinc-200 shadow-[0_8px_32px_rgba(0,0,0,0.12)] min-w-[300px] max-w-[400px]"
+                className="pointer-events-auto relative flex items-center gap-3 pl-3 pr-4 py-3 bg-white rounded-xl border-2 border-zinc-200 shadow-[0_8px_32px_rgba(0,0,0,0.12)] w-full sm:min-w-[300px] sm:max-w-[400px]"
               >
                 <div
                   className={`size-2.5 shrink-0 rounded-full ${c.dot} shadow-[0_0_6px] ${t.type === "success" ? "shadow-emerald-500/50" : t.type === "error" ? "shadow-red-500/50" : t.type === "warning" ? "shadow-amber-500/50" : "shadow-blue-500/50"}`}
