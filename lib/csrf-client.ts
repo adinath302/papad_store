@@ -10,7 +10,7 @@ async function ensureCsrfToken(): Promise<string | null> {
   let token = getCsrfTokenFromCookie();
   if (token) return token;
   try {
-    const res = await fetch("/api/csrf", { method: "GET" });
+    const res = await fetch("/api/csrf", { method: "GET", credentials: "include" });
     const data = await res.json();
     token = data.token ?? null;
   } catch {}
@@ -24,5 +24,5 @@ export async function fetchCsrf(
   const token = await ensureCsrfToken();
   const headers = new Headers(options.headers);
   if (token) headers.set("x-csrf-token", token);
-  return fetch(url, { ...options, headers });
+  return fetch(url, { ...options, credentials: "include", headers });
 }

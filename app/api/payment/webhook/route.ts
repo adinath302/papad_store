@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
+import { sendCustomerOrderStatusUpdate, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
 
 export const runtime = "nodejs";
 
@@ -41,15 +42,30 @@ export async function POST(req: Request) {
 
       const order = await prisma.order.findFirst({
         where: { razorpayOrderId },
+        include: {
+          orderitem: { include: { product: true } },
+          user: { select: { email: true } },
+        },
       });
       if (order) {
-        await prisma.order.update({
+        const updated = await prisma.order.update({
           where: { id: order.id },
           data: {
             razorpayPaymentId,
             status: "CONFIRMED",
           },
+          include: {
+            orderitem: { include: { product: true } },
+            user: { select: { email: true } },
+          },
         });
+        const customerEmail = resolveCustomerEmail(updated.email, updated.user?.email);
+        if (customerEmail && order.status !== "CONFIRMED") {
+          sendCustomerOrderStatusUpdate(
+            customerEmail,
+            buildOrderEmailData(updated),
+          ).catch((e) => console.error("Webhook status email error:", e));
+        }
       }
 
       console.log(
@@ -64,24 +80,40 @@ export async function POST(req: Request) {
 
       const failedOrder = await prisma.order.findFirst({
         where: { razorpayOrderId },
-        include: { orderitem: true },
+        include: {
+          orderitem: { include: { product: true } },
+          user: { select: { email: true } },
+        },
       });
 
       if (failedOrder) {
-        await prisma.$transaction(async (tx) => {
-          await tx.order.update({
+        const cancelled = await prisma.$transaction(async (tx) => {
+          const updated = await tx.order.update({
             where: { id: failedOrder.id },
             data: { status: "CANCELLED" },
+            include: {
+              orderitem: { include: { product: true } },
+              user: { select: { email: true } },
+            },
           });
 
-          // Restore stock
           for (const item of failedOrder.orderitem) {
             await tx.product.update({
               where: { id: item.productId },
               data: { stock: { increment: item.quantity } },
             });
           }
+
+          return updated;
         });
+
+        const customerEmail = resolveCustomerEmail(cancelled.email, cancelled.user?.email);
+        if (customerEmail && failedOrder.status !== "CANCELLED") {
+          sendCustomerOrderStatusUpdate(
+            customerEmail,
+            buildOrderEmailData(cancelled),
+          ).catch((e) => console.error("Webhook cancel email error:", e));
+        }
       }
 
       console.log(

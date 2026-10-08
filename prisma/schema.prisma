@@ -44,6 +44,7 @@ model order {
   totalAmount       Int
   status            String      @default("PENDING")
   fullName          String
+  email             String?
   phone             String
   address1          String
   address2          String?

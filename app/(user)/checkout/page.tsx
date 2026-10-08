@@ -72,6 +72,7 @@ export default function CheckoutPage() {
 
   const [form, setForm] = useState({
     fullName: "",
+    email: "",
     phone: "",
     address1: "",
     address2: "",
@@ -89,7 +90,7 @@ export default function CheckoutPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const requiredFields = ["fullName", "phone", "address1", "city", "state", "pincode"];
+  const requiredFields = ["fullName", "email", "phone", "address1", "city", "state", "pincode"];
 
   useEffect(() => {
     const fetchData = async () => {
@@ -115,9 +116,10 @@ export default function CheckoutPage() {
       }
 
       setIsGuest(false);
-      const [cartRes, addrRes] = await Promise.all([
+      const [cartRes, addrRes, meRes] = await Promise.all([
         fetch("/api/cart"),
         fetch("/api/address"),
+        fetch("/api/auth/me"),
       ]);
 
       if (cartRes.ok) {
@@ -131,6 +133,12 @@ export default function CheckoutPage() {
         setFetchError("Failed to load your cart. Please try again.");
       }
 
+      let accountEmail = "";
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        accountEmail = meData.user?.email || "";
+      }
+
       if (addrRes.ok) {
         const addresses: SavedAddress[] = await addrRes.json();
         if (addresses.length > 0) {
@@ -139,6 +147,7 @@ export default function CheckoutPage() {
           setForm((prev) => ({
             ...prev,
             fullName: addr.fullName,
+            email: accountEmail || prev.email,
             phone: addr.phone,
             address1: addr.address1,
             address2: addr.address2 || "",
@@ -146,7 +155,11 @@ export default function CheckoutPage() {
             state: addr.state,
             pincode: addr.pincode,
           }));
+        } else if (accountEmail) {
+          setForm((prev) => ({ ...prev, email: accountEmail }));
         }
+      } else if (accountEmail) {
+        setForm((prev) => ({ ...prev, email: accountEmail }));
       }
 
       setLoading(false);
@@ -286,7 +299,7 @@ export default function CheckoutPage() {
     },
     prefill: {
       name: form.fullName,
-      email: "",
+      email: form.email,
       contact: form.phone,
     },
     theme: {
@@ -318,6 +331,10 @@ document.body.appendChild(script);
     if (!/^\d{6}$/.test(form.pincode)) {
       toast("Invalid pincode format", "error");
       setPlacing(false);
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      toast("Please enter a valid email address", "error");
       return;
     }
     if (!/^(\+91|0)?[6-9]\d{9}$/.test(form.phone.replace(/\s/g, ""))) {
@@ -466,6 +483,26 @@ document.body.appendChild(script);
                       }`}
                     />
                     {fieldErrors.has("fullName") && (
+                      <p className="text-[11px] text-red-500 mt-1 ml-1 font-medium">Required</p>
+                    )}
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="text-xs font-bold uppercase tracking-wider text-stone-500 block mb-1.5">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      value={form.email}
+                      onChange={(e) => updateField("email", e.target.value)}
+                      placeholder="you@example.com"
+                      className={`w-full rounded-lg px-4 py-2.5 outline-none bg-transparent text-stone-900 placeholder:text-stone-300 text-sm transition-all ${
+                        fieldErrors.has("email")
+                          ? "border-2 border-red-400 focus:border-red-500"
+                          : "border border-stone-200 focus:border-emerald-600"
+                      }`}
+                    />
+                    {fieldErrors.has("email") && (
                       <p className="text-[11px] text-red-500 mt-1 ml-1 font-medium">Required</p>
                     )}
                   </div>

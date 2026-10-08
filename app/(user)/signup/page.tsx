@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
 import { useSiteImages } from "@/lib/useSiteImages";
@@ -10,10 +10,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { getGuestCart, clearGuestCart } from "@/lib/guest-cart";
 import { fetchCsrf } from "@/lib/csrf-client";
 import { useToast } from "@/components/Toast/ToastProvider";
+import Shimmer from "@/components/Skeleton/Skeleton";
 
-export const dynamic = "force-dynamic";
-
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [name, setName] = useState("");
@@ -40,13 +39,21 @@ export default function SignupPage() {
       const res = await fetch("/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        credentials: "include",
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), password }),
       });
 
-      const data = await res.json();
+      let data: { error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        setError("Registration failed. Please try again.");
+        setIsLoading(false);
+        return;
+      }
 
-      if (data.error) {
-        setError(data.error);
+      if (!res.ok || data.error) {
+        setError(data.error || "Registration failed. Please try again.");
         setIsLoading(false);
         return;
       }
@@ -70,8 +77,10 @@ export default function SignupPage() {
         if (allSucceeded) clearGuestCart();
       }
 
+      sessionStorage.removeItem("nav_auth");
       const redirect = searchParams.get("redirect") || "/";
       router.push(redirect);
+      router.refresh();
     } catch {
       setError("Registration failed. Please check your connection.");
       setIsLoading(false);
@@ -319,5 +328,24 @@ export default function SignupPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center px-6">
+          <div className="w-full max-w-md space-y-4">
+            <Shimmer className="h-8 w-48" />
+            <Shimmer className="h-14 w-full" />
+            <Shimmer className="h-14 w-full" />
+            <Shimmer className="h-14 w-full" />
+          </div>
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   );
 }

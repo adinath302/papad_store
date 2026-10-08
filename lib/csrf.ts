@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 
 const CSRF_COOKIE = "csrf-token";
 
@@ -8,16 +9,26 @@ function generateToken(): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-export async function setCsrfToken() {
-  const token = generateToken();
-  const cookieStore = await cookies();
-  cookieStore.set(CSRF_COOKIE, token, {
+function csrfCookieOptions() {
+  return {
     httpOnly: false,
-    sameSite: "strict",
+    sameSite: "lax" as const,
     path: "/",
     maxAge: 60 * 60 * 24,
     secure: process.env.NODE_ENV === "production",
-  });
+  };
+}
+
+export function applyCsrfCookie(res: NextResponse) {
+  const token = generateToken();
+  res.cookies.set(CSRF_COOKIE, token, csrfCookieOptions());
+  return token;
+}
+
+export async function setCsrfToken() {
+  const token = generateToken();
+  const cookieStore = await cookies();
+  cookieStore.set(CSRF_COOKIE, token, csrfCookieOptions());
   return token;
 }
 

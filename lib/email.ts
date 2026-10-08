@@ -12,7 +12,14 @@ function escapeHtml(str: string): string {
     .replace(/'/g, "&#39;");
 }
 
-type OrderEmailData = {
+export type OrderEmailItem = {
+  name: string;
+  quantity: number;
+  price?: number | null;
+  variant?: string | null;
+};
+
+export type OrderEmailData = {
   orderId: string;
   fullName: string;
   phone: string;
@@ -23,8 +30,100 @@ type OrderEmailData = {
   totalAmount: number;
   paymentType: string;
   status: string;
-  items: { name: string; quantity: number }[];
+  items: OrderEmailItem[];
+  courierName?: string | null;
+  trackingId?: string | null;
+  trackingUrl?: string | null;
 };
+
+export const ORDER_STATUS_LABELS: Record<string, string> = {
+  PENDING: "Pending",
+  CONFIRMED: "Accepted",
+  SHIPPED: "Shipped",
+  DELIVERED: "Delivered",
+  CANCELLED: "Cancelled",
+};
+
+export function formatOrderStatus(status: string): string {
+  return ORDER_STATUS_LABELS[status] || status;
+}
+
+function formatPaymentType(paymentType: string): string {
+  return paymentType === "COD" ? "Cash on Delivery" : paymentType;
+}
+
+function renderItemsHtml(items: OrderEmailItem[]): string {
+  return items
+    .map((item) => {
+      const label = item.variant ? `${item.name} (${item.variant})` : item.name;
+      const lineTotal =
+        typeof item.price === "number" ? item.price * item.quantity : null;
+      return `<tr>
+          <td style="padding:10px 0;border-bottom:1px solid #e5e5e5;color:#333;">
+            <strong>${escapeHtml(label)}</strong>
+            ${typeof item.price === "number" ? `<div style="font-size:12px;color:#888;margin-top:2px;">₹${item.price} each</div>` : ""}
+          </td>
+          <td style="padding:10px 0;border-bottom:1px solid #e5e5e5;color:#888;text-align:center;">× ${item.quantity}</td>
+          <td style="padding:10px 0;border-bottom:1px solid #e5e5e5;color:#333;text-align:right;font-weight:600;">${lineTotal != null ? `₹${lineTotal}` : ""}</td>
+        </tr>`;
+    })
+    .join("");
+}
+
+function itemsTable(items: OrderEmailItem[]): string {
+  return `<table style="width:100%;border-collapse:collapse;font-size:14px;">
+            <thead>
+              <tr>
+                <th style="text-align:left;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Product</th>
+                <th style="text-align:center;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Qty</th>
+                <th style="text-align:right;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${renderItemsHtml(items)}</tbody>
+          </table>`;
+}
+
+export function buildOrderEmailData(order: {
+  id: string;
+  fullName: string;
+  phone: string;
+  address1: string;
+  address2?: string | null;
+  city: string;
+  state: string;
+  pincode: string;
+  totalAmount: number;
+  paymentType: string;
+  status: string;
+  courierName?: string | null;
+  trackingId?: string | null;
+  orderitem: {
+    quantity: number;
+    price?: number | null;
+    product: { name: string };
+    variantId?: string | null;
+  }[];
+}): OrderEmailData {
+  return {
+    orderId: order.id,
+    fullName: order.fullName,
+    phone: order.phone,
+    address: order.address1 + (order.address2 ? `, ${order.address2}` : ""),
+    city: order.city,
+    state: order.state,
+    pincode: order.pincode,
+    totalAmount: order.totalAmount,
+    paymentType: order.paymentType,
+    status: order.status,
+    courierName: order.courierName,
+    trackingId: order.trackingId,
+    items: order.orderitem.map((oi) => ({
+      name: oi.product.name,
+      quantity: oi.quantity,
+      price: oi.price,
+    })),
+  };
+}
 
 function getTransporter() {
   if (
@@ -57,16 +156,6 @@ export async function sendAdminOrderNotification(data: OrderEmailData) {
 
   if (adminEmails.length === 0) return;
 
-  const itemsHtml = data.items
-    .map(
-      (item) =>
-        `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;">${escapeHtml(item.name)}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;text-align:center;">${item.quantity}</td>
-        </tr>`,
-    )
-    .join("");
-
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
       <div style="background:#065f46;padding:24px;border-radius:12px 12px 0 0;">
@@ -98,20 +187,12 @@ export async function sendAdminOrderNotification(data: OrderEmailData) {
           </tr>
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Status</td>
-            <td style="padding:8px 0;font-weight:600;font-size:13px;color:#065f46;">${escapeHtml(data.status)}</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;color:#065f46;">${escapeHtml(formatOrderStatus(data.status))}</td>
           </tr>
         </table>
 
         <h3 style="font-size:14px;margin:16px 0 8px;color:#333;">Items</h3>
-        <table style="width:100%;border-collapse:collapse;">
-          <thead>
-            <tr style="background:#f5f5f5;">
-              <th style="padding:8px 12px;text-align:left;font-size:12px;color:#666;">Product</th>
-              <th style="padding:8px 12px;text-align:center;font-size:12px;color:#666;">Qty</th>
-            </tr>
-          </thead>
-          <tbody>${itemsHtml}</tbody>
-        </table>
+        ${itemsTable(data.items)}
 
         <div style="border-top:2px solid #065f46;margin-top:16px;padding-top:12px;text-align:right;font-size:18px;font-weight:700;color:#065f46;">
           Total: ₹${data.totalAmount}
@@ -143,24 +224,11 @@ export async function sendCustomerOrderConfirmation(
   const transporter = getTransporter();
   if (!transporter || !email) return;
 
-  const shortId = data.orderId.slice(0, 12).toUpperCase();
-
-  const itemsHtml = data.items
-    .map(
-      (item) =>
-        `<tr>
-          <td style="padding:10px 0;border-bottom:1px solid #e5e5e5;color:#333;"><strong>${escapeHtml(item.name)}</strong></td>
-          <td style="padding:10px 0;border-bottom:1px solid #e5e5e5;color:#888;text-align:center;">× ${item.quantity}</td>
-        </tr>`,
-    )
-    .join("");
-
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
       <div style="background:#065f46;padding:32px 24px;border-radius:16px 16px 0 0;text-align:center;">
-        <div style="font-size:48px;margin-bottom:12px;">🎉</div>
         <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">Thank You, ${escapeHtml(data.fullName.split(" ")[0])}!</h1>
-        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">Your order is confirmed and we're making it fresh.</p>
+        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">Your order is ${escapeHtml(formatOrderStatus(data.status).toLowerCase())} and we're making it fresh.</p>
       </div>
       <div style="background:#fff;border:1px solid #e5e5e5;border-top:0;padding:32px;border-radius:0 0 16px 16px;">
         <p style="color:#333;font-size:15px;line-height:1.6;">
@@ -174,32 +242,21 @@ export async function sendCustomerOrderConfirmation(
         </p>
 
         <div style="background:#faf8f5;border-radius:12px;padding:20px;margin:20px 0;">
-          <table style="width:100%;border-collapse:collapse;font-size:14px;">
-            <thead>
-              <tr>
-                <th style="text-align:left;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Product</th>
-                <th style="text-align:right;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Qty</th>
-              </tr>
-            </thead>
-            <tbody>${itemsHtml}</tbody>
-          </table>
-          <div style="border-top:2px solid #065f46;margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:#065f46;">
-            <span>Total</span>
-            <span>₹${data.totalAmount}</span>
+          ${itemsTable(data.items)}
+          <div style="border-top:2px solid #065f46;margin-top:12px;padding-top:12px;font-size:16px;font-weight:700;color:#065f46;text-align:right;">
+            Total: ₹${data.totalAmount}
           </div>
         </div>
 
-        <div style="display:flex;gap:16px;background:#faf8f5;border-radius:12px;padding:16px;font-size:13px;margin:20px 0;">
-          <div style="flex:1;">
-            <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Delivering to</p>
-            <p style="color:#333;margin:0;font-weight:600;">${escapeHtml(data.fullName)}</p>
-            <p style="color:#666;margin:2px 0 0;">${escapeHtml(data.phone)}</p>
-            <p style="color:#666;margin:2px 0 0;">${escapeHtml(data.address)}, ${escapeHtml(data.city)}, ${escapeHtml(data.state)} - ${escapeHtml(data.pincode)}</p>
-          </div>
-          <div>
-            <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Payment</p>
-            <p style="color:#333;margin:0;font-weight:600;">${data.paymentType === "COD" ? "Cash on Delivery" : escapeHtml(data.paymentType)}</p>
-          </div>
+        <div style="background:#faf8f5;border-radius:12px;padding:16px;font-size:13px;margin:20px 0;">
+          <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Shipment status</p>
+          <p style="color:#065f46;margin:0 0 12px;font-weight:700;">${escapeHtml(formatOrderStatus(data.status))}</p>
+          <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Delivering to</p>
+          <p style="color:#333;margin:0;font-weight:600;">${escapeHtml(data.fullName)}</p>
+          <p style="color:#666;margin:2px 0 0;">${escapeHtml(data.phone)}</p>
+          <p style="color:#666;margin:2px 0 0;">${escapeHtml(data.address)}, ${escapeHtml(data.city)}, ${escapeHtml(data.state)} - ${escapeHtml(data.pincode)}</p>
+          <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:12px 0 4px;">Payment</p>
+          <p style="color:#333;margin:0;font-weight:600;">${escapeHtml(formatPaymentType(data.paymentType))}</p>
         </div>
 
         <div style="background:#fef3c7;border-radius:12px;padding:16px;text-align:center;margin:20px 0;border:1px solid #fde68a;">
@@ -232,7 +289,7 @@ export async function sendCustomerOrderConfirmation(
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
-      subject: `✅ Order Confirmed #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
+      subject: `Order ${formatOrderStatus(data.status)} #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
       html,
     });
   } catch (error) {
@@ -343,24 +400,24 @@ export async function sendCustomerShippingNotification(
   }
 }
 
-const STATUS_EMAILS: Record<string, { icon: string; title: string; message: string }> = {
+const STATUS_EMAILS: Record<string, { title: string; message: string }> = {
+  PENDING: {
+    title: "Order Received",
+    message: "We have received your order and it is pending confirmation.",
+  },
   CONFIRMED: {
-    icon: "✅",
-    title: "Order Confirmed",
-    message: "Your order has been confirmed and we're preparing it fresh in our kitchen.",
+    title: "Order Accepted",
+    message: "Your order has been accepted and we are preparing it fresh in our kitchen.",
   },
   SHIPPED: {
-    icon: "🚚",
     title: "Order Shipped",
     message: "Your order has been packed and handed over to the courier partner.",
   },
   DELIVERED: {
-    icon: "📦",
     title: "Order Delivered",
     message: "Your order has been delivered. We hope you enjoy every bite!",
   },
   CANCELLED: {
-    icon: "❌",
     title: "Order Cancelled",
     message: "Your order has been cancelled. If you have any questions, please reach out.",
   },
@@ -373,25 +430,36 @@ export async function sendCustomerOrderStatusUpdate(
   const transporter = getTransporter();
   if (!transporter || !email) return;
 
-  const statusInfo = STATUS_EMAILS[data.status];
-  if (!statusInfo) return;
+  const statusInfo = STATUS_EMAILS[data.status] || {
+    title: `Order ${formatOrderStatus(data.status)}`,
+    message: `Your order status has been updated to ${formatOrderStatus(data.status)}.`,
+  };
 
-  const itemsHtml = data.items
-    .map(
-      (item) =>
-        `<tr>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#333;">${escapeHtml(item.name)}</td>
-          <td style="padding:8px 12px;border-bottom:1px solid #e5e5e5;color:#888;text-align:center;">× ${item.quantity}</td>
-        </tr>`,
-    )
-    .join("");
+  const shipmentBlock =
+    data.status === "SHIPPED" && data.courierName
+      ? `<div style="background:#065f46;border-radius:12px;padding:20px;margin:20px 0;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <tr>
+              <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.2);color:#a7f3d0;width:100px;">Courier</td>
+              <td style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.2);color:#fff;font-weight:600;">${escapeHtml(data.courierName)}</td>
+            </tr>
+            ${
+              data.trackingId
+                ? `<tr>
+              <td style="padding:8px 0;color:#a7f3d0;">Tracking ID</td>
+              <td style="padding:8px 0;color:#fff;font-weight:600;font-family:monospace;letter-spacing:1px;">${escapeHtml(data.trackingId)}</td>
+            </tr>`
+                : ""
+            }
+          </table>
+        </div>`
+      : "";
 
   const html = `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;">
       <div style="background:#065f46;padding:32px 24px;border-radius:16px 16px 0 0;text-align:center;">
-        <div style="font-size:48px;margin-bottom:12px;">${statusInfo.icon}</div>
         <h1 style="color:#fff;margin:0;font-size:22px;font-weight:700;">${escapeHtml(statusInfo.title)}</h1>
-        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">${escapeHtml(statusInfo.message)}</p>
+        <p style="color:#a7f3d0;font-size:14px;margin:8px 0 0;">Shipment status: ${escapeHtml(formatOrderStatus(data.status))}</p>
       </div>
       <div style="background:#fff;border:1px solid #e5e5e5;border-top:0;padding:32px;border-radius:0 0 16px 16px;">
         <p style="color:#333;font-size:15px;line-height:1.6;">
@@ -399,26 +467,25 @@ export async function sendCustomerOrderStatusUpdate(
         </p>
         <p style="color:#666;font-size:14px;line-height:1.6;">${escapeHtml(statusInfo.message)}</p>
 
+        <div style="background:#ecfdf5;border-radius:12px;padding:16px;margin:20px 0;text-align:center;">
+          <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Current status</p>
+          <p style="color:#065f46;margin:0;font-size:18px;font-weight:700;">${escapeHtml(formatOrderStatus(data.status))}</p>
+        </div>
+
+        ${shipmentBlock}
+
         <div style="background:#faf8f5;border-radius:12px;padding:20px;margin:20px 0;">
-          <table style="width:100%;border-collapse:collapse;font-size:14px;">
-            <thead>
-              <tr>
-                <th style="text-align:left;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Product</th>
-                <th style="text-align:right;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #e5e5e5;">Qty</th>
-              </tr>
-            </thead>
-            <tbody>${itemsHtml}</tbody>
-          </table>
-          <div style="border-top:2px solid #065f46;margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:#065f46;">
-            <span>Total</span>
-            <span>₹${data.totalAmount}</span>
+          ${itemsTable(data.items)}
+          <div style="border-top:2px solid #065f46;margin-top:12px;padding-top:12px;font-size:16px;font-weight:700;color:#065f46;text-align:right;">
+            Total: ₹${data.totalAmount}
           </div>
         </div>
 
-        <div style="background:#fef3c7;border-radius:12px;padding:16px;text-align:center;margin:20px 0;border:1px solid #fde68a;">
-          <p style="color:#92400e;font-size:13px;margin:0;line-height:1.6;">
-            🏡 <strong>Handmade with love,</strong> sun-dried to perfection.
-          </p>
+        <div style="background:#faf8f5;border-radius:12px;padding:16px;font-size:13px;margin:20px 0;">
+          <p style="color:#888;font-size:11px;text-transform:uppercase;letter-spacing:1px;margin:0 0 4px;">Delivering to</p>
+          <p style="color:#333;margin:0;font-weight:600;">${escapeHtml(data.fullName)}</p>
+          <p style="color:#666;margin:2px 0 0;">${escapeHtml(data.phone)}</p>
+          <p style="color:#666;margin:2px 0 0;">${escapeHtml(data.address)}, ${escapeHtml(data.city)}, ${escapeHtml(data.state)} - ${escapeHtml(data.pincode)}</p>
         </div>
 
         <div style="text-align:center;margin-top:24px;">
@@ -444,10 +511,18 @@ export async function sendCustomerOrderStatusUpdate(
     await transporter.sendMail({
       from: process.env.SMTP_FROM,
       to: email,
-      subject: `${statusInfo.icon} ${statusInfo.title} #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
+      subject: `${statusInfo.title} #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
       html,
     });
   } catch (error) {
     console.error("Failed to send status update email:", error);
   }
+}
+
+export function resolveCustomerEmail(
+  orderEmail?: string | null,
+  userEmail?: string | null,
+): string | null {
+  const value = (orderEmail || userEmail || "").trim().toLowerCase();
+  return value || null;
 }
