@@ -16,7 +16,9 @@ export async function POST(req: Request) {
       );
     }
 
-    const { email } = await req.json();
+    const body = await req.json().catch(() => null);
+    const email =
+      typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
     if (!email) {
       return Response.json({ error: "Email is required" }, { status: 400 });
     }

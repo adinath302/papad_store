@@ -1,6 +1,8 @@
-import { setCsrfToken } from "@/lib/csrf";
+import { NextResponse } from "next/server";
+import { applyCsrfCookie } from "@/lib/csrf";
 
 export async function GET() {
-  const token = await setCsrfToken();
-  return Response.json({ token });
+  const res = NextResponse.json({ token: "" });
+  const token = applyCsrfCookie(res);
+  return NextResponse.json({ token }, { headers: res.headers });
 }

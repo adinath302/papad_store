@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { isRazorpayConfigured } from "@/lib/razorpay";
 import crypto from "crypto";
-import { sendAdminOrderNotification, sendCustomerOrderConfirmation } from "@/lib/email";
+import { sendAdminOrderNotification, sendCustomerOrderConfirmation, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
 import { calculateShippingFee } from "@/lib/shipping";
 
 export const runtime = "nodejs";
@@ -21,6 +21,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       fullName,
+      email: checkoutEmail,
       phone,
       address1,
       address2,
@@ -40,8 +41,12 @@ export async function POST(req: Request) {
       return Response.json({ error: "Invalid payment method" }, { status: 400 });
     }
 
+    const email =
+      typeof checkoutEmail === "string" ? checkoutEmail.trim().toLowerCase() : "";
+
     if (
       !fullName ||
+      !email ||
       !phone ||
       !address1 ||
       !city ||
@@ -52,6 +57,10 @@ export async function POST(req: Request) {
         { error: "Missing required shipping fields" },
         { status: 400 },
       );
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return Response.json({ error: "Invalid email address" }, { status: 400 });
     }
 
     // Verify Razorpay signature if payment was made
@@ -190,6 +199,7 @@ export async function POST(req: Request) {
           totalAmount,
           status: paymentType === "Razorpay" ? "CONFIRMED" : "PENDING",
           fullName,
+          email,
           phone,
           address1,
           address2: address2 || null,
@@ -247,31 +257,15 @@ export async function POST(req: Request) {
       return Response.json(order);
     }
 
-    const emailData = {
-      orderId: updatedOrder.id,
-      fullName: updatedOrder.fullName,
-      phone: updatedOrder.phone,
-      address: updatedOrder.address1 + (updatedOrder.address2 ? `, ${updatedOrder.address2}` : ""),
-      city: updatedOrder.city,
-      state: updatedOrder.state,
-      pincode: updatedOrder.pincode,
-      subtotal: subtotal,
-      shippingCost: updatedOrder.shippingCost,
-      totalAmount: updatedOrder.totalAmount,
-      paymentType: updatedOrder.paymentType,
-      status: updatedOrder.status,
-      items: updatedOrder.orderitem.map((oi) => ({
-        name: oi.product.name,
-        quantity: oi.quantity,
-      })),
-    };
+    const emailData = buildOrderEmailData(updatedOrder);
 
     sendAdminOrderNotification(emailData).catch((e) =>
       console.error("Admin email error:", e),
     );
 
-    if (updatedOrder?.user?.email) {
-      sendCustomerOrderConfirmation(updatedOrder.user.email, emailData).catch(
+    const customerEmail = resolveCustomerEmail(updatedOrder.email, updatedOrder.user?.email);
+    if (customerEmail) {
+      sendCustomerOrderConfirmation(customerEmail, emailData).catch(
         (e) => console.error("Customer email error:", e),
       );
     }

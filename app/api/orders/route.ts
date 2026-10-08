@@ -3,7 +3,7 @@ import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { can, isOwner } from "@/lib/permissions";
 import { cookies } from "next/headers";
-import { sendCustomerShippingNotification, sendCustomerOrderStatusUpdate } from "@/lib/email";
+import { sendCustomerShippingNotification, sendCustomerOrderStatusUpdate, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
 import { getTrackingUrl } from "@/lib/tracking";
 import { calculateSpeedPostRate, estimateZone } from "@/lib/indiapost";
 
@@ -155,39 +155,26 @@ export async function PATCH(req: Request) {
       return updated;
     });
 
-    if (order.user?.email) {
-      // Send status update email for any status change
+    const customerEmail = resolveCustomerEmail(order.email, order.user?.email);
+    if (customerEmail) {
       if (status && prevOrder && prevOrder.status !== status) {
-        const emailData = {
-          orderId: order.id,
-          fullName: order.fullName,
-          phone: order.phone,
-          address: order.address1 + (order.address2 ? `, ${order.address2}` : ""),
-          city: order.city,
-          state: order.state,
-          pincode: order.pincode,
-          totalAmount: order.totalAmount,
-          paymentType: order.paymentType,
-          status: order.status,
-          items: order.orderitem.map((oi) => ({
-            name: oi.product.name,
-            quantity: oi.quantity,
-          })),
-        };
-        sendCustomerOrderStatusUpdate(order.user.email, emailData).catch(
-          (e) => console.error("Status email error:", e),
-        );
+        const emailData = buildOrderEmailData(order);
+        const trackingUrl = getTrackingUrl(order.courierName, order.trackingId);
+        sendCustomerOrderStatusUpdate(customerEmail, {
+          ...emailData,
+          trackingUrl,
+        }).catch((e) => console.error("Status email error:", e));
       }
 
-      // Send shipping notification when tracking is added
       const shouldNotify =
         order.trackingId &&
         order.trackingId !== "PENDING" &&
-        (data.trackingId !== undefined || data.status === "SHIPPED");
+        (data.trackingId !== undefined || data.status === "SHIPPED") &&
+        data.status !== "SHIPPED";
 
       if (shouldNotify) {
         const trackingUrl = getTrackingUrl(order.courierName, order.trackingId);
-        sendCustomerShippingNotification(order.user.email, {
+        sendCustomerShippingNotification(customerEmail, {
           orderId: order.id,
           fullName: order.fullName,
           courierName: order.courierName || "",
@@ -196,6 +183,7 @@ export async function PATCH(req: Request) {
           items: order.orderitem.map((oi) => ({
             name: oi.product.name,
             quantity: oi.quantity,
+            price: oi.price,
           })),
         }).catch((e) => console.error("Shipping email error:", e));
       }

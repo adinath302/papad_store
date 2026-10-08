@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Image from "next/image";
 import { motion } from "motion/react";
 import { useSiteImages } from "@/lib/useSiteImages";
@@ -10,10 +10,9 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { getGuestCart, clearGuestCart } from "@/lib/guest-cart";
 import { fetchCsrf } from "@/lib/csrf-client";
 import { useToast } from "@/components/Toast/ToastProvider";
+import Shimmer from "@/components/Skeleton/Skeleton";
 
-export const dynamic = "force-dynamic";
-
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
@@ -44,26 +43,42 @@ export default function LoginPage() {
     if (allSucceeded) clearGuestCart();
   };
 
-  const handleLogin = async () => {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password) {
+      toast("Please enter your email and password.", "error");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        credentials: "include",
+        body: JSON.stringify({ email: email.trim(), password }),
       });
 
-      const data = await res.json();
-
-      if (data.error) {
-        toast(data.error, "error");
+      let data: { error?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        toast("Something went wrong. Please try again.", "error");
         setIsLoading(false);
         return;
       }
 
+      if (!res.ok || data.error) {
+        toast(data.error || "Login failed. Please try again.", "error");
+        setIsLoading(false);
+        return;
+      }
+
+      sessionStorage.removeItem("nav_auth");
       await mergeGuestCart();
       const redirect = searchParams.get("redirect") || "/";
       router.push(redirect);
+      router.refresh();
     } catch {
       toast("Something went wrong. Please try again.", "error");
       setIsLoading(false);
@@ -97,8 +112,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Inputs */}
-          <div className="space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
             <div className="relative group">
               <Mail
                 className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-emerald-700 transition-colors"
@@ -107,6 +121,8 @@ export default function LoginPage() {
               <input
                 type="email"
                 placeholder="Email Address"
+                autoComplete="email"
+                required
                 className="w-full bg-white border border-stone-200 rounded-xl py-4 pl-12 pr-4 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all text-stone-900"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -121,6 +137,8 @@ export default function LoginPage() {
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="Password"
+                autoComplete="current-password"
+                required
                 className="w-full bg-white border border-stone-200 rounded-xl py-4 pl-12 pr-12 outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all text-stone-900"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -133,11 +151,9 @@ export default function LoginPage() {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
-          </div>
 
-          {/* Action Button */}
           <button
-            onClick={handleLogin}
+            type="submit"
             disabled={isLoading}
             className="w-full bg-emerald-800 hover:bg-emerald-700 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 group transition-all disabled:opacity-50"
           >
@@ -156,6 +172,7 @@ export default function LoginPage() {
               </>
             )}
           </button>
+          </form>
 
           <div className="text-center -mt-2">
             <Link
@@ -267,5 +284,24 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center px-6">
+          <div className="w-full max-w-md space-y-4">
+            <Shimmer className="h-8 w-48" />
+            <Shimmer className="h-14 w-full" />
+            <Shimmer className="h-14 w-full" />
+            <Shimmer className="h-14 w-full" />
+          </div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

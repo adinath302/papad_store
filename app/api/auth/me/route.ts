@@ -35,8 +35,8 @@ export async function GET() {
         ...(isAdmin ? { ownerEmail: OWNER_EMAIL } : {}),
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("ME ERROR:", error);
-    return NextResponse.json({ error: "Failed to fetch user" }, { status: 500 });
+    return NextResponse.json({ user: null }, { status: 200 });
   }
 }

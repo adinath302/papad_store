@@ -3,7 +3,7 @@ import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { logActivity, checkLowStock } from "@/lib/activity";
-import { sendCustomerOrderStatusUpdate } from "@/lib/email";
+import { sendCustomerOrderStatusUpdate, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
 import { razorpay } from "@/lib/razorpay";
 
 export async function POST(req: Request) {
@@ -106,27 +106,12 @@ export async function POST(req: Request) {
     // Log activity
     await logActivity(userId, "ORDER_CANCELLED", "order", orderId);
 
-    // Send cancellation email
-    if (order.user?.email) {
-      const emailData = {
-        orderId: order.id,
-        fullName: order.fullName,
-        phone: order.phone,
-        address: order.address1 + (order.address2 ? `, ${order.address2}` : ""),
-        city: order.city,
-        state: order.state,
-        pincode: order.pincode,
-        totalAmount: order.totalAmount,
-        paymentType: order.paymentType,
-        status: "CANCELLED",
-        items: order.orderitem.map((oi) => ({
-          name: oi.product.name,
-          quantity: oi.quantity,
-        })),
-      };
-      sendCustomerOrderStatusUpdate(order.user.email, emailData).catch(
-        (e) => console.error("Cancellation email error:", e),
-      );
+    const customerEmail = resolveCustomerEmail(order.email, order.user?.email);
+    if (customerEmail) {
+      sendCustomerOrderStatusUpdate(
+        customerEmail,
+        buildOrderEmailData({ ...updatedOrder, status: "CANCELLED" }),
+      ).catch((e) => console.error("Cancellation email error:", e));
     }
 
     return NextResponse.json(updatedOrder);
