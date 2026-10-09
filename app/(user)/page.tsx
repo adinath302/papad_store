@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { serializeProducts } from "@/lib/serialize-product";
 import dynamic from "next/dynamic";
 import HeroCarousel from "@/components/Home/HeroCarousel";
 import PromoBar from "@/components/Home/PromoBar";
@@ -54,7 +55,7 @@ export default async function Home() {
         getFeaturedReviews(),
       ]);
 
-    products = JSON.parse(JSON.stringify(productRows));
+    products = serializeProducts(productRows);
     ordersDelivered = deliveredAgg;
     happyCustomers = uniqueCustomers.length;
     productsMade = unitsSold._sum.quantity ?? 0;

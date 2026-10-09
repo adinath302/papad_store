@@ -1,12 +1,21 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Image, Upload, Save, RotateCcw, Check } from "lucide-react";
+import { Upload, Save, RotateCcw, Check } from "lucide-react";
 import { fetchCsrf } from "@/lib/csrf-client";
 
 type SiteImagesTabProps = {
   toast: (msg: string, type: "success" | "error") => void;
 };
+
+const ABOUT_GALLERY_KEYS = [
+  "about_gallery_1",
+  "about_gallery_2",
+  "about_gallery_3",
+  "about_gallery_4",
+  "about_gallery_5",
+  "about_gallery_6",
+];
 
 const SECTIONS = [
   {
@@ -74,13 +83,39 @@ const SECTIONS = [
   },
 ];
 
+async function uploadFile(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetchCsrf("/api/upload", {
+    method: "POST",
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok || !data.image) {
+    throw new Error(data.error || "Upload failed");
+  }
+  return data.image as string;
+}
+
 export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
   const [images, setImages] = useState<Record<string, string>>({});
   const [original, setOriginal] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
+  const [uploadingKeys, setUploadingKeys] = useState<Set<string>>(new Set());
+  const [batchUploading, setBatchUploading] = useState(false);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+  const aboutBatchRef = useRef<HTMLInputElement | null>(null);
+  const imagesRef = useRef(images);
+  const originalRef = useRef(original);
+
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
+
+  useEffect(() => {
+    originalRef.current = original;
+  }, [original]);
 
   useEffect(() => {
     fetch("/api/site-images")
@@ -96,67 +131,115 @@ export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
       });
   }, [toast]);
 
+  const persistPartial = async (partial: Record<string, string>) => {
+    if (Object.keys(partial).length === 0) return true;
+    const res = await fetchCsrf("/api/site-images", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ images: partial }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data.error || "Save failed");
+    }
+    const merged = { ...originalRef.current, ...partial };
+    originalRef.current = merged;
+    setOriginal(merged);
+    return true;
+  };
+
+  const persistImages = async (next: Record<string, string>) => {
+    const baseline = originalRef.current;
+    const changed: Record<string, string> = {};
+    for (const [key, url] of Object.entries(next)) {
+      if (url !== baseline[key]) changed[key] = url;
+    }
+    return persistPartial(changed);
+  };
+
   const hasChanges = JSON.stringify(images) !== JSON.stringify(original);
+
+  const markUploading = (key: string, on: boolean) => {
+    setUploadingKeys((prev) => {
+      const next = new Set(prev);
+      if (on) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+  };
 
   const handleUpload = async (key: string, file: File) => {
     if (!file.type.startsWith("image/")) {
       toast("Please select an image file", "error");
       return;
     }
-    setUploadingKey(key);
+    markUploading(key, true);
     try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const base64 = event.target?.result as string;
-        const res = await fetchCsrf("/api/upload", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: base64 }),
-        });
-        const data = await res.json();
-        if (data.image) {
-          setImages((prev) => ({ ...prev, [key]: data.image }));
-          toast("Image uploaded!", "success");
-        } else {
-          toast("Upload failed: " + (data.error || "Unknown error"), "error");
+      const url = await uploadFile(file);
+      imagesRef.current = { ...imagesRef.current, [key]: url };
+      setImages({ ...imagesRef.current });
+      await persistPartial({ [key]: url });
+      toast("Image uploaded!", "success");
+    } catch (err: any) {
+      toast(err?.message || "Image upload failed", "error");
+    } finally {
+      markUploading(key, false);
+    }
+  };
+
+  const handleAboutBatch = async (files: FileList | File[]) => {
+    const list = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (list.length === 0) {
+      toast("Please select image files", "error");
+      return;
+    }
+
+    const slots = ABOUT_GALLERY_KEYS.filter((key) => !uploadingKeys.has(key));
+    const selected = list.slice(0, slots.length);
+    if (selected.length === 0) {
+      toast("All gallery slots are currently uploading", "error");
+      return;
+    }
+
+    setBatchUploading(true);
+    selected.forEach((_, i) => markUploading(slots[i], true));
+
+    try {
+      const results = await Promise.allSettled(
+        selected.map((file) => uploadFile(file)),
+      );
+      const uploaded: Record<string, string> = {};
+      let ok = 0;
+      results.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          uploaded[slots[i]] = result.value;
+          ok += 1;
         }
-        setUploadingKey(null);
-      };
-      reader.readAsDataURL(file);
-    } catch {
-      toast("Image upload failed", "error");
-      setUploadingKey(null);
+      });
+      imagesRef.current = { ...imagesRef.current, ...uploaded };
+      setImages({ ...imagesRef.current });
+      if (ok > 0) {
+        await persistPartial(uploaded);
+        toast(`${ok} About Us image${ok === 1 ? "" : "s"} uploaded`, "success");
+      }
+      if (ok < selected.length) {
+        toast(`${selected.length - ok} image${selected.length - ok === 1 ? "" : "s"} failed`, "error");
+      }
+    } catch (err: any) {
+      toast(err?.message || "Batch upload failed", "error");
+    } finally {
+      selected.forEach((_, i) => markUploading(slots[i], false));
+      setBatchUploading(false);
     }
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      const changed: Record<string, string> = {};
-      for (const [key, url] of Object.entries(images)) {
-        if (url !== original[key]) {
-          changed[key] = url;
-        }
-      }
-      if (Object.keys(changed).length === 0) {
-        toast("No changes to save", "success");
-        setSaving(false);
-        return;
-      }
-      const res = await fetchCsrf("/api/site-images", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ images: changed }),
-      });
-      const data = await res.json();
-      if (data.success) {
-        setOriginal({ ...images });
-        toast("Site images saved!", "success");
-      } else {
-        toast("Save failed: " + (data.error || "Unknown error"), "error");
-      }
-    } catch {
-      toast("Failed to save", "error");
+      await persistImages(images);
+      toast("Site images saved!", "success");
+    } catch (err: any) {
+      toast(err?.message || "Failed to save", "error");
     }
     setSaving(false);
   };
@@ -212,9 +295,39 @@ export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
           key={section.title}
           className="bg-white rounded-2xl border border-stone-200 p-5"
         >
-          <h3 className="text-sm font-bold text-stone-800 mb-4">
-            {section.title}
-          </h3>
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h3 className="text-sm font-bold text-stone-800">
+              {section.title}
+            </h3>
+            {section.title === "About Us Gallery" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => aboutBatchRef.current?.click()}
+                  disabled={batchUploading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold bg-stone-900 text-white hover:bg-stone-800 disabled:opacity-40"
+                >
+                  {batchUploading ? (
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Upload size={12} />
+                  )}
+                  {batchUploading ? "Uploading..." : "Add multiple images"}
+                </button>
+                <input
+                  ref={aboutBatchRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (e.target.files?.length) handleAboutBatch(e.target.files);
+                    e.target.value = "";
+                  }}
+                />
+              </>
+            )}
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {section.keys.map(({ key, label }) => (
               <div
@@ -227,14 +340,19 @@ export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
                     alt={label}
                     className="w-full h-full object-cover"
                   />
+                  {uploadingKeys.has(key) && (
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
                     <button
                       onClick={() => fileRefs.current[key]?.click()}
-                      disabled={uploadingKey === key}
-                      className="p-2.5 bg-white rounded-xl shadow-lg hover:bg-stone-50 transition-colors"
+                      disabled={uploadingKeys.has(key)}
+                      className="p-2.5 bg-white rounded-xl shadow-lg hover:bg-stone-50 transition-colors disabled:opacity-50"
                       title="Upload new image"
                     >
-                      {uploadingKey === key ? (
+                      {uploadingKeys.has(key) ? (
                         <div className="w-4 h-4 border-2 border-stone-900 border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Upload size={16} className="text-stone-700" />

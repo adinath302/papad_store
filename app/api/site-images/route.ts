@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
+import { validateCsrfToken } from "@/lib/csrf";
 
 const DEFAULT_IMAGES: Record<string, string> = {
   logo: "/logo.png",
@@ -53,6 +54,11 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    const csrfToken = req.headers.get("x-csrf-token");
+    if (!(await validateCsrfToken(csrfToken))) {
+      return NextResponse.json({ error: "Invalid CSRF token" }, { status: 403 });
+    }
+
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
     if (!userId) {

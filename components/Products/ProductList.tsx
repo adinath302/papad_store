@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import ProductCard from "./ProductCard";
 import { isLoggedIn } from "@/lib/guest-cart";
 import { getGuestWishlist } from "@/lib/guest-wishlist";
@@ -11,35 +11,58 @@ export default function ProductList({
   totalCount,
   currentPage,
   perPage,
+  search,
+  category,
+  sort,
+  inStock,
 }: {
   products: any[];
   totalCount: number;
   currentPage: number;
   perPage: number;
+  search?: string;
+  category?: string;
+  sort?: string;
+  inStock?: boolean;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const [wishlistedIds, setWishlistedIds] = useState<Set<string>>(new Set());
+  const [wishlistedIds, setWishlistedIds] = useState<string[]>([]);
   const totalPages = Math.ceil(totalCount / perPage);
 
   useEffect(() => {
+    let cancelled = false;
     if (isLoggedIn()) {
       fetch("/api/wishlist")
         .then((r) => r.json())
         .then((items) => {
-          setWishlistedIds(new Set(items.map((i: any) => i.productId)));
+          if (!cancelled && Array.isArray(items)) {
+            setWishlistedIds(items.map((i: any) => i.productId).filter(Boolean));
+          }
         })
         .catch(() => {});
     } else {
-      setWishlistedIds(new Set(getGuestWishlist()));
+      const ids = getGuestWishlist();
+      queueMicrotask(() => {
+        if (!cancelled) setWishlistedIds(ids);
+      });
     }
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const goToPage = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("page", String(page));
-    router.push(`/products?${params.toString()}`);
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (category) params.set("category", category);
+    if (sort && sort !== "featured") params.set("sort", sort);
+    if (inStock) params.set("inStock", "true");
+    if (page > 1) params.set("page", String(page));
+    const qs = params.toString();
+    router.push(qs ? `/products?${qs}` : "/products");
   };
+
+  const wishlisted = new Set(wishlistedIds);
 
   return (
     <div>
@@ -48,13 +71,13 @@ export default function ProductList({
           <p className="text-stone-500 text-sm">No products found.</p>
         </div>
       ) : (
-      <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-16">
-        {products.map((item: any) => (
-          <li key={item.id}>
-            <ProductCard product={item} wishlisted={wishlistedIds.has(item.id)} />
-          </li>
-        ))}
-      </ul>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10 md:gap-x-8 md:gap-y-16">
+          {products.map((item: any) => (
+            <li key={item.id}>
+              <ProductCard product={item} wishlisted={wishlisted.has(item.id)} />
+            </li>
+          ))}
+        </ul>
       )}
 
       {totalPages > 1 && (

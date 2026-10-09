@@ -1,35 +1,48 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 const CATEGORIES = [
   { value: "weight", label: "By Weight" },
   { value: "pieces", label: "By Pieces" },
 ];
 
+function buildQuery(opts: {
+  search?: string;
+  category?: string;
+  sort?: string;
+  inStock?: boolean;
+}) {
+  const params = new URLSearchParams();
+  if (opts.search) params.set("search", opts.search);
+  if (opts.category) params.set("category", opts.category);
+  if (opts.sort && opts.sort !== "featured") params.set("sort", opts.sort);
+  if (opts.inStock) params.set("inStock", "true");
+  return params.toString();
+}
+
 export default function FilterSidebar({
   selectedCategory,
   inStock,
+  search,
+  sort,
 }: {
   selectedCategory?: string;
   inStock?: boolean;
+  search?: string;
+  sort?: string;
 }) {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
-  const updateParam = useCallback(
-    (key: string, value: string | null) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-      router.push(`/products?${params.toString()}`);
-    },
-    [router, searchParams],
-  );
+  const go = (next: { category?: string; inStock?: boolean }) => {
+    const qs = buildQuery({
+      search,
+      sort,
+      category: next.category,
+      inStock: next.inStock,
+    });
+    router.push(qs ? `/products?${qs}` : "/products");
+  };
 
   return (
     <div className="bg-white p-5 md:p-6 rounded-xl border border-stone-200 shadow-sm space-y-8 lg:sticky lg:top-28">
@@ -43,9 +56,9 @@ export default function FilterSidebar({
           </span>
           <input
             type="checkbox"
-            checked={inStock}
+            checked={!!inStock}
             onChange={(e) =>
-              updateParam("inStock", e.target.checked ? "true" : null)
+              go({ category: selectedCategory || undefined, inStock: e.target.checked })
             }
             className="w-4 h-4 accent-amber-600"
           />
@@ -62,7 +75,7 @@ export default function FilterSidebar({
               type="radio"
               name="category"
               checked={!selectedCategory}
-              onChange={() => updateParam("category", null)}
+              onChange={() => go({ inStock })}
               className="w-4 h-4 accent-amber-600"
             />
             <span className="text-zinc-600 group-hover:text-zinc-900 transition-colors">
@@ -78,7 +91,7 @@ export default function FilterSidebar({
                 type="radio"
                 name="category"
                 checked={selectedCategory === cat.value}
-                onChange={() => updateParam("category", cat.value)}
+                onChange={() => go({ category: cat.value, inStock })}
                 className="w-4 h-4 accent-amber-600"
               />
               <span className="text-zinc-600 group-hover:text-zinc-900 transition-colors">
