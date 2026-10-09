@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import type { Metadata } from "next";
 import ProductDetails from "@/components/Products/ProductDetails";
+import { serializeProduct, serializeProducts } from "@/lib/serialize-product";
 
 export const revalidate = 60;
 
@@ -122,8 +123,8 @@ export default async function ProductDetailsPage({
         dangerouslySetInnerHTML={{ __html: jsonLdString }}
       />
       <ProductDetails
-        product={JSON.parse(JSON.stringify(product))}
-        relatedProducts={JSON.parse(JSON.stringify(allProducts))}
+        product={serializeProduct(product)}
+        relatedProducts={serializeProducts(allProducts)}
       />
     </>
   );

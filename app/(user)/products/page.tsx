@@ -1,11 +1,11 @@
-import { Suspense } from "react";
 import { prisma } from "@/lib/prisma";
 import ProductList from "@/components/Products/ProductList";
 import FilterSidebar from "@/components/Products/FilterSidebar";
 import SearchBar from "@/components/Products/SearchBar";
 import SortSelect from "@/components/Products/SortSelect";
+import { serializeProducts } from "@/lib/serialize-product";
 
-export const revalidate = 60;
+export const dynamic = "force-dynamic";
 
 const PER_PAGE = 12;
 
@@ -24,7 +24,7 @@ export default async function ProductPage({
   const inStock = params.inStock === "true";
   const page = Math.max(1, parseInt(typeof params.page === "string" ? params.page : "1") || 1);
 
-  const where: any = {};
+  const where: Record<string, unknown> = {};
 
   if (search) {
     where.OR = [
@@ -45,7 +45,7 @@ export default async function ProductPage({
   let products: any[] = [];
   let totalCount = 0;
   try {
-    [products, totalCount] = await Promise.all([
+    const [rows, count] = await Promise.all([
       prisma.product.findMany({
         where,
         include: { productvariant: true },
@@ -54,7 +54,11 @@ export default async function ProductPage({
       }),
       prisma.product.count({ where }),
     ]);
-  } catch {}
+    products = serializeProducts(rows);
+    totalCount = count;
+  } catch (error) {
+    console.error("PRODUCTS PAGE ERROR:", error);
+  }
 
   const minPrice = (item: any) => {
     const prices = (item.productvariant || [])
@@ -90,12 +94,12 @@ export default async function ProductPage({
 
         <div className="flex flex-col lg:flex-row gap-8 lg:gap-12">
           <aside className="w-full lg:w-64 shrink-0">
-            <Suspense fallback={<div className="h-40 bg-white rounded-xl border border-stone-200" />}>
-              <FilterSidebar
-                selectedCategory={category}
-                inStock={inStock}
-              />
-            </Suspense>
+            <FilterSidebar
+              selectedCategory={category}
+              inStock={inStock}
+              search={search}
+              sort={sort}
+            />
           </aside>
 
           <div className="flex-1 min-w-0">
@@ -103,19 +107,24 @@ export default async function ProductPage({
               <span className="text-xs font-bold tracking-widest uppercase text-zinc-400">
                 {totalCount} Product{totalCount !== 1 ? "s" : ""} Found
               </span>
-              <Suspense fallback={null}>
-                <SortSelect currentSort={sort} />
-              </Suspense>
+              <SortSelect
+                currentSort={sort}
+                search={search}
+                category={category}
+                inStock={inStock}
+              />
             </div>
 
-            <Suspense fallback={<div className="h-64 bg-white rounded-xl border border-stone-200" />}>
-              <ProductList
-              products={JSON.parse(JSON.stringify(products))}
+            <ProductList
+              products={products}
               totalCount={totalCount}
               currentPage={page}
               perPage={PER_PAGE}
+              search={search}
+              category={category}
+              sort={sort}
+              inStock={inStock}
             />
-            </Suspense>
           </div>
         </div>
       </div>

@@ -1,19 +1,28 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-export default function SortSelect({ currentSort = "featured" }: { currentSort?: string }) {
+export default function SortSelect({
+  currentSort = "featured",
+  search,
+  category,
+  inStock,
+}: {
+  currentSort?: string;
+  search?: string;
+  category?: string;
+  inStock?: boolean;
+}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const handleChange = (value: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (value === "featured") {
-      params.delete("sort");
-    } else {
-      params.set("sort", value);
-    }
-    router.push(`/products?${params.toString()}`);
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (category) params.set("category", category);
+    if (inStock) params.set("inStock", "true");
+    if (value && value !== "featured") params.set("sort", value);
+    const qs = params.toString();
+    router.push(qs ? `/products?${qs}` : "/products");
   };
 
   return (
