@@ -4,7 +4,7 @@ const csp = [
   "default-src 'self'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.razorpay.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: https://res.cloudinary.com",
+  "img-src 'self' data: blob: https://res.cloudinary.com",
   "font-src 'self'",
   "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://api.razorpay.com https://kjiqyjmnmmqjrkrkwimf.supabase.co",
   "frame-src https://api.razorpay.com",
