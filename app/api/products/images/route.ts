@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
-import cloudinary from "@/lib/cloudinary";
+import { getCloudinary } from "@/lib/cloudinary";
 import { cookies } from "next/headers";
 
 async function requireAdmin(req: NextRequest): Promise<boolean> {
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       const base64 = buffer.toString("base64");
       const dataUri = `data:${file.type};base64,${base64}`;
 
-      const result = await cloudinary.uploader.upload(dataUri, {
+      const result = await getCloudinary().uploader.upload(dataUri, {
         folder: "papad_store",
       });
 
@@ -152,7 +152,7 @@ export async function DELETE(req: NextRequest) {
       const urlParts = image.url.split("/");
       const publicIdWithExt = urlParts[urlParts.length - 1];
       const publicId = `papad_store/${publicIdWithExt.split(".")[0]}`;
-      await cloudinary.uploader.destroy(publicId);
+      await getCloudinary().uploader.destroy(publicId);
     } catch (cloudinaryError) {
       console.error("Cloudinary delete failed:", cloudinaryError);
     }
