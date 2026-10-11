@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { applyCsrfCookie } from "@/lib/csrf";
 import { normalizeEmail, setAuthCookies } from "@/lib/auth-cookies";
+import { isOwner } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -50,12 +51,14 @@ export async function POST(req: Request) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 12);
+    const role = isOwner(email) ? "ADMIN" : "USER";
 
     const user = await prisma.user.create({
       data: {
         name,
         email,
         password: hashedPassword,
+        role,
       },
       select: { id: true, name: true, email: true, role: true },
     });

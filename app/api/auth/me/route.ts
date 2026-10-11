@@ -21,16 +21,26 @@ export async function GET() {
       return NextResponse.json({ user: null }, { status: 200 });
     }
 
-    const isAdmin = user.role === "ADMIN";
+    const owner = isOwner(user.email);
+    let role = user.role;
+    if (owner && role !== "ADMIN") {
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data: { role: "ADMIN" },
+        select: { role: true },
+      });
+      role = updated.role;
+    }
+    const isAdmin = role === "ADMIN" || owner;
 
     return NextResponse.json({
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role,
         isAdmin,
-        isOwner: isOwner(user.email),
+        isOwner: owner,
         permissions: user.permissions,
         ...(isAdmin ? { ownerEmail: OWNER_EMAIL } : {}),
       },

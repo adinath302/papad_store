@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { checkRateLimit } from "@/lib/rate-limit";
 import { applyCsrfCookie } from "@/lib/csrf";
 import { normalizeEmail, setAuthCookies } from "@/lib/auth-cookies";
+import { isOwner } from "@/lib/permissions";
 
 export const dynamic = "force-dynamic";
 
@@ -49,18 +50,28 @@ export async function POST(req: Request) {
       );
     }
 
+    let role = user.role;
+    if (isOwner(user.email) && role !== "ADMIN") {
+      const updated = await prisma.user.update({
+        where: { id: user.id },
+        data: { role: "ADMIN" },
+        select: { role: true },
+      });
+      role = updated.role;
+    }
+
     const res = NextResponse.json({
       message: "Login successful",
       user: {
         id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
-        isAdmin: user.role === "ADMIN",
+        role,
+        isAdmin: role === "ADMIN",
       },
     });
 
-    setAuthCookies(res, { id: user.id, role: user.role });
+    setAuthCookies(res, { id: user.id, role });
     applyCsrfCookie(res);
 
     return res;

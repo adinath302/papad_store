@@ -1,11 +1,11 @@
-import cloudinary from "@/lib/cloudinary";
+import { getCloudinary } from "@/lib/cloudinary";
 import { validateCsrfToken } from "@/lib/csrf";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-const MAX_FILE_BYTES = 8 * 1024 * 1024;
+const MAX_FILE_BYTES = 4.2 * 1024 * 1024;
 const ALLOWED_TYPES = new Set([
   "image/jpeg",
   "image/png",
@@ -25,7 +25,7 @@ async function requireAdmin() {
 
 async function uploadBuffer(buffer: Buffer, mime: string) {
   const dataUri = `data:${mime};base64,${buffer.toString("base64")}`;
-  const result = await cloudinary.uploader.upload(dataUri, {
+  const result = await getCloudinary().uploader.upload(dataUri, {
     folder: "papad_store",
   });
   return result.secure_url;
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       return Response.json({ error: "Image missing" }, { status: 400 });
     }
 
-    const result = await cloudinary.uploader.upload(image, {
+    const result = await getCloudinary().uploader.upload(image, {
       folder: "papad_store",
     });
 
