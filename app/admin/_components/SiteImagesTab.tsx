@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Upload, Save, RotateCcw, Check } from "lucide-react";
 import { fetchCsrf } from "@/lib/csrf-client";
-import { compressImage } from "@/lib/compress-image";
+import { uploadImage } from "@/lib/upload-image";
 
 type SiteImagesTabProps = {
   toast: (msg: string, type: "success" | "error") => void;
@@ -84,31 +84,8 @@ const SECTIONS = [
   },
 ];
 
-async function readUploadResponse(res: Response): Promise<{ image?: string; error?: string }> {
-  const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    if (res.status === 413) {
-      throw new Error("Image is still too large after compression. Try a smaller photo.");
-    }
-    throw new Error(text.slice(0, 120) || "Upload failed");
-  }
-}
-
 async function uploadFile(file: File): Promise<string> {
-  const compressed = await compressImage(file);
-  const formData = new FormData();
-  formData.append("file", compressed);
-  const res = await fetchCsrf("/api/upload", {
-    method: "POST",
-    body: formData,
-  });
-  const data = await readUploadResponse(res);
-  if (!res.ok || !data.image) {
-    throw new Error(data.error || "Upload failed");
-  }
-  return data.image;
+  return uploadImage(file);
 }
 
 export default function SiteImagesTab({ toast }: SiteImagesTabProps) {

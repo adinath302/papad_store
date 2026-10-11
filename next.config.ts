@@ -6,7 +6,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https://res.cloudinary.com",
   "font-src 'self'",
-  "connect-src 'self' https://res.cloudinary.com https://api.razorpay.com https://kjiqyjmnmmqjrkrkwimf.supabase.co",
+  "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://api.razorpay.com https://kjiqyjmnmmqjrkrkwimf.supabase.co",
   "frame-src https://api.razorpay.com",
   "base-uri 'self'",
 ].join("; ");

@@ -1,5 +1,5 @@
-const TARGET_BYTES = 3.2 * 1024 * 1024;
-const MAX_EDGE = 1920;
+const TARGET_BYTES = 1.2 * 1024 * 1024;
+const MAX_EDGE = 1600;
 
 function loadImage(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -56,22 +56,20 @@ export async function compressImage(file: File): Promise<File> {
   if (!file.type.startsWith("image/") || file.type === "image/svg+xml") {
     return file;
   }
-  if (file.size <= TARGET_BYTES && file.type !== "image/gif") {
-    return file;
-  }
+  if (file.type === "image/gif") return file;
 
   const img = await loadImage(file);
   let maxEdge = MAX_EDGE;
-  let quality = 0.86;
+  let quality = 0.82;
   let blob: Blob | null = null;
   const type = "image/webp";
 
-  for (let attempt = 0; attempt < 6; attempt += 1) {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
     const canvas = drawScaled(img, maxEdge);
     blob = await canvasToBlob(canvas, type, quality);
     if (blob.size <= TARGET_BYTES) break;
-    if (quality > 0.72) quality -= 0.08;
-    else maxEdge = Math.round(maxEdge * 0.85);
+    if (quality > 0.68) quality -= 0.06;
+    else maxEdge = Math.round(maxEdge * 0.82);
   }
 
   if (!blob) return file;

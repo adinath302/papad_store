@@ -41,9 +41,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const formData = await req.formData();
-    const productId = formData.get("productId") as string;
-    const files = formData.getAll("files") as File[];
+    const contentType = req.headers.get("content-type") || "";
+    let productId = "";
+    let urls: string[] = [];
+
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      productId = typeof body?.productId === "string" ? body.productId : "";
+      urls = Array.isArray(body?.urls)
+        ? body.urls.filter((u: unknown) => typeof u === "string" && u.startsWith("https://"))
+        : [];
+    } else {
+      const formData = await req.formData();
+      productId = String(formData.get("productId") || "");
+      const files = formData.getAll("files") as File[];
+      for (const file of files) {
+        if (!(file instanceof File) || file.size === 0) continue;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const dataUri = `data:${file.type};base64,${buffer.toString("base64")}`;
+        const result = await getCloudinary().uploader.upload(dataUri, {
+          folder: "papad_store",
+        });
+        urls.push(result.secure_url);
+      }
+    }
 
     if (!productId) {
       return NextResponse.json({ error: "productId is required" }, { status: 400 });
@@ -54,7 +75,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    if (files.length === 0) {
+    if (urls.length === 0) {
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
     }
 
@@ -65,19 +86,11 @@ export async function POST(req: NextRequest) {
     let nextSortOrder = (maxSortOrder._max.sortOrder ?? -1) + 1;
 
     const createdImages = [];
-    for (const file of files) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const base64 = buffer.toString("base64");
-      const dataUri = `data:${file.type};base64,${base64}`;
-
-      const result = await getCloudinary().uploader.upload(dataUri, {
-        folder: "papad_store",
-      });
-
+    for (const url of urls) {
       const image = await prisma.productimage.create({
         data: {
           productId,
-          url: result.secure_url,
+          url,
           sortOrder: nextSortOrder++,
         },
       });

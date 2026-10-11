@@ -10,7 +10,7 @@ import Image from "next/image";
 import type { Product, ProductImage } from "./types";
 import { fetchCsrf } from "@/lib/csrf-client";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { compressImage } from "@/lib/compress-image";
+import { uploadImage } from "@/lib/upload-image";
 
 type FormState = {
   name: string;
@@ -72,31 +72,9 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
 
     setUploading(true);
     try {
-      const compressed = await compressImage(file);
-      const formData = new FormData();
-      formData.append("file", compressed);
-      const res = await fetchCsrf("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const text = await res.text();
-      let data: { image?: string; error?: string } = {};
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error(
-          res.status === 413
-            ? "Image is still too large after compression. Try a smaller photo."
-            : "Upload failed",
-        );
-      }
-      if (data.image) {
-        const imageUrl = data.image;
-        setForm((prev) => ({ ...prev, image: imageUrl }));
-        toast("Image uploaded successfully!", "success");
-      } else {
-        toast("Upload failed: " + (data.error || "Unknown error"), "error");
-      }
+      const imageUrl = await uploadImage(file);
+      setForm((prev) => ({ ...prev, image: imageUrl }));
+      toast("Image uploaded successfully!", "success");
     } catch (err: any) {
       toast(err?.message || "Image upload failed", "error");
     } finally {
@@ -138,14 +116,14 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
 
     setUploadingImages(true);
     try {
-      const formData = new FormData();
-      formData.append("productId", editingProductId!);
+      const urls: string[] = [];
       for (const file of Array.from(files)) {
-        formData.append("files", await compressImage(file));
+        urls.push(await uploadImage(file));
       }
       const res = await fetchCsrf("/api/products/images", {
         method: "POST",
-        body: formData,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: editingProductId, urls }),
       });
       if (res.ok) {
         toast("Images uploaded successfully!", "success");
