@@ -51,7 +51,8 @@ const Navbar = ({ onCartToggle }: { onCartToggle?: () => void }) => {
       fetch("/api/auth/me", { signal: controller.signal })
         .then((r) => r.json())
         .then((data) => {
-          const isAdminUser = data.user?.isAdmin === true;
+          const isAdminUser =
+            data.user?.isAdmin === true || data.user?.isOwner === true;
           setIsAdmin(isAdminUser);
           setIsLoggedIn(true);
           sessionStorage.setItem(
