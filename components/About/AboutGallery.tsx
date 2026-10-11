@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useSiteImages } from "@/lib/useSiteImages";
 
@@ -13,58 +13,55 @@ const GALLERY_KEYS = [
   "about_gallery_6",
 ];
 
-function shuffle<T>(items: T[]): T[] {
-  const next = [...items];
-  for (let i = next.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const current = next[i];
-    next[i] = next[j];
-    next[j] = current;
-  }
-  return next;
-}
-
 export default function AboutGallery() {
   const { getImage } = useSiteImages();
-  const [order, setOrder] = useState(GALLERY_KEYS);
-  const [tick, setTick] = useState(0);
+  const [index, setIndex] = useState(0);
+  const slides = GALLERY_KEYS.map((key) => ({ key, src: getImage(key) }));
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      setOrder((prev) => shuffle(prev));
-      setTick((n) => n + 1);
+    const timer = window.setInterval(() => {
+      setIndex((prev) => (prev === slides.length - 1 ? 0 : prev + 1));
     }, 4500);
-    return () => window.clearInterval(id);
-  }, []);
-
-  const slides = useMemo(
-    () =>
-      order.map((key) => ({
-        key,
-        src: getImage(key),
-      })),
-    [order, getImage],
-  );
+    return () => window.clearInterval(timer);
+  }, [slides.length]);
 
   return (
     <section className="pb-16 px-4 md:px-6">
       <div className="max-w-5xl mx-auto">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 md:gap-4">
-          {slides.map((slide, index) => (
+        <div className="relative aspect-[16/9] md:aspect-[21/9] rounded-2xl md:rounded-3xl overflow-hidden bg-stone-100 border border-stone-200 shadow-sm">
+          {slides.map((slide, i) => (
             <div
-              key={`${slide.key}-${tick}`}
-              className="relative aspect-[4/3] rounded-xl md:rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 animate-about-shuffle"
-              style={{ animationDelay: `${index * 40}ms` }}
+              key={slide.key}
+              className={`absolute inset-0 transition-opacity duration-700 ${
+                i === index ? "opacity-100" : "opacity-0 pointer-events-none"
+              }`}
             >
               <Image
                 src={slide.src}
                 alt="Shivshambho craft"
                 fill
-                sizes="(max-width: 768px) 50vw, 33vw"
+                priority={i === 0}
+                sizes="(max-width: 768px) 100vw, 1024px"
                 className="object-cover"
               />
             </div>
           ))}
+
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+            {slides.map((_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setIndex(i)}
+                aria-label={`Go to gallery image ${i + 1}`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === index
+                    ? "w-8 bg-amber-400"
+                    : "w-3 bg-white/70 hover:bg-white"
+                }`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>
