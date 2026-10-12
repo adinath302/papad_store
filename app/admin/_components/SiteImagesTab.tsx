@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { Upload, Save, RotateCcw, Check } from "lucide-react";
 import { fetchCsrf } from "@/lib/csrf-client";
 import { uploadImage } from "@/lib/upload-image";
+import { clearSiteImagesCache } from "@/lib/useSiteImages";
 
 type SiteImagesTabProps = {
   toast: (msg: string, type: "success" | "error") => void;
@@ -169,8 +170,7 @@ export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
       const url = await uploadFile(file);
       imagesRef.current = { ...imagesRef.current, [key]: url };
       setImages({ ...imagesRef.current });
-      await persistPartial({ [key]: url });
-      toast("Image uploaded!", "success");
+      toast("Image uploaded. Click Save Changes to publish.", "success");
     } catch (err: any) {
       toast(err?.message || "Image upload failed", "error");
     } finally {
@@ -210,8 +210,10 @@ export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
       imagesRef.current = { ...imagesRef.current, ...uploaded };
       setImages({ ...imagesRef.current });
       if (ok > 0) {
-        await persistPartial(uploaded);
-        toast(`${ok} About Us image${ok === 1 ? "" : "s"} uploaded`, "success");
+        toast(
+          `${ok} About Us image${ok === 1 ? "" : "s"} uploaded. Click Save Changes to publish.`,
+          "success",
+        );
       }
       if (ok < selected.length) {
         toast(`${selected.length - ok} image${selected.length - ok === 1 ? "" : "s"} failed`, "error");
@@ -228,6 +230,7 @@ export default function SiteImagesTab({ toast }: SiteImagesTabProps) {
     setSaving(true);
     try {
       await persistImages(images);
+      clearSiteImagesCache();
       toast("Site images saved!", "success");
     } catch (err: any) {
       toast(err?.message || "Failed to save", "error");

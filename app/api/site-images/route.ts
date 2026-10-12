@@ -44,7 +44,7 @@ export async function GET() {
       map[row.key] = row.url;
     }
     return NextResponse.json(map, {
-      headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
+      headers: { "Cache-Control": "no-store" },
     });
   } catch (error: any) {
     console.error("Site images GET error:", error);
