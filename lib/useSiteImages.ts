@@ -56,6 +56,11 @@ async function fetchSiteImages(): Promise<Record<string, string>> {
   return cachePromise;
 }
 
+export function clearSiteImagesCache() {
+  cachedImages = null;
+  cachePromise = null;
+}
+
 export function useSiteImages() {
   const [images, setImages] = useState<Record<string, string>>(DEFAULTS);
   const [loading, setLoading] = useState(true);
