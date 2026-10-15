@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
-import { razorpay } from "@/lib/razorpay";
+import { getRazorpay } from "@/lib/razorpay";
 import { logActivity } from "@/lib/activity";
 import { cookies } from "next/headers";
 
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     if (!Number.isFinite(amountPaise) || amountPaise < 100) {
       return NextResponse.json({ error: "Invalid refund amount" }, { status: 400 });
     }
-    const razorpayRefund = await razorpay.payments.refund(order.razorpayPaymentId, { amount: amountPaise });
+    const razorpayRefund = await getRazorpay().payments.refund(order.razorpayPaymentId, { amount: amountPaise });
 
     const refund = await prisma.refund.create({
       data: {

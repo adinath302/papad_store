@@ -195,8 +195,8 @@ export async function POST(req: Request) {
     }
 
     if (paymentType === "Razorpay") {
-      const { razorpay } = await import("@/lib/razorpay");
-      const rzpOrder = await razorpay.orders.fetch(razorpayOrderId);
+      const { getRazorpay } = await import("@/lib/razorpay");
+      const rzpOrder = await getRazorpay().orders.fetch(razorpayOrderId);
       const paidPaise = Number(rzpOrder.amount);
       if (paidPaise !== totalAmount * 100) {
         return Response.json(

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { validateCsrfToken } from "@/lib/csrf";
 import {
-  razorpay,
+  getRazorpay,
   getRazorpayKeyId,
   isRazorpayConfigured,
 } from "@/lib/razorpay";
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
 
     const receipt = `rcpt_${Date.now()}`;
 
-    const razorpayOrder = await razorpay.orders.create({
+    const razorpayOrder = await getRazorpay().orders.create({
       amount: totalAmount * 100,
       currency: "INR",
       receipt,

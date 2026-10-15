@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { logActivity, checkLowStock } from "@/lib/activity";
 import { sendCustomerOrderStatusUpdate, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
-import { razorpay } from "@/lib/razorpay";
+import { getRazorpay } from "@/lib/razorpay";
 
 export const runtime = "nodejs";
 
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
 
     if (order.razorpayPaymentId && order.paymentType !== "COD") {
       try {
-        const refund = await razorpay.payments.refund(order.razorpayPaymentId, {
+        const refund = await getRazorpay().payments.refund(order.razorpayPaymentId, {
           amount: order.totalAmount * 100,
         });
         razorpayRefundId = refund.id;
