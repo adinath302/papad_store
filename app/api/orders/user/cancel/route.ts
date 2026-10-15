@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { logActivity, checkLowStock } from "@/lib/activity";
 import { sendCustomerOrderStatusUpdate, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
 import { razorpay } from "@/lib/razorpay";
+
+export const runtime = "nodejs";
 
 export async function POST(req: Request) {
   try {
@@ -53,7 +55,7 @@ export async function POST(req: Request) {
     if (order.razorpayPaymentId && order.paymentType !== "COD") {
       try {
         const refund = await razorpay.payments.refund(order.razorpayPaymentId, {
-          amount: order.totalAmount,
+          amount: order.totalAmount * 100,
         });
         razorpayRefundId = refund.id;
       } catch (refundError: any) {
@@ -108,10 +110,16 @@ export async function POST(req: Request) {
 
     const customerEmail = resolveCustomerEmail(order.email, order.user?.email);
     if (customerEmail) {
-      sendCustomerOrderStatusUpdate(
-        customerEmail,
-        buildOrderEmailData({ ...updatedOrder, status: "CANCELLED" }),
-      ).catch((e) => console.error("Cancellation email error:", e));
+      after(async () => {
+        try {
+          await sendCustomerOrderStatusUpdate(
+            customerEmail,
+            buildOrderEmailData({ ...updatedOrder, status: "CANCELLED" }),
+          );
+        } catch (e) {
+          console.error("Cancellation email error:", e);
+        }
+      });
     }
 
     return NextResponse.json(updatedOrder);

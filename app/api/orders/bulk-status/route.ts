@@ -1,10 +1,12 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { logActivity, checkLowStock } from "@/lib/activity";
 import { cookies } from "next/headers";
 import { sendCustomerOrderStatusUpdate, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
 import { getTrackingUrl } from "@/lib/tracking";
+
+export const runtime = "nodejs";
 
 const VALID_STATUSES = ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"];
 
@@ -75,16 +77,20 @@ export async function PATCH(req: Request) {
       },
     });
 
-    for (const order of updatedOrders) {
-      const customerEmail = resolveCustomerEmail(order.email, order.user?.email);
-      if (!customerEmail) continue;
-      const emailData = buildOrderEmailData(order);
-      const trackingUrl = getTrackingUrl(order.courierName, order.trackingId);
-      sendCustomerOrderStatusUpdate(customerEmail, {
-        ...emailData,
-        trackingUrl,
-      }).catch((e) => console.error("Bulk status email error:", e));
-    }
+    after(async () => {
+      for (const order of updatedOrders) {
+        const customerEmail = resolveCustomerEmail(order.email, order.user?.email);
+        if (!customerEmail) continue;
+        try {
+          await sendCustomerOrderStatusUpdate(customerEmail, {
+            ...buildOrderEmailData(order),
+            trackingUrl: getTrackingUrl(order.courierName, order.trackingId),
+          });
+        } catch (e) {
+          console.error("Bulk status email error:", e);
+        }
+      }
+    });
 
     // Check low stock for affected products
     const affectedProducts = await prisma.orderitem.findMany({

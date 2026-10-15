@@ -2,12 +2,12 @@ import type { NextConfig } from "next";
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.razorpay.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://api.razorpay.com https://checkout.razorpay.com",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://res.cloudinary.com",
+  "img-src 'self' data: blob: https://res.cloudinary.com https://*.razorpay.com",
   "font-src 'self'",
-  "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://api.razorpay.com https://kjiqyjmnmmqjrkrkwimf.supabase.co",
-  "frame-src https://api.razorpay.com",
+  "connect-src 'self' https://res.cloudinary.com https://api.cloudinary.com https://api.razorpay.com https://checkout.razorpay.com https://lumberjack.razorpay.com https://*.razorpay.com https://kjiqyjmnmmqjrkrkwimf.supabase.co",
+  "frame-src https://api.razorpay.com https://checkout.razorpay.com",
   "base-uri 'self'",
 ].join("; ");
 

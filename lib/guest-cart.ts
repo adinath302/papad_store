@@ -46,8 +46,7 @@ export function addToGuestCart(item: GuestCartItem) {
 export function removeFromGuestCart(productId: string, variantId?: string) {
   setGuestCart(
     getGuestCart().filter(
-      (i) =>
-        !(i.productId === productId && i.variantId === (variantId ?? i.variantId)),
+      (i) => !(i.productId === productId && i.variantId === variantId),
     ),
   );
 }
@@ -59,7 +58,7 @@ export function updateGuestCartQuantity(
 ) {
   const cart = getGuestCart();
   const item = cart.find(
-    (i) => i.productId === productId && i.variantId === (variantId ?? i.variantId),
+    (i) => i.productId === productId && i.variantId === variantId,
   );
   if (item) {
     if (quantity <= 0) {

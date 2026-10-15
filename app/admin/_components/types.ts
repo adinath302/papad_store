@@ -46,6 +46,7 @@ export type Order = {
   status: string;
   fullName: string;
   phone: string;
+  email: string;
   address1: string;
   address2: string | null;
   city: string;

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 import { sendCustomerOrderStatusUpdate, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
@@ -61,10 +61,16 @@ export async function POST(req: Request) {
         });
         const customerEmail = resolveCustomerEmail(updated.email, updated.user?.email);
         if (customerEmail && order.status !== "CONFIRMED") {
-          sendCustomerOrderStatusUpdate(
-            customerEmail,
-            buildOrderEmailData(updated),
-          ).catch((e) => console.error("Webhook status email error:", e));
+          after(async () => {
+            try {
+              await sendCustomerOrderStatusUpdate(
+                customerEmail,
+                buildOrderEmailData(updated),
+              );
+            } catch (e) {
+              console.error("Webhook status email error:", e);
+            }
+          });
         }
       }
 
@@ -87,6 +93,9 @@ export async function POST(req: Request) {
       });
 
       if (failedOrder) {
+        if (failedOrder.status === "CANCELLED") {
+          return NextResponse.json({ status: "ok" });
+        }
         const cancelled = await prisma.$transaction(async (tx) => {
           const updated = await tx.order.update({
             where: { id: failedOrder.id },
@@ -109,10 +118,16 @@ export async function POST(req: Request) {
 
         const customerEmail = resolveCustomerEmail(cancelled.email, cancelled.user?.email);
         if (customerEmail && failedOrder.status !== "CANCELLED") {
-          sendCustomerOrderStatusUpdate(
-            customerEmail,
-            buildOrderEmailData(cancelled),
-          ).catch((e) => console.error("Webhook cancel email error:", e));
+          after(async () => {
+            try {
+              await sendCustomerOrderStatusUpdate(
+                customerEmail,
+                buildOrderEmailData(cancelled),
+              );
+            } catch (e) {
+              console.error("Webhook cancel email error:", e);
+            }
+          });
         }
       }
 

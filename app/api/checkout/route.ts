@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
@@ -63,8 +64,13 @@ export async function POST(req: Request) {
       return Response.json({ error: "Invalid email address" }, { status: 400 });
     }
 
-    // Verify Razorpay signature if payment was made
     if (paymentType === "Razorpay") {
+      if (!isRazorpayConfigured()) {
+        return Response.json(
+          { error: "Online payments are not configured" },
+          { status: 501 },
+        );
+      }
       if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
         return Response.json(
           { error: "Missing payment verification details" },
@@ -72,19 +78,28 @@ export async function POST(req: Request) {
         );
       }
 
-      if (isRazorpayConfigured()) {
-        const secret = process.env.RAZORPAY_KEY_SECRET || "";
-        const generatedSignature = crypto
-          .createHmac("sha256", secret)
-          .update(`${razorpayOrderId}|${razorpayPaymentId}`)
-          .digest("hex");
+      const secret = process.env.RAZORPAY_KEY_SECRET || "";
+      const generatedSignature = crypto
+        .createHmac("sha256", secret)
+        .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+        .digest("hex");
 
-        if (generatedSignature !== razorpaySignature) {
-          return Response.json(
-            { error: "Payment verification failed" },
-            { status: 400 },
-          );
-        }
+      if (generatedSignature !== razorpaySignature) {
+        return Response.json(
+          { error: "Payment verification failed" },
+          { status: 400 },
+        );
+      }
+
+      const duplicate = await prisma.order.findFirst({
+        where: { razorpayPaymentId },
+        select: { id: true },
+      });
+      if (duplicate) {
+        return Response.json(
+          { error: "This payment has already been used" },
+          { status: 400 },
+        );
       }
     }
 
@@ -110,6 +125,10 @@ export async function POST(req: Request) {
 
     const cartItems: any[] = [];
     for (const ci of clientItems) {
+      const quantity = Number(ci.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        return Response.json({ error: "Invalid item quantity" }, { status: 400 });
+      }
       const product = productMap.get(ci.productId);
       if (!product) {
         return Response.json(
@@ -131,7 +150,7 @@ export async function POST(req: Request) {
       cartItems.push({
         productId: ci.productId,
         variantId: ci.variantId || null,
-        quantity: ci.quantity,
+        quantity,
         unitPrice: (() => {
           if (ci.variantId) {
             const v = product.productvariant.find((vv: any) => vv.id === ci.variantId);
@@ -172,6 +191,18 @@ export async function POST(req: Request) {
             totalAmount = Math.max(0, subtotal + shippingCost - discount);
           }
         }
+      }
+    }
+
+    if (paymentType === "Razorpay") {
+      const { razorpay } = await import("@/lib/razorpay");
+      const rzpOrder = await razorpay.orders.fetch(razorpayOrderId);
+      const paidPaise = Number(rzpOrder.amount);
+      if (paidPaise !== totalAmount * 100) {
+        return Response.json(
+          { error: "Paid amount does not match order total" },
+          { status: 400 },
+        );
       }
     }
 
@@ -258,24 +289,32 @@ export async function POST(req: Request) {
     }
 
     const emailData = buildOrderEmailData(updatedOrder);
-
-    sendAdminOrderNotification(emailData).catch((e) =>
-      console.error("Admin email error:", e),
-    );
-
     const customerEmail = resolveCustomerEmail(updatedOrder.email, updatedOrder.user?.email);
-    if (customerEmail) {
-      sendCustomerOrderConfirmation(customerEmail, emailData).catch(
-        (e) => console.error("Customer email error:", e),
-      );
-    }
+
+    // Run after the response is sent. `after` extends the serverless
+    // invocation lifetime (via waitUntil), so emails actually deliver on
+    // Vercel instead of being killed when the response returns.
+    after(async () => {
+      const tasks: Promise<unknown>[] = [
+        sendAdminOrderNotification(emailData).catch((e) =>
+          console.error("Admin email error:", e),
+        ),
+      ];
+      if (customerEmail) {
+        tasks.push(
+          sendCustomerOrderConfirmation(customerEmail, emailData).catch((e) =>
+            console.error("Customer email error:", e),
+          ),
+        );
+      }
+      await Promise.allSettled(tasks);
+    });
 
     return Response.json(updatedOrder);
   } catch (error: any) {
     console.error("CHECKOUT ERROR:", error);
-    return Response.json(
-      { error: error?.message?.includes("Insufficient stock") ? error.message : (error?.message || "Checkout failed") },
-      { status: 500 },
-    );
+    const message = error?.message || "Checkout failed";
+    const status = message.includes("Insufficient stock") ? 409 : 500;
+    return Response.json({ error: message }, { status });
   }
 }

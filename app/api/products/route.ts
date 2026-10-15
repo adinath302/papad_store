@@ -24,7 +24,7 @@ export async function GET() {
     })
     return NextResponse.json(products, {
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        "Cache-Control": "private, no-store",
       },
     });
   } catch (error: any) {
@@ -63,7 +63,7 @@ export async function POST(req: Request) {
         nameMarathi: body.nameMarathi || null,
         description: body.description || null,
 
-        stock: Number(body.stock) || 0,
+        stock: body.stock !== undefined && body.stock !== null && body.stock !== "" ? Number(body.stock) : null,
         weight: body.weight ? Number(body.weight) : 200,
 
         image: body.image || null,

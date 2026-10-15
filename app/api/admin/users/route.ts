@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 import { validateCsrfToken } from "@/lib/csrf";
+import { isOwner } from "@/lib/permissions";
 
 async function getCurrentUser() {
   const cookieStore = await cookies();
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     if (!currentUser) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    if (currentUser.role !== "ADMIN") {
+    if (currentUser.role !== "ADMIN" || !isOwner(currentUser.email)) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

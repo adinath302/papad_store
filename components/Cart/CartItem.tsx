@@ -53,7 +53,7 @@ const CartItem = memo(function CartItem({
       const guestItem = guestCart.find(
         (i) =>
           i.productId === item.product.id &&
-          i.variantId === (item.variantId ?? i.variantId),
+          (i.variantId ?? null) === (item.variantId ?? null),
       );
       if (!guestItem) {
         setPendingQty(false);
@@ -126,7 +126,7 @@ const CartItem = memo(function CartItem({
     <div className="flex gap-4 sm:gap-5 items-center py-2">
       <div className="w-24 h-28 sm:w-28 sm:h-32 bg-zinc-100 rounded-2xl overflow-hidden shrink-0">
         <Image
-          src={item.product?.image || "/papad-placeholder.jpg"}
+          src={item.product?.image || "/use_everywhere.jpg"}
           alt={item.product?.name ?? "Cart item"}
           width={112}
           height={128}

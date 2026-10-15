@@ -8,16 +8,14 @@ export async function GET(req: Request) {
     const orderId = searchParams.get("order");
     const phone = searchParams.get("phone");
 
-    if (!orderId && !phone) {
+    if (!orderId || !phone) {
       return NextResponse.json(
-        { error: "Please provide an Order ID or Phone number" },
+        { error: "Please provide both Order ID and Phone number" },
         { status: 400 },
       );
     }
 
-    let where: any = {};
-    if (orderId) where.id = orderId;
-    if (phone) where.phone = phone;
+    const where = { id: orderId, phone };
 
     const orders = await prisma.order.findMany({
       where,
