@@ -78,7 +78,8 @@ function SignupForm() {
       }
 
       sessionStorage.removeItem("nav_auth");
-      const redirect = searchParams.get("redirect") || "/";
+      const raw = searchParams.get("redirect") || "/";
+      const redirect = raw.startsWith("/") && !raw.startsWith("//") ? raw : "/";
       router.push(redirect);
       router.refresh();
     } catch {

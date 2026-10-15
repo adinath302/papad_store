@@ -359,6 +359,9 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
                       <td className="px-5 py-4 max-w-[200px]">
                         <p className="font-semibold text-stone-800 text-sm">{order.fullName || "Guest"}</p>
                         <p className="text-[11px] text-stone-400 mt-0.5">{order.phone}</p>
+                        {order.email && (
+                          <p className="text-[11px] text-stone-400 mt-0.5 truncate" title={order.email}>{order.email}</p>
+                        )}
                         <div className="text-[11px] text-stone-500 mt-0.5 leading-snug">
                           <p>{order.address1}</p>
                           {order.address2 && <p>{order.address2}</p>}
@@ -498,6 +501,9 @@ export default function OrdersTab({ isOwner, hasPerm, onOrderChange }: OrdersTab
                           <div className="min-w-0">
                             <p className="text-sm font-semibold text-stone-800 truncate">{order.fullName || "Guest"}</p>
                             <p className="text-[11px] text-stone-400">{order.phone}</p>
+                            {order.email && (
+                              <p className="text-[11px] text-stone-400 truncate">{order.email}</p>
+                            )}
                           </div>
                         </div>
                         <div className="text-right shrink-0">

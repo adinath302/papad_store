@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
 import { can, isOwner } from "@/lib/permissions";
@@ -6,6 +6,8 @@ import { cookies } from "next/headers";
 import { sendCustomerShippingNotification, sendCustomerOrderStatusUpdate, resolveCustomerEmail, buildOrderEmailData } from "@/lib/email";
 import { getTrackingUrl } from "@/lib/tracking";
 import { calculateSpeedPostRate, estimateZone } from "@/lib/indiapost";
+
+export const runtime = "nodejs";
 
 async function getCurrentUser() {
   const cookieStore = await cookies();
@@ -156,37 +158,45 @@ export async function PATCH(req: Request) {
     });
 
     const customerEmail = resolveCustomerEmail(order.email, order.user?.email);
-    if (customerEmail) {
-      if (status && prevOrder && prevOrder.status !== status) {
-        const emailData = buildOrderEmailData(order);
-        const trackingUrl = getTrackingUrl(order.courierName, order.trackingId);
-        sendCustomerOrderStatusUpdate(customerEmail, {
-          ...emailData,
-          trackingUrl,
-        }).catch((e) => console.error("Status email error:", e));
-      }
+    const statusChanged = !!status && !!prevOrder && prevOrder.status !== status;
+    const trackingChanged =
+      data.trackingId !== undefined || data.courierName !== undefined;
+    const hasTracking = !!order.trackingId && order.trackingId !== "PENDING";
+    // When the status email already carries the courier/tracking block, don't
+    // also send a separate shipping email.
+    const sendShippingEmail =
+      trackingChanged && hasTracking && !(statusChanged && order.status === "SHIPPED");
 
-      const shouldNotify =
-        order.trackingId &&
-        order.trackingId !== "PENDING" &&
-        (data.trackingId !== undefined || data.status === "SHIPPED") &&
-        data.status !== "SHIPPED";
-
-      if (shouldNotify) {
-        const trackingUrl = getTrackingUrl(order.courierName, order.trackingId);
-        sendCustomerShippingNotification(customerEmail, {
-          orderId: order.id,
-          fullName: order.fullName,
-          courierName: order.courierName || "",
-          trackingId: order.trackingId || "",
-          trackingUrl,
-          items: order.orderitem.map((oi) => ({
-            name: oi.product.name,
-            quantity: oi.quantity,
-            price: oi.price,
-          })),
-        }).catch((e) => console.error("Shipping email error:", e));
-      }
+    if (customerEmail && (statusChanged || sendShippingEmail)) {
+      after(async () => {
+        if (statusChanged) {
+          try {
+            await sendCustomerOrderStatusUpdate(customerEmail, {
+              ...buildOrderEmailData(order),
+              trackingUrl: getTrackingUrl(order.courierName, order.trackingId),
+            });
+          } catch (e) {
+            console.error("Status email error:", e);
+          }
+        }
+        if (sendShippingEmail) {
+          try {
+            await sendCustomerShippingNotification(customerEmail, {
+              orderId: order.id,
+              fullName: order.fullName,
+              courierName: order.courierName || "",
+              trackingId: order.trackingId || "",
+              trackingUrl: getTrackingUrl(order.courierName, order.trackingId),
+              items: order.orderitem.map((oi) => ({
+                name: oi.product.name,
+                quantity: oi.quantity,
+              })),
+            });
+          } catch (e) {
+            console.error("Shipping email error:", e);
+          }
+        }
+      });
     }
 
     return NextResponse.json(order);

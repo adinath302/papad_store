@@ -36,29 +36,30 @@ export async function PATCH(
     const { id } = await params;
     const body = await req.json();
 
-    await prisma.productvariant.deleteMany({ where: { productId: id } });
-
-    const product = await prisma.product.update({
-      where: { id },
-      data: {
-        name: body.name,
-        nameMarathi: body.nameMarathi || null,
-        description: body.description || null,
-        stock: body.stock !== undefined && body.stock !== null ? Number(body.stock) : null,
-        weight: body.weight ? Number(body.weight) : 200,
-        image: body.image || null,
-        thumbnail: body.thumbnail || body.image || null,
-        productType: body.productType || "weight",
-        metaTitle: body.metaTitle || null,
-        metaDescription: body.metaDescription || null,
-        productvariant: {
-          create: (body.variants || []).map((v: any) => ({
-            label: v.label,
-            price: Number(v.price),
-          })),
+    const product = await prisma.$transaction(async (tx) => {
+      await tx.productvariant.deleteMany({ where: { productId: id } });
+      return tx.product.update({
+        where: { id },
+        data: {
+          name: body.name,
+          nameMarathi: body.nameMarathi || null,
+          description: body.description || null,
+          stock: body.stock !== undefined && body.stock !== null ? Number(body.stock) : null,
+          weight: body.weight ? Number(body.weight) : 200,
+          image: body.image || null,
+          thumbnail: body.thumbnail || body.image || null,
+          productType: body.productType || "weight",
+          metaTitle: body.metaTitle || null,
+          metaDescription: body.metaDescription || null,
+          productvariant: {
+            create: (body.variants || []).map((v: any) => ({
+              label: v.label,
+              price: Number(v.price),
+            })),
+          },
         },
-      },
-      include: { productvariant: true },
+        include: { productvariant: true },
+      });
     });
 
     return NextResponse.json(product);
@@ -91,6 +92,14 @@ export async function DELETE(
 
     const { id } = await params;
 
+    const ordered = await prisma.orderitem.count({ where: { productId: id } });
+    if (ordered > 0) {
+      return NextResponse.json(
+        { error: "Cannot delete a product that has been ordered. Hide it by setting stock to 0 instead." },
+        { status: 409 },
+      );
+    }
+
     await prisma.wishlistitem.deleteMany({ where: { productId: id } });
     await prisma.review.deleteMany({ where: { productId: id } });
     await prisma.recentlyviewed.deleteMany({ where: { productId: id } });
@@ -98,7 +107,6 @@ export async function DELETE(
     await prisma.productimage.deleteMany({ where: { productId: id } });
     await prisma.productvariant.deleteMany({ where: { productId: id } });
     await prisma.cartitem.deleteMany({ where: { productId: id } });
-    await prisma.orderitem.deleteMany({ where: { productId: id } });
     await prisma.product.delete({ where: { id } });
 
     return NextResponse.json({ success: true });

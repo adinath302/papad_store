@@ -9,6 +9,8 @@ import {
 import { prisma } from "@/lib/prisma";
 import { calculateShippingFee } from "@/lib/shipping";
 
+export const runtime = "nodejs";
+
 export async function POST(req: Request) {
   const csrfToken = req.headers.get("x-csrf-token");
   if (!(await validateCsrfToken(csrfToken))) {
@@ -45,6 +47,10 @@ export async function POST(req: Request) {
 
     let subtotal = 0;
     for (const ci of clientItems) {
+      const quantity = Number(ci.quantity);
+      if (!Number.isInteger(quantity) || quantity < 1) {
+        return NextResponse.json({ error: "Invalid item quantity" }, { status: 400 });
+      }
       const product = productMap.get(ci.productId);
       if (!product) {
         return NextResponse.json(
@@ -69,7 +75,7 @@ export async function POST(req: Request) {
           ? product.productvariant[0].price
           : 0;
       }
-      subtotal += price * ci.quantity;
+      subtotal += price * quantity;
     }
 
     const shippingCost = calculateShippingFee(subtotal, state);

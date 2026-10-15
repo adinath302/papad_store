@@ -50,7 +50,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Order already has a refund" }, { status: 400 });
     }
 
-    const razorpayRefund = await razorpay.payments.refund(order.razorpayPaymentId, { amount });
+    const amountPaise = Math.round(Number(amount) * 100);
+    if (!Number.isFinite(amountPaise) || amountPaise < 100) {
+      return NextResponse.json({ error: "Invalid refund amount" }, { status: 400 });
+    }
+    const razorpayRefund = await razorpay.payments.refund(order.razorpayPaymentId, { amount: amountPaise });
 
     const refund = await prisma.refund.create({
       data: {

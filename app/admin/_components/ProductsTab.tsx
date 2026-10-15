@@ -212,7 +212,7 @@ export default function ProductsTab({ products, isOwner, hasPerm, onProductChang
         metaDescription: form.metaDescription || null,
         stock: form.stock ? Number(form.stock) : null,
         weight: form.weight ? Number(form.weight) : null,
-        productType: "variant",
+        productType: form.variants.some((v) => /piece/i.test(v.label)) ? "pieces" : "weight",
         image: form.image || null,
         thumbnail: form.image || null,
         variants: form.variants.filter((v) => v.label.trim() && v.price).map((v) => ({ label: v.label.trim(), price: Number(v.price) })),

@@ -30,8 +30,10 @@ export default function CartSidebar({
   const [loading, setLoading] = useState(true);
   const [checkingOut, setCheckingOut] = useState(false);
 
-  const fetchCart = useCallback(async () => {
-    setLoading(true);
+  const fetchCart = useCallback(async (silent = false) => {
+    // Silent refresh (e.g. quantity change) keeps the current items mounted so
+    // product images are not unmounted/reloaded.
+    if (!silent) setLoading(true);
     try {
       if (!isLoggedIn()) {
         const guestItems = getGuestCart();
@@ -49,7 +51,6 @@ export default function CartSidebar({
           quantity: gi.quantity,
         }));
         setItems(mapped);
-        setLoading(false);
         return;
       }
 
@@ -57,7 +58,6 @@ export default function CartSidebar({
       if (!res.ok) {
         console.error("Cart fetch failed:", res.status, res.statusText);
         setItems([]);
-        setLoading(false);
         return;
       }
       const text = await res.text();
@@ -66,7 +66,7 @@ export default function CartSidebar({
     } catch (error) {
       console.error("Fetch cart error:", error);
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, []);
 
@@ -163,7 +163,7 @@ export default function CartSidebar({
               ) : (
                 items.map((item) => (
                   <div key={item.id} className="group relative">
-                    <CartItem item={item} onUpdate={fetchCart} />
+                    <CartItem item={item} onUpdate={() => fetchCart(true)} />
                   </div>
                 ))
               )}

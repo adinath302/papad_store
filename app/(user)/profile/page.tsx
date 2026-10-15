@@ -187,9 +187,14 @@ export default function ProfilePage() {
   }, [activeTab, checking, user]);
 
   const handleLogout = async () => {
-    await fetchCsrf("/api/auth/logout", { method: "POST" });
-    sessionStorage.removeItem("nav_auth");
-    router.push("/");
+    try {
+      await fetchCsrf("/api/auth/logout", { method: "POST" });
+    } finally {
+      sessionStorage.removeItem("nav_auth");
+      // Full reload so the Navbar (a client component in the root layout)
+      // re-reads the cleared auth cookie and updates immediately.
+      window.location.href = "/";
+    }
   };
 
   const handleSaveName = async () => {

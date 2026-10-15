@@ -1,7 +1,23 @@
 import nodemailer from "nodemailer";
+import { OWNER_EMAIL } from "@/lib/permissions";
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
-const SUPPORT_PHONE = process.env.SUPPORT_PHONE || "+91 98765 43210";
+const SUPPORT_PHONE = process.env.SUPPORT_PHONE || "+91 78229 01803";
+
+// Shop owner addresses that must always receive new-order alerts.
+const DEFAULT_ADMIN_EMAILS = [
+  OWNER_EMAIL,
+  "adinathgaware18@gmail.com",
+];
+
+function getAdminEmails(): string[] {
+  const fromEnv = (process.env.ADMIN_EMAILS || "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  const merged = new Set([...DEFAULT_ADMIN_EMAILS, ...fromEnv].map((e) => e.toLowerCase()));
+  return [...merged];
+}
 
 function escapeHtml(str: string): string {
   return str
@@ -22,6 +38,7 @@ export type OrderEmailItem = {
 export type OrderEmailData = {
   orderId: string;
   fullName: string;
+  email?: string | null;
   phone: string;
   address: string;
   city: string;
@@ -86,6 +103,7 @@ function itemsTable(items: OrderEmailItem[]): string {
 export function buildOrderEmailData(order: {
   id: string;
   fullName: string;
+  email?: string | null;
   phone: string;
   address1: string;
   address2?: string | null;
@@ -100,13 +118,17 @@ export function buildOrderEmailData(order: {
   orderitem: {
     quantity: number;
     price?: number | null;
-    product: { name: string };
+    product: {
+      name: string;
+      productvariant?: { id: string; label: string }[];
+    };
     variantId?: string | null;
   }[];
 }): OrderEmailData {
   return {
     orderId: order.id,
     fullName: order.fullName,
+    email: order.email,
     phone: order.phone,
     address: order.address1 + (order.address2 ? `, ${order.address2}` : ""),
     city: order.city,
@@ -117,11 +139,17 @@ export function buildOrderEmailData(order: {
     status: order.status,
     courierName: order.courierName,
     trackingId: order.trackingId,
-    items: order.orderitem.map((oi) => ({
-      name: oi.product.name,
-      quantity: oi.quantity,
-      price: oi.price,
-    })),
+    items: order.orderitem.map((oi) => {
+      const variant = oi.variantId
+        ? oi.product.productvariant?.find((v) => v.id === oi.variantId)?.label
+        : null;
+      return {
+        name: oi.product.name,
+        quantity: oi.quantity,
+        price: oi.price,
+        variant: variant || null,
+      };
+    }),
   };
 }
 
@@ -131,6 +159,9 @@ function getTransporter() {
     !process.env.SMTP_USER ||
     !process.env.SMTP_PASS
   ) {
+    console.error(
+      "[email] SMTP not configured (SMTP_HOST/SMTP_USER/SMTP_PASS). Emails will NOT be sent.",
+    );
     return null;
   }
 
@@ -145,14 +176,17 @@ function getTransporter() {
   });
 }
 
+// Gmail (and most providers) reject mail whose From differs from the
+// authenticated account, so fall back to SMTP_USER when SMTP_FROM is unset.
+function getFromAddress(): string {
+  return process.env.SMTP_FROM || process.env.SMTP_USER || "";
+}
+
 export async function sendAdminOrderNotification(data: OrderEmailData) {
   const transporter = getTransporter();
   if (!transporter) return;
 
-  const adminEmails = (process.env.ADMIN_EMAILS || "")
-    .split(",")
-    .map((e) => e.trim())
-    .filter(Boolean);
+  const adminEmails = getAdminEmails();
 
   if (adminEmails.length === 0) return;
 
@@ -176,6 +210,10 @@ export async function sendAdminOrderNotification(data: OrderEmailData) {
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Phone</td>
             <td style="padding:8px 0;font-weight:600;font-size:13px;">${escapeHtml(data.phone)}</td>
+          </tr>
+          <tr>
+            <td style="padding:8px 0;color:#888;font-size:13px;">Email</td>
+            <td style="padding:8px 0;font-weight:600;font-size:13px;">${escapeHtml(data.email || "Not provided")}</td>
           </tr>
           <tr>
             <td style="padding:8px 0;color:#888;font-size:13px;">Address</td>
@@ -207,7 +245,7 @@ export async function sendAdminOrderNotification(data: OrderEmailData) {
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: getFromAddress(),
       to: adminEmails.join(", "),
       subject: `🛒 New Order #${data.orderId.slice(0, 8).toUpperCase()} - ₹${data.totalAmount}`,
       html,
@@ -287,7 +325,7 @@ export async function sendCustomerOrderConfirmation(
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: getFromAddress(),
       to: email,
       subject: `Order ${formatOrderStatus(data.status)} #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
       html,
@@ -390,7 +428,7 @@ export async function sendCustomerShippingNotification(
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: getFromAddress(),
       to: email,
       subject: `🚚 Order Shipped #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
       html,
@@ -509,7 +547,7 @@ export async function sendCustomerOrderStatusUpdate(
 
   try {
     await transporter.sendMail({
-      from: process.env.SMTP_FROM,
+      from: getFromAddress(),
       to: email,
       subject: `${statusInfo.title} #${data.orderId.slice(0, 8).toUpperCase()} - Shivshambho`,
       html,
