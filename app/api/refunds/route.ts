@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { validateCsrfToken } from "@/lib/csrf";
 import { prisma } from "@/lib/prisma";
-import { getRazorpay } from "@/lib/razorpay";
+import { getRazorpay, isRazorpayConfigured } from "@/lib/razorpay";
 import { logActivity } from "@/lib/activity";
 import { cookies } from "next/headers";
 
@@ -44,6 +44,13 @@ export async function POST(req: Request) {
 
     if (!order.razorpayPaymentId) {
       return NextResponse.json({ error: "Order has no Razorpay payment ID" }, { status: 400 });
+    }
+
+    if (!isRazorpayConfigured()) {
+      return NextResponse.json(
+        { error: "Online payments are not configured" },
+        { status: 501 },
+      );
     }
 
     if (order.refund.length > 0) {
